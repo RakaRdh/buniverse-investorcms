@@ -9,14 +9,21 @@ class DataRepository
         $base = defined('WRITEPATH') ? WRITEPATH : dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'writable' . DIRECTORY_SEPARATOR;
         $dir = $base . 'data' . DIRECTORY_SEPARATOR . 'json';
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            @mkdir($dir, 0777, true);
         }
         return $dir;
     }
 
     private static function getFilePath(string $key): string
     {
-        return self::getJsonDir() . DIRECTORY_SEPARATOR . $key . '.json';
+        $primary = self::getJsonDir() . DIRECTORY_SEPARATOR . $key . '.json';
+        if (!file_exists($primary)) {
+            $fallback = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'writable' . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'json' . DIRECTORY_SEPARATOR . $key . '.json';
+            if (file_exists($fallback)) {
+                @copy($fallback, $primary);
+            }
+        }
+        return $primary;
     }
 
     private static bool $isInitializing = false;

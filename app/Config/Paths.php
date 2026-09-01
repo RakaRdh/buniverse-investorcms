@@ -53,7 +53,41 @@ class Paths
      * for maximum security, keeping it out of the app and/or
      * system directories.
      */
-    public string $writableDirectory = __DIR__ . '/../../writable';
+    public string $writableDirectory;
+
+    public function __construct()
+    {
+        $defaultWritable = realpath(__DIR__ . '/../../writable') ?: (__DIR__ . '/../../writable');
+
+        // If running in Vercel serverless environment (where root filesystem is read-only)
+        if (isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL']) || !is_writable($defaultWritable)) {
+            $tmpWritable = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ci4_writable';
+            if (!is_dir($tmpWritable)) {
+                @mkdir($tmpWritable, 0777, true);
+            }
+            // Copy seed json data to /tmp if not present
+            $tmpJsonDir = $tmpWritable . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'json';
+            if (!is_dir($tmpJsonDir)) {
+                @mkdir($tmpJsonDir, 0777, true);
+                $seedDir = __DIR__ . '/../../writable/data/json';
+                if (is_dir($seedDir)) {
+                    foreach (glob($seedDir . '/*.json') as $file) {
+                        @copy($file, $tmpJsonDir . DIRECTORY_SEPARATOR . basename($file));
+                    }
+                }
+            }
+            // Ensure session, logs, and cache dirs exist
+            foreach (['session', 'logs', 'cache', 'debugbar', 'uploads'] as $sub) {
+                $subDir = $tmpWritable . DIRECTORY_SEPARATOR . $sub;
+                if (!is_dir($subDir)) {
+                    @mkdir($subDir, 0777, true);
+                }
+            }
+            $this->writableDirectory = $tmpWritable;
+        } else {
+            $this->writableDirectory = $defaultWritable;
+        }
+    }
 
     /**
      * ---------------------------------------------------------------
