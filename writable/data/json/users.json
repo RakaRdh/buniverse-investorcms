@@ -1,0 +1,72 @@
+[
+    {
+        "id": 1,
+        "name": "Raka Herdika",
+        "username": "raka_h",
+        "email": "raka.herdika@investor.id",
+        "password": "admin123",
+        "role": "Admin",
+        "status": "Active",
+        "last_active": "Just now"
+    },
+    {
+        "id": 2,
+        "name": "Natasha Khairunisa",
+        "username": "natasha_k",
+        "email": "natasha.k@investor.id",
+        "password": "editor123",
+        "role": "Editor",
+        "status": "Active",
+        "last_active": "12 mins ago"
+    },
+    {
+        "id": 3,
+        "name": "Eva Fitriani",
+        "username": "eva_id",
+        "email": "eva.fitriani@investor.id",
+        "password": "author123",
+        "role": "Author",
+        "status": "Active",
+        "last_active": "35 mins ago"
+    },
+    {
+        "id": 4,
+        "name": "M. Ghafur Fadillah",
+        "username": "ghafur_f",
+        "email": "ghafur.f@investor.id",
+        "password": "author123",
+        "role": "Author",
+        "status": "Active",
+        "last_active": "1 hour ago"
+    },
+    {
+        "id": 5,
+        "name": "Erla Darwati",
+        "username": "erla_d",
+        "email": "erla.darwati@investor.id",
+        "password": "editor123",
+        "role": "Editor",
+        "status": "Active",
+        "last_active": "2 hours ago"
+    },
+    {
+        "id": 6,
+        "name": "Arnoldus Kristianus",
+        "username": "arnoldus_k",
+        "email": "arnoldus.k@investor.id",
+        "password": "contrib123",
+        "role": "Contributor",
+        "status": "Active",
+        "last_active": "1 day ago"
+    },
+    {
+        "id": 7,
+        "name": "Prisma ID Desk",
+        "username": "prisma_id",
+        "email": "desk.prisma@investor.id",
+        "password": "contrib123",
+        "role": "Contributor",
+        "status": "Active",
+        "last_active": "Yesterday"
+    }
+]

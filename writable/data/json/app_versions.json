@@ -1,0 +1,35 @@
+[
+    {
+        "id": 1,
+        "app": "Investor.id Mobile",
+        "platform": "iOS (App Store)",
+        "version": "v4.2.1",
+        "build": "4210",
+        "release_date": "28 Aug 2026",
+        "status": "Published",
+        "mandatory": false,
+        "changelog": "New live market widget, performance optimization on push alerts."
+    },
+    {
+        "id": 2,
+        "app": "Investor.id Mobile",
+        "platform": "Android (Play Store)",
+        "version": "v4.2.0",
+        "build": "4205",
+        "release_date": "25 Aug 2026",
+        "status": "Published",
+        "mandatory": false,
+        "changelog": "Added dark mode support, stock watchlist sync improvements."
+    },
+    {
+        "id": 3,
+        "app": "Investor.id Mobile",
+        "platform": "iOS (App Store)",
+        "version": "v4.3.0-beta",
+        "build": "4300",
+        "release_date": "02 Sep 2026",
+        "status": "Testing",
+        "mandatory": false,
+        "changelog": "AI News Summaries, Interactive Financial Statements viewer."
+    }
+]

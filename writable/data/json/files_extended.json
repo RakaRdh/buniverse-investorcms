@@ -1,0 +1,56 @@
+[
+    {
+        "id": 1,
+        "name": "Laporan_Keuangan_Q2_2026_IDX.pdf",
+        "date": "31/08/2026 17:00",
+        "upload_by": "raka_h",
+        "url": "/files/download/1",
+        "type": "PDF",
+        "size": "4.8 MB"
+    },
+    {
+        "id": 2,
+        "name": "Editorial_Styleguide_InvestorID_2026.pdf",
+        "date": "28/08/2026 10:00",
+        "upload_by": "Editorial Board",
+        "url": "/files/download/2",
+        "type": "PDF",
+        "size": "1.2 MB"
+    },
+    {
+        "id": 3,
+        "name": "Konsensus_Analis_Saham_Banking_Sep2026.xlsx",
+        "date": "31/08/2026 08:30",
+        "upload_by": "natasha_k",
+        "url": "/files/download/3",
+        "type": "XLSX",
+        "size": "780 KB"
+    },
+    {
+        "id": 4,
+        "name": "Press_Release_BUMN_Karya_Merger.docx",
+        "date": "30/08/2026 15:20",
+        "upload_by": "prisma_id",
+        "url": "/files/download/4",
+        "type": "DOCX",
+        "size": "320 KB"
+    },
+    {
+        "id": 5,
+        "name": "Template_Infografis_Investor_Social.ai",
+        "date": "25/08/2026 11:15",
+        "upload_by": "Creative Studio",
+        "url": "/files/download/5",
+        "type": "AI",
+        "size": "18.4 MB"
+    },
+    {
+        "id": 6,
+        "name": "Makroekonomi_APBN_2027_Draft.pdf",
+        "date": "24/08/2026 14:00",
+        "upload_by": "arnoldus_k",
+        "url": "/files/download/6",
+        "type": "PDF",
+        "size": "3.5 MB"
+    }
+]

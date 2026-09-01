@@ -1,0 +1,46 @@
+[
+    {
+        "id": 1,
+        "title": "IHSG Composite Daily Candle & Volume",
+        "type": "Candlestick / Area",
+        "symbol": "COMPOSITE:IDX",
+        "source": "TradingView / Bloomberg API",
+        "author": "Raka H.",
+        "updated": "01 Sep 2026 09:00",
+        "status": "Active",
+        "embed_code": "<iframe src=\"https://investor.id/embed/charts/ihsg-composite\" width=\"100%\" height=\"450\" frameborder=\"0\"></iframe>"
+    },
+    {
+        "id": 2,
+        "title": "Harga Emas Spot Dunia (XAU/USD) vs Antam",
+        "type": "Multi-line Comparison",
+        "symbol": "XAUUSD / ANTM",
+        "source": "Kitco / Antam Feed",
+        "author": "Natasha K.",
+        "updated": "31 Aug 2026 18:30",
+        "status": "Active",
+        "embed_code": "<iframe src=\"https://investor.id/embed/charts/gold-xau-antam\" width=\"100%\" height=\"400\" frameborder=\"0\"></iframe>"
+    },
+    {
+        "id": 3,
+        "title": "Pergerakan Kurs JISDOR USD/IDR",
+        "type": "Step Line",
+        "symbol": "USDIDR:JISDOR",
+        "source": "Bank Indonesia API",
+        "author": "Erla D.",
+        "updated": "31 Aug 2026 16:00",
+        "status": "Active",
+        "embed_code": "<iframe src=\"https://investor.id/embed/charts/usd-idr-jisdor\" width=\"100%\" height=\"380\" frameborder=\"0\"></iframe>"
+    },
+    {
+        "id": 4,
+        "title": "Top 10 Market Cap IDX Heatmap",
+        "type": "Treemap Heatmap",
+        "symbol": "IDX:TOP10",
+        "source": "IDX Data Service",
+        "author": "Ghafur F.",
+        "updated": "30 Aug 2026 17:15",
+        "status": "Active",
+        "embed_code": "<iframe src=\"https://investor.id/embed/charts/idx-marketcap-heatmap\" width=\"100%\" height=\"500\" frameborder=\"0\"></iframe>"
+    }
+]

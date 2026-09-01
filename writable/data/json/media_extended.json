@@ -1,0 +1,164 @@
+[
+    {
+        "id": 1,
+        "title": "Gedung Bursa Efek Indonesia (IDX) SCBD",
+        "caption": "Aktivitas perdagangan saham di Gedung Bursa Efek Indonesia, Jakarta Selatan.",
+        "image": "/img/article1.jpg",
+        "source": "Investor.id / Dokumen",
+        "date": "01/09/26 07:28",
+        "user": "raka_h"
+    },
+    {
+        "id": 2,
+        "title": "Kilang Minyak dan Gas Bumi Cepu",
+        "caption": "Fasilitas produksi migas Blok Cepu beroperasi dengan kapasitas optimal.",
+        "image": "/img/article2.jpg",
+        "source": "Pertamina / Istimewa",
+        "date": "01/09/26 04:28",
+        "user": "natasha_k"
+    },
+    {
+        "id": 3,
+        "title": "Pertemuan Tingkat Menteri Keuangan ASEAN",
+        "caption": "Delegasi Indonesia memimpin diskusi integrasi pembayaran lintas negara.",
+        "image": "/img/article3.jpg",
+        "source": "Kemenkeu RI",
+        "date": "01/09/26 01:28",
+        "user": "eva_id"
+    },
+    {
+        "id": 4,
+        "title": "Pembangunan Kereta Cepat Tahap Lanjutan",
+        "caption": "Progres konstruksi jalur ekstensi transportasi rel modern nasional.",
+        "image": "/img/article4.jpg",
+        "source": "KCIC / Humas",
+        "date": "31/08/26 22:28",
+        "user": "ghafur_f"
+    },
+    {
+        "id": 5,
+        "title": "Pabrik Baterai Kendaraan Listrik Karawang",
+        "caption": "Lini perakitan sel baterai EV siap memasok kebutuhan industri otomotif.",
+        "image": "/img/article5.jpg",
+        "source": "IBC / Dok",
+        "date": "31/08/26 19:28",
+        "user": "erla_d"
+    },
+    {
+        "id": 6,
+        "title": "Fasilitas Smelter Nikel Terintegrasi Pomalaa",
+        "caption": "Operasional smelter HPAL menghasilkan material kelas satu untuk baterai hijau.",
+        "image": "/img/article6.jpg",
+        "source": "Antam Tbk",
+        "date": "31/08/26 16:28",
+        "user": "arnoldus_k"
+    },
+    {
+        "id": 7,
+        "title": "Kantor Pusat Bank Sentral Bank Indonesia",
+        "caption": "Kompleks perkantoran Bank Indonesia di kawasan Thamrin Jakarta.",
+        "image": "/img/article1.jpg",
+        "source": "BI / Humas",
+        "date": "31/08/26 13:28",
+        "user": "raka_h"
+    },
+    {
+        "id": 8,
+        "title": "Pembangkit Listrik Tenaga Surya Terapung Cirata",
+        "caption": "Panel PLTS terapung terbesar di kawasan Asia Tenggara beroperasi penuh.",
+        "image": "/img/article2.jpg",
+        "source": "PLN Nusantara",
+        "date": "31/08/26 10:28",
+        "user": "natasha_k"
+    },
+    {
+        "id": 9,
+        "title": "Pusat Logistik Berikat Pelabuhan Tanjung Priok",
+        "caption": "Arus peti kemas ekspor impor nasional terus menunjukkan tren ekspansi.",
+        "image": "/img/article3.jpg",
+        "source": "Pelindo",
+        "date": "31/08/26 07:28",
+        "user": "eva_id"
+    },
+    {
+        "id": 10,
+        "title": "Server Farm Data Center Tier 4 Cikarang",
+        "caption": "Infrastruktur cloud computing mendukung transformasi digital ekonomi perbankan.",
+        "image": "/img/article4.jpg",
+        "source": "Telkom Data",
+        "date": "31/08/26 04:28",
+        "user": "ghafur_f"
+    },
+    {
+        "id": 11,
+        "title": "Perkebunan Kelapa Sawit Berkelanjutan Riau",
+        "caption": "Sertifikasi RSPO pada perkebunan sawit rakyat mendorong daya saing ekspor CPO.",
+        "image": "/img/article5.jpg",
+        "source": "GAPKI",
+        "date": "31/08/26 01:28",
+        "user": "erla_d"
+    },
+    {
+        "id": 12,
+        "title": "Konferensi Pers Rapat Dewan Gubernur Bank Indonesia",
+        "caption": "Gubernur BI menyampaikan asesmen kondisi moneter dan stabilitas nilai tukar Rupiah.",
+        "image": "/img/article6.jpg",
+        "source": "BI Media",
+        "date": "30/08/26 22:28",
+        "user": "arnoldus_k"
+    },
+    {
+        "id": 13,
+        "title": "Pabrik Semen Ramah Lingkungan Tuban",
+        "caption": "Pemanfaatan bahan bakar alternatif biomassa pada industri manufaktur semen.",
+        "image": "/img/article1.jpg",
+        "source": "SIG Tbk",
+        "date": "30/08/26 19:28",
+        "user": "raka_h"
+    },
+    {
+        "id": 14,
+        "title": "Peluncuran Reksa Dana ESG Syariah",
+        "caption": "Manajer investasi merilis instrumen investasi berkelanjutan berbasis prinsip syariah.",
+        "image": "/img/article2.jpg",
+        "source": "Syailendra",
+        "date": "30/08/26 16:28",
+        "user": "natasha_k"
+    },
+    {
+        "id": 15,
+        "title": "Terminal Khusus Ekspor Bauksit Kalimantan Barat",
+        "caption": "Pengapalan produk olahan alumina hasil hilirisasi mineral tambang.",
+        "image": "/img/article3.jpg",
+        "source": "Inalum",
+        "date": "30/08/26 13:28",
+        "user": "eva_id"
+    },
+    {
+        "id": 16,
+        "title": "Kantor Cabang Digital Bank Syariah Indonesia",
+        "caption": "Layanan perbankan digital memudahkan transaksi nasabah segmen milenial.",
+        "image": "/img/article4.jpg",
+        "source": "BSI Media",
+        "date": "30/08/26 10:28",
+        "user": "ghafur_f"
+    },
+    {
+        "id": 17,
+        "title": "Proyek Bendungan Pengendali Banjir Nusantara",
+        "caption": "Pembangunan infrastruktur pengendali air di Kawasan Inti Pusat Pemerintahan.",
+        "image": "/img/article5.jpg",
+        "source": "PUPR",
+        "date": "30/08/26 07:28",
+        "user": "erla_d"
+    },
+    {
+        "id": 18,
+        "title": "Pusat Riset Kecerdasan Buatan AI Bandung",
+        "caption": "Kolaborasi perguruan tinggi dan industri teknologi menciptakan solusi analitik.",
+        "image": "/img/article6.jpg",
+        "source": "ITB Press",
+        "date": "30/08/26 04:28",
+        "user": "arnoldus_k"
+    }
+]

@@ -1,0 +1,133 @@
+/* ==========================================================================
+   Investor.id Modern Newsroom CMS Design System (Tailwind & Lovable Matching Tokens)
+   ========================================================================== */
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 215 28% 17%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+
+    --primary: 209 59% 30%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 20% 95%;
+    --muted-foreground: 217 19% 45%;
+
+    --accent: 204 62% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 76% 40%;
+    --warning: 36 92% 50%;
+
+    --border: 214 20% 91%;
+    --input: 214 20% 91%;
+    --ring: 209 59% 30%;
+
+    --radius: 0.625rem;
+
+    --sidebar-background: 215 64% 12%;
+    --sidebar-foreground: 214 20% 91%;
+    --sidebar-primary: 204 62% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 50% 18%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 215 40% 20%;
+    --sidebar-ring: 204 62% 52%;
+
+    --premium: 38 92% 50%;
+    --premium-foreground: 0 0% 100%;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 100%;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size: 0.9375rem; /* ~15px base size for better readability */
+  line-height: 1.5;
+}
+
+main table, 
+main .surface-card table {
+  font-size: 0.8125rem; /* ~13px for table data cells */
+}
+
+/* Custom Surface Card utility matching Lovable */
+.surface-card {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05), 0 1px 2px rgba(16, 24, 40, 0.03);
+}
+
+.shadow-raised {
+  box-shadow: 0 4px 14px -2px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.04);
+}
+
+/* Collapsed sidebar states */
+.sidebar-collapsed {
+  width: 76px !important;
+}
+
+.sidebar-collapsed .nav-label,
+.sidebar-collapsed .group-label,
+.sidebar-collapsed .brand-desc,
+.sidebar-collapsed .brand-title {
+  display: none !important;
+}
+
+.sidebar-collapsed .nav-item-link {
+  justify-content: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Toast container */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast-item {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  padding: 12px 18px;
+  border-radius: 0.5rem;
+  font-size: 13.5px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toastSlideIn 0.2s ease-out;
+}
+
+@keyframes toastSlideIn {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

@@ -1,0 +1,7 @@
+/* Media Page Styles */
+.media-row-card {
+  transition: all 0.15s ease;
+}
+.media-row-card:hover {
+  background-color: hsl(var(--muted) / 0.4);
+}

@@ -1,0 +1,32 @@
+[
+    {
+        "id": 1,
+        "title": "Kupas Tuntas Valuasi Bank Jumbo Pasca Penurunan Suku Bunga",
+        "type": "Editorial Deep Dive",
+        "badge": "Special Report",
+        "order": 1,
+        "status": "Active",
+        "image": "/img/article1.jpg",
+        "target_url": "/post/2"
+    },
+    {
+        "id": 2,
+        "title": "Investasi Hijau: Panduan Lengkap Obligasi ESG untuk Pemula",
+        "type": "Academy Series",
+        "badge": "Investor Academy",
+        "order": 2,
+        "status": "Active",
+        "image": "/img/article4.jpg",
+        "target_url": "/post/9"
+    },
+    {
+        "id": 3,
+        "title": "Prospek Pasar IPO Kuartal IV 2026",
+        "type": "Market Outlook",
+        "badge": "Analysis",
+        "order": 3,
+        "status": "Active",
+        "image": "/img/article3.jpg",
+        "target_url": "/post/6"
+    }
+]

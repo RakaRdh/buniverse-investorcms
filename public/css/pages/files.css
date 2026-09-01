@@ -1,0 +1,4 @@
+/* Files Page Styles */
+.file-table-row:hover {
+  background-color: hsl(var(--muted) / 0.4);
+}
