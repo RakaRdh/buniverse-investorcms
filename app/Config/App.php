@@ -22,9 +22,14 @@ class App extends BaseConfig
     {
         parent::__construct();
 
-        // Auto-detect dynamic protocol, host, and port if available
+        // Auto-detect dynamic protocol (supporting reverse proxies like Vercel / Cloudflare), host, and port
         if (isset($_SERVER['HTTP_HOST'])) {
-            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+                || (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on')
+                || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+
+            $protocol = $isHttps ? 'https://' : 'http://';
             $this->baseURL = $protocol . $_SERVER['HTTP_HOST'] . '/';
         } else {
             $this->baseURL = 'http://localhost:8080/';
