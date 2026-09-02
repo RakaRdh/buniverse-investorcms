@@ -316,7 +316,7 @@
     <div class="p-4">
         <div class="flex items-center justify-between mb-3">
             <h3 class="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <i data-lucide="bar-chart-2" class="size-3.5 text-emerald-600"></i>
+                <i data-lucide="bar-chart-2" class="size-3.5 text-primary"></i>
                 <span>Jumlah Artikel Dirilis Per Hari</span>
             </h3>
             <span class="text-[11px] font-mono text-muted-foreground"><?= count($dailyReleases) ?> Hari</span>
@@ -339,7 +339,7 @@
                         <td class="py-2 px-3 text-muted-foreground"><?= esc($d['day_name']) ?></td>
                         <td class="py-2 px-3 text-center">
                             <?php if ($d['count'] > 0): ?>
-                                <span class="inline-flex items-center justify-center min-w-6 rounded bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                                <span class="inline-flex items-center justify-center min-w-6 rounded bg-primary/15 border border-primary/25 px-2 py-0.5 text-xs font-bold text-primary">
                                     <?= $d['count'] ?> artikel
                                 </span>
                             <?php else: ?>

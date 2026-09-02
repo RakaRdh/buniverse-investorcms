@@ -33,7 +33,7 @@
             <div class="flex shrink-0 flex-wrap items-center gap-2">
                 <!-- Preview Button (Opens New Tab) -->
                 <button type="button" onclick="previewArticlePage()" class="inline-flex items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted hover:text-primary transition-colors shadow-xs">
-                    <i data-lucide="eye" class="size-4 text-emerald-600"></i>
+                    <i data-lucide="eye" class="size-4 text-primary"></i>
                     <span>Preview Artikel</span>
                 </button>
 
@@ -59,15 +59,15 @@
         <div class="surface-card p-5 sm:p-6 lg:col-span-2 space-y-5">
             
             <!-- A. Scrape Artikel dari URL Eksternal (Placeholder Box) -->
-            <div class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/70 space-y-2">
-                <div class="flex items-center gap-2 text-emerald-800">
-                    <i data-lucide="link" class="size-4 text-emerald-600"></i>
+            <div class="p-4 rounded-xl border border-primary/25 bg-primary/5 space-y-2">
+                <div class="flex items-center gap-2 text-primary">
+                    <i data-lucide="link" class="size-4 text-primary"></i>
                     <span class="text-xs font-bold tracking-tight">Scrape Artikel dari URL Berita Eksternal</span>
                 </div>
-                <p class="text-[11px] text-emerald-700/80">Tempel link artikel dari situs berita yang diizinkan (Antara News). AI akan mengekstrak isi berita dan gambar thumbnail secara otomatis.</p>
+                <p class="text-[11px] text-muted-foreground">Tempel link artikel dari situs berita yang diizinkan (Antara News). AI akan mengekstrak isi berita dan gambar thumbnail secara otomatis.</p>
                 <div class="flex items-center gap-2 pt-1">
-                    <input type="url" id="scrapeUrlInput" placeholder="https://www.antaranews.com/berita/..." class="flex h-9 flex-1 rounded-md border border-emerald-300 bg-white px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500">
-                    <button type="button" onclick="handleScrapePlaceholder()" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-4 text-xs font-bold text-white shadow hover:bg-emerald-700 transition-colors shrink-0">
+                    <input type="url" id="scrapeUrlInput" placeholder="https://www.antaranews.com/berita/..." class="flex h-9 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                    <button type="button" onclick="handleScrapePlaceholder()" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground shadow hover:bg-primary/90 transition-colors shrink-0">
                         <i data-lucide="rotate-cw" class="size-3.5"></i>
                         <span>Scrape Artikel</span>
                     </button>
@@ -95,8 +95,8 @@
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground">
                         Judul Artikel <span class="text-destructive">*</span>
                     </label>
-                    <button type="button" onclick="handleAiAssistance('judul')" class="inline-flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-700 hover:bg-emerald-500/25 transition-colors">
-                        <i data-lucide="sparkles" class="size-3 text-emerald-600"></i>
+                    <button type="button" onclick="handleAiAssistance('judul')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
                         <span>GENERATE JUDUL VIA AI</span>
                     </button>
                 </div>
@@ -128,8 +128,8 @@
             <div>
                 <div class="flex items-center justify-between mb-1.5">
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground">Uraian Singkat (Lead / Summary)</label>
-                    <button type="button" onclick="handleAiAssistance('summary')" class="inline-flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-700 hover:bg-emerald-500/25 transition-colors">
-                        <i data-lucide="sparkles" class="size-3 text-emerald-600"></i>
+                    <button type="button" onclick="handleAiAssistance('summary')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
                         <span>GENERATE SUMMARY VIA AI</span>
                     </button>
                 </div>
@@ -182,9 +182,9 @@
                         <i data-lucide="list-ordered" class="size-4 text-primary"></i>
                         <span>3 Poin Utama Artikel (Points)</span>
                     </label>
-                    <button type="button" onclick="handleAiAssistance('points')" class="inline-flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-700 hover:bg-emerald-500/25 transition-colors">
-                        <i data-lucide="sparkles" class="size-3 text-emerald-600"></i>
-                        <span>GENERATE 3 POINT VIA AI</span>
+                    <button type="button" onclick="handleAiAssistance('points')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
+                        <span>GENERATE 3 POINTS VIA AI</span>
                     </button>
                 </div>
                 
@@ -197,15 +197,15 @@
                 ?>
                 <div class="space-y-2">
                     <div class="flex items-center gap-2">
-                        <span class="grid size-6 shrink-0 place-items-center rounded bg-primary/20 text-primary text-[11px] font-bold">1</span>
+                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">1</span>
                         <input type="text" name="point_1" id="pointInput1" value="<?= esc($pts[0] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting pertama artikel...">
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="grid size-6 shrink-0 place-items-center rounded bg-primary/20 text-primary text-[11px] font-bold">2</span>
+                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">2</span>
                         <input type="text" name="point_2" id="pointInput2" value="<?= esc($pts[1] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting kedua artikel...">
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="grid size-6 shrink-0 place-items-center rounded bg-primary/20 text-primary text-[11px] font-bold">3</span>
+                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">3</span>
                         <input type="text" name="point_3" id="pointInput3" value="<?= esc($pts[2] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting ketiga artikel...">
                     </div>
                 </div>
@@ -231,7 +231,7 @@
                         <span>Embed Chart</span>
                     </button>
                     <button type="button" onclick="openMediaChooserModal('quill')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
-                        <i data-lucide="image" class="size-3 text-emerald-600"></i>
+                        <i data-lucide="image" class="size-3 text-primary"></i>
                         <span>Insert Media</span>
                     </button>
                     <button type="button" onclick="insertEmbedTool('embed_socmed')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
@@ -258,8 +258,8 @@
             <div class="pt-2 border-t border-border">
                 <div class="flex items-center justify-between mb-1.5">
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground">Kata Kunci (Tags)</label>
-                    <button type="button" onclick="handleAiAssistance('tags')" class="inline-flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-700 hover:bg-emerald-500/25 transition-colors">
-                        <i data-lucide="sparkles" class="size-3 text-emerald-600"></i>
+                    <button type="button" onclick="handleAiAssistance('tags')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
                         <span>GENERATE TAGS VIA AI</span>
                     </button>
                 </div>
@@ -269,7 +269,7 @@
 
             <!-- Bottom Action Footer -->
             <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
-                <button type="button" onclick="previewArticlePage()" class="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-emerald-700 transition-colors">
+                <button type="button" onclick="previewArticlePage()" class="inline-flex items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-primary shadow-xs hover:bg-primary hover:text-white transition-colors">
                     <i data-lucide="eye" class="size-4"></i>
                     <span>PREVIEW ARTIKEL</span>
                 </button>

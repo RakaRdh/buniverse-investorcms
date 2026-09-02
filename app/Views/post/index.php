@@ -287,7 +287,7 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
                         <!-- Action -->
                         <td class="py-3 px-3 text-right">
                             <div class="inline-flex items-center gap-1 justify-end">
-                                <a href="<?= base_url('post/preview/' . $post['id']) ?>" target="_blank" class="inline-flex size-7 items-center justify-center rounded-md border border-input bg-background text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" title="Preview Artikel">
+                                <a href="<?= base_url('post/preview/' . $post['id']) ?>" target="_blank" class="inline-flex size-7 items-center justify-center rounded-md border border-input bg-background text-primary hover:text-primary-foreground hover:bg-primary transition-colors" title="Preview Artikel">
                                     <i data-lucide="eye" class="size-3"></i>
                                 </a>
                                 <a href="<?= base_url('post/edit/' . $post['id']) ?>" class="inline-flex size-7 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted" title="Edit Post">
