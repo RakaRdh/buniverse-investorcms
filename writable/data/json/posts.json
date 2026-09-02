@@ -19,7 +19,15 @@
         "tags": "",
         "source": "Investor.id / Riset",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 1,
@@ -38,7 +46,15 @@
         "summary": "Ulasan komprehensif mengenai Prediksi Harga Emas Antam (ANTM) Selasa 1 September 2026 dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Prediksi Harga Emas Antam (ANTM) Selasa 1 September 2026</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "secondary",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Commodities",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 2,
@@ -57,7 +73,15 @@
         "summary": "Ulasan komprehensif mengenai September Effect Bayangi Momentum Positif IHSG dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>September Effect Bayangi Momentum Positif IHSG</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "main",
-        "is_breaking": 1
+        "is_breaking": 1,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 3,
@@ -76,7 +100,15 @@
         "summary": "Ulasan komprehensif mengenai IHSG Menanjak, 5 Saham Catatkan Rekor ARA dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>IHSG Menanjak, 5 Saham Catatkan Rekor ARA</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "secondary",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 4,
@@ -95,7 +127,15 @@
         "summary": "Ulasan komprehensif mengenai OJK Jatuhkan 1.277 Sanksi ke Pelaku Pasar Modal Sepanjang 2026 dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>OJK Jatuhkan 1.277 Sanksi ke Pelaku Pasar Modal Sepanjang 2026</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 5,
@@ -114,7 +154,15 @@
         "summary": "Ulasan komprehensif mengenai RI-Singapura Perkuat Penggunaan Mata Uang Lokal Lewat Kerangka LCT dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>RI-Singapura Perkuat Penggunaan Mata Uang Lokal Lewat Kerangka LCT</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "secondary",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Finance",
+        "sub_kanal": "Banking",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 6,
@@ -133,7 +181,15 @@
         "summary": "Ulasan komprehensif mengenai Merger PTPP & ADHI Dipacu Beres Tahun Ini dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Merger PTPP & ADHI Dipacu Beres Tahun Ini</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Corporate Action",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 7,
@@ -152,7 +208,15 @@
         "summary": "Ulasan komprehensif mengenai Rupiah Kembali Diuji Tekanan Ganda Suku Bunga dan Inflasi Global dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Rupiah Kembali Diuji Tekanan Ganda Suku Bunga dan Inflasi Global</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Commodities",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 8,
@@ -171,7 +235,15 @@
         "summary": "Ulasan komprehensif mengenai Progres Underpass Bitung Capai 56,68%, Ditarget Tuntas Akhir 2026 dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Progres Underpass Bitung Capai 56,68%, Ditarget Tuntas Akhir 2026</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Business",
+        "sub_kanal": "Infrastructure",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 9,
@@ -190,7 +262,15 @@
         "summary": "Ulasan komprehensif mengenai Mesin Uang Baru TBS Energi Utama (TOBA) dari Ekosistem Motor Listrik dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Mesin Uang Baru TBS Energi Utama (TOBA) dari Ekosistem Motor Listrik</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Corporate Action",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 10,
@@ -209,7 +289,15 @@
         "summary": "Ulasan komprehensif mengenai Prabowo: Saya Sudah Hitung, Jutaan Rakyat akan Keluar dari Kemiskinan dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Prabowo: Saya Sudah Hitung, Jutaan Rakyat akan Keluar dari Kemiskinan</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Macroeconomy",
+        "sub_kanal": "",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 11,
@@ -228,7 +316,15 @@
         "summary": "Ulasan komprehensif mengenai Kinerja Emiten Perbankan KBMI 4 Masih Jadi Penopang Laba IHSG dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Kinerja Emiten Perbankan KBMI 4 Masih Jadi Penopang Laba IHSG</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Finance",
+        "sub_kanal": "Banking",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 12,
@@ -247,7 +343,15 @@
         "summary": "Ulasan komprehensif mengenai Harga Minyak Mentah WTI Naik Tipis Pasca Pertemuan OPEC+ dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Harga Minyak Mentah WTI Naik Tipis Pasca Pertemuan OPEC+</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Commodities",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 13,
@@ -266,7 +370,15 @@
         "summary": "Ulasan komprehensif mengenai Emiten Teknologi Buka Suara Soal Dampak Regulasi AI Uni Eropa dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Emiten Teknologi Buka Suara Soal Dampak Regulasi AI Uni Eropa</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 14,
@@ -285,7 +397,15 @@
         "summary": "Ulasan komprehensif mengenai PLN Operasikan 12 PLTS Baru di Wilayah Indonesia Timur dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>PLN Operasikan 12 PLTS Baru di Wilayah Indonesia Timur</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 15,
@@ -304,7 +424,15 @@
         "summary": "Ulasan komprehensif mengenai Telkom (TLKM) Perluas Kapasitas Data Center AI Hyperscale dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Telkom (TLKM) Perluas Kapasitas Data Center AI Hyperscale</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 16,
@@ -323,7 +451,15 @@
         "summary": "Ulasan komprehensif mengenai Defisit Neraca Berjalan RI Kuartal II Tetap Rendah Terkendali dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Defisit Neraca Berjalan RI Kuartal II Tetap Rendah Terkendali</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Macroeconomy",
+        "sub_kanal": "",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 17,
@@ -342,7 +478,15 @@
         "summary": "Ulasan komprehensif mengenai Astra International (ASII) Bukukan Kenaikan Penjualan Mobil Hybrid dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Astra International (ASII) Bukukan Kenaikan Penjualan Mobil Hybrid</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Corporate Action",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 18,
@@ -361,7 +505,15 @@
         "summary": "Ulasan komprehensif mengenai Target Pertumbuhan Ekonomi 5,2% di RAPBN 2027 Dinilai Realistis dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Target Pertumbuhan Ekonomi 5,2% di RAPBN 2027 Dinilai Realistis</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Macroeconomy",
+        "sub_kanal": "",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 19,
@@ -380,7 +532,15 @@
         "summary": "Ulasan komprehensif mengenai Smelter Tembaga Baru di Gresik Siap Uji Coba Produksi Komersial dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Smelter Tembaga Baru di Gresik Siap Uji Coba Produksi Komersial</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Business",
+        "sub_kanal": "Infrastructure",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 20,
@@ -399,7 +559,15 @@
         "summary": "Ulasan komprehensif mengenai Bank Mandiri (BMRI) Siapkan Belanja Modal IT Rp 3,5 Triliun dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Bank Mandiri (BMRI) Siapkan Belanja Modal IT Rp 3,5 Triliun</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Finance",
+        "sub_kanal": "Banking",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 21,
@@ -418,7 +586,15 @@
         "summary": "Ulasan komprehensif mengenai Peluang Rebound Saham Konsumer Menjelang Periode Kampanye Pemilu Daerah dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Peluang Rebound Saham Konsumer Menjelang Periode Kampanye Pemilu Daerah</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 22,
@@ -437,7 +613,15 @@
         "summary": "Ulasan komprehensif mengenai Bursa Karbon Indonesia Catatkan Rekor Transaksi Sertifikat Penurunan Emisi dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Bursa Karbon Indonesia Catatkan Rekor Transaksi Sertifikat Penurunan Emisi</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 23,
@@ -456,7 +640,15 @@
         "summary": "Ulasan komprehensif mengenai Kuartal III/2026, Penyaluran Kredit Sindikasi Tumbuh 14,2% dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Kuartal III/2026, Penyaluran Kredit Sindikasi Tumbuh 14,2%</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Finance",
+        "sub_kanal": "Banking",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 24,
@@ -475,7 +667,15 @@
         "summary": "Ulasan komprehensif mengenai Valuasi Saham Sektor Telekomunikasi Masih Menarik untuk Akumulasi dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Valuasi Saham Sektor Telekomunikasi Masih Menarik untuk Akumulasi</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 25,
@@ -494,7 +694,15 @@
         "summary": "Ulasan komprehensif mengenai Pemerintah Terbitkan Sukuk Ritel SR021, Kupon Diprediksi Menarik dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Pemerintah Terbitkan Sukuk Ritel SR021, Kupon Diprediksi Menarik</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Finance",
+        "sub_kanal": "Banking",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 26,
@@ -513,7 +721,15 @@
         "summary": "Ulasan komprehensif mengenai Hilirisasi Nikel Bawa Nilai Tambah Ekspor Tembus US$ 35 Miliar dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Hilirisasi Nikel Bawa Nilai Tambah Ekspor Tembus US$ 35 Miliar</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Business",
+        "sub_kanal": "Infrastructure",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 27,
@@ -532,7 +748,15 @@
         "summary": "Ulasan komprehensif mengenai Pergerakan Bitcoin Pasca Halving Terus Membentuk Konsolidasi Sehat dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Pergerakan Bitcoin Pasca Halving Terus Membentuk Konsolidasi Sehat</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 28,
@@ -551,7 +775,15 @@
         "summary": "Ulasan komprehensif mengenai BBCA Catatkan Pertumbuhan Transaksi Mobile Banking 28% YoY dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>BBCA Catatkan Pertumbuhan Transaksi Mobile Banking 28% YoY</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Finance",
+        "sub_kanal": "Banking",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 29,
@@ -570,7 +802,15 @@
         "summary": "Ulasan komprehensif mengenai Prospek Pasar Properti Residensial Menengah Pasca Insentif PPN DTP dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Prospek Pasar Properti Residensial Menengah Pasca Insentif PPN DTP</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Business",
+        "sub_kanal": "Infrastructure",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 30,
@@ -589,7 +829,15 @@
         "summary": "Ulasan komprehensif mengenai Rekomendasi Saham Sektor Pangan Pasca Rilis Indeks Ketahanan Pangan dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Rekomendasi Saham Sektor Pangan Pasca Rilis Indeks Ketahanan Pangan</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 31,
@@ -608,7 +856,15 @@
         "summary": "Ulasan komprehensif mengenai Ekspor Kopi Specialty Indonesia Cetak Rekor Penjualan di Pasar Eropa dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Ekspor Kopi Specialty Indonesia Cetak Rekor Penjualan di Pasar Eropa</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Commodities",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 32,
@@ -627,7 +883,15 @@
         "summary": "Ulasan komprehensif mengenai Kesiapan Infrastruktur Pelabuhan Patimban Fase 2 Capai 85% dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Kesiapan Infrastruktur Pelabuhan Patimban Fase 2 Capai 85%</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Business",
+        "sub_kanal": "Infrastructure",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 33,
@@ -646,7 +910,15 @@
         "summary": "Ulasan komprehensif mengenai Kuartal IV/2026, 3 Calon Unicorn Siap Listing di Papan Utama IDX dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Kuartal IV/2026, 3 Calon Unicorn Siap Listing di Papan Utama IDX</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 34,
@@ -665,7 +937,15 @@
         "summary": "Ulasan komprehensif mengenai Bank Mandiri Taspen Salurkan Kredit Pensiunan Rp 42 Triliun dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Bank Mandiri Taspen Salurkan Kredit Pensiunan Rp 42 Triliun</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Finance",
+        "sub_kanal": "Banking",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 35,
@@ -684,7 +964,15 @@
         "summary": "Ulasan komprehensif mengenai Strategi Emiten Tambang Batubara Diversifikasi ke Energi Terbarukan dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Strategi Emiten Tambang Batubara Diversifikasi ke Energi Terbarukan</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 36,
@@ -703,7 +991,15 @@
         "summary": "Ulasan komprehensif mengenai Pemerintah Naikkan Kuota Rumah Subsidi FLPP Jadi 220.000 Unit dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Pemerintah Naikkan Kuota Rumah Subsidi FLPP Jadi 220.000 Unit</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Macroeconomy",
+        "sub_kanal": "",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 37,
@@ -722,7 +1018,15 @@
         "summary": "Ulasan komprehensif mengenai GOTO Optimistis Pertahankan EBITDA Positif Sepanjang 2026 dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>GOTO Optimistis Pertahankan EBITDA Positif Sepanjang 2026</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Corporate Action",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 38,
@@ -741,7 +1045,15 @@
         "summary": "Ulasan komprehensif mengenai Pasar Obligasi Korporasi Ramai Penerbitan Green Bond Sektor Energi dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Pasar Obligasi Korporasi Ramai Penerbitan Green Bond Sektor Energi</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 39,
@@ -760,7 +1072,15 @@
         "summary": "Ulasan komprehensif mengenai Bank Danamon dan Adira Finance Perkuat Ekosistem Pembiayaan Otomotif dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Bank Danamon dan Adira Finance Perkuat Ekosistem Pembiayaan Otomotif</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Finance",
+        "sub_kanal": "Banking",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 40,
@@ -779,7 +1099,15 @@
         "summary": "Ulasan komprehensif mengenai Antisipasi El Nino, Bulog Amankan Pasokan Cadangan Beras Pemerintah dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Antisipasi El Nino, Bulog Amankan Pasokan Cadangan Beras Pemerintah</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Macroeconomy",
+        "sub_kanal": "",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 41,
@@ -798,7 +1126,15 @@
         "summary": "Ulasan komprehensif mengenai Emiten Farmasi Catat Lonjakan Permintaan Produk Preventif Kesehatan dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Emiten Farmasi Catat Lonjakan Permintaan Produk Preventif Kesehatan</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 42,
@@ -817,7 +1153,15 @@
         "summary": "Ulasan komprehensif mengenai Kawasan Industri Terpadu Batang Tarik Investasi Asing US$ 1,2 Miliar dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Kawasan Industri Terpadu Batang Tarik Investasi Asing US$ 1,2 Miliar</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Business",
+        "sub_kanal": "Infrastructure",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 43,
@@ -836,7 +1180,15 @@
         "summary": "Ulasan komprehensif mengenai Penyaluran Pinjaman Fintech Lending Tumbuh Sehat Pasca Regulasi Baru OJK dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Penyaluran Pinjaman Fintech Lending Tumbuh Sehat Pasca Regulasi Baru OJK</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 44,
@@ -855,7 +1207,15 @@
         "summary": "Ulasan komprehensif mengenai Kesiapan Bandara Dhoho Kediri Dongkrak Potensi Agribisnis Jawa Timur dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Kesiapan Bandara Dhoho Kediri Dongkrak Potensi Agribisnis Jawa Timur</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Business",
+        "sub_kanal": "Infrastructure",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 45,
@@ -874,7 +1234,15 @@
         "summary": "Ulasan komprehensif mengenai Indo Tambangraya (ITMG) Bagikan Dividen Interim Yield Menarik 8% dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Indo Tambangraya (ITMG) Bagikan Dividen Interim Yield Menarik 8%</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Corporate Action",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 46,
@@ -893,7 +1261,15 @@
         "summary": "Ulasan komprehensif mengenai Pemerintah Rilis Peta Jalan Pengembangan Industri Semikonduktor dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Pemerintah Rilis Peta Jalan Pengembangan Industri Semikonduktor</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 47,
@@ -912,7 +1288,15 @@
         "summary": "Ulasan komprehensif mengenai Cadangan Devisa RI Agustus 2026 Naik Menjadi US$ 150,2 Miliar dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Cadangan Devisa RI Agustus 2026 Naik Menjadi US$ 150,2 Miliar</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Macroeconomy",
+        "sub_kanal": "",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 48,
@@ -931,7 +1315,15 @@
         "summary": "Ulasan komprehensif mengenai KAI Logistik Tingkatkan Angkutan Kargo Kereta Api 22% Sepanjang Semester I dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>KAI Logistik Tingkatkan Angkutan Kargo Kereta Api 22% Sepanjang Semester I</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Business",
+        "sub_kanal": "Infrastructure",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 49,
@@ -950,7 +1342,15 @@
         "summary": "Ulasan komprehensif mengenai Saham Sektor Kesehatan Masuki Fase Konsolidasi Pasca Reli Kuartal II dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Saham Sektor Kesehatan Masuki Fase Konsolidasi Pasca Reli Kuartal II</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Market",
+        "sub_kanal": "Stock",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     },
     {
         "id": 50,
@@ -969,6 +1369,14 @@
         "summary": "Ulasan komprehensif mengenai Pemerintah Pastikan Pasokan BBM dan Gas Elpiji Aman Hadapi Akhir Tahun dalam lanskap ekonomi dan pasar keuangan Indonesia.",
         "content": "<p>Laporan mendalam mengenai <strong>Pemerintah Pastikan Pasokan BBM dan Gas Elpiji Aman Hadapi Akhir Tahun</strong> yang dirilis oleh redaksi Investor.id.</p><p>Analisis sentimen pasar, katalis makroekonomi, dan valuasi fundamental menjadi fokus utama para pelaku pasar dan investor institusional.</p>",
         "headline_type": "none",
-        "is_breaking": 0
+        "is_breaking": 0,
+        "kanal": "Macroeconomy",
+        "sub_kanal": "",
+        "points": [
+            "Poin utama ringkasan berita pertama yang menjelaskan esensi peristiwa terkini.",
+            "Faktor pendorong sentimen pasar modal dan dampaknya terhadap pergerakan instrumen investasi.",
+            "Pandangan analis serta proyeksi keberlanjutan tren ekonomi ke depan."
+        ],
+        "sumber_berita": "Investor.id / Riset"
     }
 ]

@@ -31,6 +31,15 @@ $navGroups = [
     [
         'label' => 'Management',
         'items' => [
+            [
+                'label' => 'Subscriber',
+                'type' => 'dropdown',
+                'icon' => 'users-round',
+                'children' => [
+                    ['label' => 'Subscriber List', 'to' => 'subscriber'],
+                    ['label' => 'Subscriber Stats', 'to' => 'subscriber/stats'],
+                ]
+            ],
             ['label' => 'Categories', 'to' => 'categories', 'icon' => 'tags'],
             ['label' => 'User', 'to' => 'user', 'icon' => 'users'],
         ]
@@ -52,8 +61,8 @@ $navGroups = [
         </div>
     </div>
 
-    <!-- Navigation List with Visual Groups (Internal Scroll only if screen height is small) -->
-    <nav aria-label="Main navigation" class="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-4 overscroll-contain">
+    <!-- Navigation List with Visual Groups (Internal Scroll styled with custom scrollbar) -->
+    <nav aria-label="Main navigation" class="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-4 overscroll-contain custom-sidebar-scroll">
         <?php foreach ($navGroups as $group): ?>
             <div>
                 <p class="group-label mb-1.5 px-3 text-[10px] font-semibold tracking-[0.14em] text-sidebar-foreground/45 uppercase">
@@ -63,23 +72,61 @@ $navGroups = [
 
                 <ul class="space-y-0.5">
                     <?php foreach ($group['items'] as $item): ?>
-                        <?php 
-                            $isActive = ($item['to'] === 'dashboard' && ($currentUri === 'dashboard' || $currentUri === '')) 
-                                || ($item['to'] !== 'dashboard' && str_starts_with($currentUri, $item['to']));
-                        ?>
-                        <li>
-                            <a href="<?= base_url($item['to']) ?>"
-                               title="<?= esc($item['label']) ?>"
-                               class="nav-item-link group relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors duration-150 <?= $isActive ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-xs' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' ?>">
+                        <?php if (($item['type'] ?? 'link') === 'dropdown'): ?>
+                            <?php
+                                $isChildActive = false;
+                                foreach ($item['children'] as $child) {
+                                    if (str_starts_with($currentUri, $child['to'])) {
+                                        $isChildActive = true;
+                                        break;
+                                    }
+                                }
+                            ?>
+                            <li class="sidebar-dropdown-wrapper">
+                                <button type="button" 
+                                        onclick="toggleSidebarDropdown(this)"
+                                        class="nav-item-link group relative flex w-full items-center justify-between gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors duration-150 <?= $isChildActive ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' ?>">
+                                    
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <i data-lucide="<?= esc($item['icon']) ?>" class="size-4 shrink-0 <?= $isChildActive ? 'text-sidebar-primary' : '' ?>" aria-hidden="true"></i>
+                                        <span class="nav-label truncate"><?= esc($item['label']) ?></span>
+                                    </div>
+                                    <i data-lucide="chevron-down" class="size-3.5 shrink-0 transition-transform duration-200 text-sidebar-foreground/50 dropdown-arrow <?= $isChildActive ? 'rotate-180' : '' ?>" aria-hidden="true"></i>
+                                </button>
                                 
-                                <?php if ($isActive): ?>
-                                    <span class="absolute top-1 bottom-1 -left-2 w-0.5 rounded-full bg-sidebar-primary" aria-hidden="true"></span>
-                                <?php endif; ?>
+                                <ul class="pl-6 pr-1 py-1 space-y-0.5 <?= $isChildActive ? '' : 'hidden' ?> dropdown-menu">
+                                    <?php foreach ($item['children'] as $child): ?>
+                                        <?php $isSubActive = str_starts_with($currentUri, $child['to']); ?>
+                                        <li>
+                                            <a href="<?= base_url($child['to']) ?>"
+                                               class="flex items-center gap-2 rounded-md px-2 py-1 text-[11px] transition-colors <?= $isSubActive ? 'font-bold text-sidebar-primary bg-sidebar-accent/40' : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/30' ?>">
+                                                <span class="size-1 rounded-full <?= $isSubActive ? 'bg-sidebar-primary' : 'bg-sidebar-foreground/40' ?>"></span>
+                                                <span><?= esc($child['label']) ?></span>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </li>
+                        <?php else: ?>
+                            <?php 
+                                $isActive = ($item['to'] === 'dashboard' && ($currentUri === 'dashboard' || $currentUri === '')) 
+                                    || ($item['to'] === 'statistic' && $currentUri === 'statistic')
+                                    || ($item['to'] !== 'dashboard' && $item['to'] !== 'statistic' && str_starts_with($currentUri, $item['to']));
+                            ?>
+                            <li>
+                                <a href="<?= base_url($item['to']) ?>"
+                                   title="<?= esc($item['label']) ?>"
+                                   class="nav-item-link group relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors duration-150 <?= $isActive ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-xs' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' ?>">
+                                    
+                                    <?php if ($isActive): ?>
+                                        <span class="absolute top-1 bottom-1 -left-2 w-0.5 rounded-full bg-sidebar-primary" aria-hidden="true"></span>
+                                    <?php endif; ?>
 
-                                <i data-lucide="<?= esc($item['icon']) ?>" class="size-4 shrink-0 <?= $isActive ? 'text-sidebar-primary' : '' ?>" aria-hidden="true"></i>
-                                <span class="nav-label truncate"><?= esc($item['label']) ?></span>
-                            </a>
-                        </li>
+                                    <i data-lucide="<?= esc($item['icon']) ?>" class="size-4 shrink-0 <?= $isActive ? 'text-sidebar-primary' : '' ?>" aria-hidden="true"></i>
+                                    <span class="nav-label truncate"><?= esc($item['label']) ?></span>
+                                </a>
+                            </li>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </ul>
             </div>

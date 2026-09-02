@@ -5,80 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= esc($title ?? 'Investor.ID CMS') ?> — Newsroom Workspace</title>
     
-    <!-- Modern Typography: Inter -->
+    <!-- Modern Typography: Inter (Streamlined Weights) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS (CDN configured with exact Lovable theme tokens) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: ["class"],
-            theme: {
-                extend: {
-                    colors: {
-                        border: "hsl(var(--border))",
-                        input: "hsl(var(--input))",
-                        ring: "hsl(var(--ring))",
-                        background: "hsl(var(--background))",
-                        foreground: "hsl(var(--foreground))",
-                        primary: {
-                            DEFAULT: "hsl(var(--primary))",
-                            foreground: "hsl(var(--primary-foreground))",
-                        },
-                        secondary: {
-                            DEFAULT: "hsl(var(--secondary))",
-                            foreground: "hsl(var(--secondary-foreground))",
-                        },
-                        destructive: {
-                            DEFAULT: "hsl(var(--destructive))",
-                            foreground: "hsl(var(--destructive-foreground))",
-                        },
-                        muted: {
-                            DEFAULT: "hsl(var(--muted))",
-                            foreground: "hsl(var(--muted-foreground))",
-                        },
-                        accent: {
-                            DEFAULT: "hsl(var(--accent))",
-                            foreground: "hsl(var(--accent-foreground))",
-                        },
-                        card: {
-                            DEFAULT: "hsl(var(--card))",
-                            foreground: "hsl(var(--card-foreground))",
-                        },
-                        sidebar: {
-                            DEFAULT: "hsl(var(--sidebar-background))",
-                            foreground: "hsl(var(--sidebar-foreground))",
-                            primary: "hsl(var(--sidebar-primary))",
-                            "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-                            accent: "hsl(var(--sidebar-accent))",
-                            "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-                            border: "hsl(var(--sidebar-border))",
-                            ring: "hsl(var(--sidebar-ring))",
-                        },
-                        success: "hsl(var(--success))",
-                        warning: "hsl(var(--warning))",
-                        premium: {
-                            DEFAULT: "hsl(var(--premium))",
-                            foreground: "hsl(var(--premium-foreground))",
-                        },
-                    },
-                    borderRadius: {
-                        lg: "var(--radius)",
-                        md: "calc(var(--radius) - 2px)",
-                        sm: "calc(var(--radius) - 4px)",
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Static Compiled Tailwind CSS (Optimized & Prebuilt) -->
+    <link rel="stylesheet" href="/css/tailwind.min.css">
 
     <!-- Icons: Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <!-- Charts: ApexCharts -->
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <!-- Design System CSS Tokens -->
     <link rel="stylesheet" href="/css/newsroom.css">

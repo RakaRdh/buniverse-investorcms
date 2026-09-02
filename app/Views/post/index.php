@@ -1,6 +1,7 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('styles') ?>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="/css/pages/post.css">
 <?= $this->endSection() ?>
 
@@ -28,39 +29,40 @@
 
 <?php
 // Compute boolean states for toggleable quick filters
-$isDefaultFilter = ($filters['status'] === 'all' && $filters['premium'] === 'all' && empty($filters['q']) && $filters['category'] === 'all');
-$isPublishedActive = ($filters['status'] === 'Published' && $filters['premium'] === 'all');
-$isDraftActive = ($filters['status'] === 'Draft' && $filters['premium'] === 'all');
-$isScheduledActive = ($filters['status'] === 'Scheduled' && $filters['premium'] === 'all');
-$isPremiumActive = ($filters['premium'] === '1');
+$isDefaultFilter = (($filters['status'] ?? 'all') === 'all' && ($filters['premium'] ?? 'all') === 'all' && empty($filters['q']) && ($filters['kanal'] ?? 'all') === 'all' && ($filters['author'] ?? 'all') === 'all' && ($filters['editor'] ?? 'all') === 'all' && empty($filters['date_from']) && empty($filters['date_to']));
+$isPublishedActive = (($filters['status'] ?? '') === 'Published' && ($filters['premium'] ?? 'all') === 'all');
+$isDraftActive = (($filters['status'] ?? '') === 'Draft' && ($filters['premium'] ?? 'all') === 'all');
+$isScheduledActive = (($filters['status'] ?? '') === 'Scheduled' && ($filters['premium'] ?? 'all') === 'all');
+$isPremiumActive = (($filters['premium'] ?? '') === '1');
 ?>
 
 <!-- Modern Filter Toolbar -->
 <div class="surface-card p-4 mb-6">
     <form method="get" action="<?= base_url('post') ?>" id="postFilterForm">
+        <!-- Row 1: Primary Filters -->
         <div class="flex flex-wrap gap-3 items-center justify-between">
             <!-- Keyword Search -->
-            <div class="relative flex-1 min-w-[260px]">
+            <div class="relative flex-1 min-w-[240px]">
                 <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"></i>
-                <input type="text" name="q" value="<?= esc($filters['q'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Search by title or author name...">
+                <input type="text" name="q" value="<?= esc($filters['q'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Cari judul artikel atau author...">
             </div>
 
-            <!-- Category Select -->
-            <div class="min-w-[160px]">
-                <select name="category" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="this.form.submit()">
-                    <option value="all">Category: All</option>
-                    <?php foreach ($categories as $cat): ?>
-                        <option value="<?= esc($cat['name']) ?>" <?= ($filters['category'] === $cat['name']) ? 'selected' : '' ?>>
-                            <?= esc($cat['name']) ?>
+            <!-- Kanal Select -->
+            <div class="min-w-[150px]">
+                <select name="kanal" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="this.form.submit()">
+                    <option value="all">Kanal: Semua</option>
+                    <?php foreach ($kanals as $kn): ?>
+                        <option value="<?= esc($kn['name']) ?>" <?= ($filters['kanal'] === $kn['name']) ? 'selected' : '' ?>>
+                            <?= esc($kn['name']) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
             <!-- Status Select -->
-            <div class="min-w-[140px]">
+            <div class="min-w-[130px]">
                 <select name="status" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="this.form.submit()">
-                    <option value="all" <?= $filters['status'] === 'all' ? 'selected' : '' ?>>Status: All</option>
+                    <option value="all" <?= $filters['status'] === 'all' ? 'selected' : '' ?>>Status: Semua</option>
                     <option value="Published" <?= $filters['status'] === 'Published' ? 'selected' : '' ?>>Published</option>
                     <option value="Draft" <?= $filters['status'] === 'Draft' ? 'selected' : '' ?>>Draft</option>
                     <option value="Scheduled" <?= $filters['status'] === 'Scheduled' ? 'selected' : '' ?>>Scheduled</option>
@@ -69,52 +71,110 @@ $isPremiumActive = ($filters['premium'] === '1');
             </div>
 
             <!-- Premium Select -->
-            <div class="min-w-[140px]">
+            <div class="min-w-[130px]">
                 <select name="premium" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="this.form.submit()">
-                    <option value="all" <?= $filters['premium'] === 'all' ? 'selected' : '' ?>>Tier: All</option>
+                    <option value="all" <?= $filters['premium'] === 'all' ? 'selected' : '' ?>>Tier: Semua</option>
                     <option value="1" <?= $filters['premium'] === '1' ? 'selected' : '' ?>>Premium Only</option>
                     <option value="0" <?= $filters['premium'] === '0' ? 'selected' : '' ?>>Free / Public</option>
                 </select>
             </div>
 
-            <div class="flex gap-2">
+            <!-- Action & Toggle More Filter -->
+            <div class="flex items-center gap-2">
                 <button type="submit" class="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors">
                     <i data-lucide="filter" class="size-3.5"></i>
-                    <span>Apply</span>
+                    <span>Terapkan</span>
                 </button>
-                <?php if (!empty($filters['q']) || $filters['category'] !== 'all' || $filters['status'] !== 'all' || $filters['premium'] !== 'all'): ?>
-                    <a href="<?= base_url('post') ?>" class="inline-flex items-center justify-center rounded-md border border-input bg-background p-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground" title="Clear Filters">
+                
+                <button type="button" onclick="toggleMoreFilter()" id="btnMoreFilter" class="inline-flex items-center justify-center gap-1 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                    <i data-lucide="sliders-horizontal" class="size-3.5"></i>
+                    <span>More Filter</span>
+                    <i data-lucide="chevron-down" class="size-3.5 transition-transform duration-200" id="moreFilterIcon"></i>
+                </button>
+
+                <?php if (!empty($filters['q']) || $filters['kanal'] !== 'all' || $filters['status'] !== 'all' || $filters['premium'] !== 'all' || ($filters['author'] ?? 'all') !== 'all' || ($filters['editor'] ?? 'all') !== 'all' || !empty($filters['date_from']) || !empty($filters['date_to'])): ?>
+                    <a href="<?= base_url('post') ?>" class="inline-flex items-center justify-center rounded-md border border-input bg-background p-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground" title="Reset Semua Filter">
                         <i data-lucide="x" class="size-4"></i>
                     </a>
                 <?php endif; ?>
             </div>
         </div>
 
-        <!-- Quick Status Chips Bar (Prompt 1: Hapus angka di all posts) -->
+        <!-- Row 2: Collapsible More Filter (Author, Editor, Date Range) -->
+        <?php 
+            $hasMoreFilterActive = ($filters['author'] !== 'all' || $filters['editor'] !== 'all' || !empty($filters['date_from']) || !empty($filters['date_to']));
+        ?>
+        <div id="moreFilterPanel" class="<?= $hasMoreFilterActive ? '' : 'hidden' ?> pt-3 mt-3 border-t border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in duration-150">
+            <!-- Filter Author -->
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Filter Author</label>
+                <select name="author" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="this.form.submit()">
+                    <option value="all">Semua Author</option>
+                    <?php 
+                        $authors = array_filter($users, fn($u) => in_array($u['role'], ['Author', 'Contributor']));
+                        foreach ($authors as $u): 
+                    ?>
+                        <option value="<?= esc($u['name']) ?>" <?= ($filters['author'] === $u['name']) ? 'selected' : '' ?>>
+                            <?= esc($u['name']) ?> (<?= esc($u['role']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <!-- Filter Editor -->
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Filter Editor / Poster</label>
+                <select name="editor" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="this.form.submit()">
+                    <option value="all">Semua Editor</option>
+                    <?php 
+                        $editors = array_filter($users, fn($u) => in_array($u['role'], ['Editor', 'Admin']));
+                        foreach ($editors as $u): 
+                    ?>
+                        <option value="<?= esc($u['username']) ?>" <?= ($filters['editor'] === $u['username']) ? 'selected' : '' ?>>
+                            <?= esc($u['name']) ?> (@<?= esc($u['username']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <!-- Tanggal Dari -->
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tanggal Dari</label>
+                <input type="text" name="date_from" id="postFilterDateFrom" value="<?= esc($filters['date_from'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer" placeholder="YYYY-MM-DD">
+            </div>
+
+            <!-- Tanggal Sampai -->
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tanggal Sampai</label>
+                <input type="text" name="date_to" id="postFilterDateTo" value="<?= esc($filters['date_to'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer" placeholder="YYYY-MM-DD">
+            </div>
+        </div>
+
+        <!-- Quick Status Chips Bar -->
         <div class="flex items-center gap-2 mt-3 pt-3 border-t border-border flex-wrap text-xs">
             <span class="font-semibold text-muted-foreground">Quick Filter:</span>
             
-            <!-- All Posts (Tanpa angka) -->
+            <!-- All Posts -->
             <a href="<?= base_url('post') ?>" class="rounded-md px-2.5 py-1 font-medium transition-colors <?= $isDefaultFilter ? 'bg-primary/10 text-primary font-semibold border border-primary/30' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
                 All Posts
             </a>
 
-            <!-- Published (Toggle to All if active) -->
+            <!-- Published -->
             <a href="<?= $isPublishedActive ? base_url('post') : base_url('post?status=Published') ?>" class="rounded-md px-2.5 py-1 font-medium transition-colors <?= $isPublishedActive ? 'bg-primary/10 text-primary font-semibold border border-primary/30' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
                 Published
             </a>
 
-            <!-- Drafts (Toggle to All if active) -->
+            <!-- Drafts -->
             <a href="<?= $isDraftActive ? base_url('post') : base_url('post?status=Draft') ?>" class="rounded-md px-2.5 py-1 font-medium transition-colors <?= $isDraftActive ? 'bg-primary/10 text-primary font-semibold border border-primary/30' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
                 Drafts
             </a>
 
-            <!-- Scheduled (Toggle to All if active) -->
+            <!-- Scheduled -->
             <a href="<?= $isScheduledActive ? base_url('post') : base_url('post?status=Scheduled') ?>" class="rounded-md px-2.5 py-1 font-medium transition-colors <?= $isScheduledActive ? 'bg-primary/10 text-primary font-semibold border border-primary/30' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
                 Scheduled
             </a>
 
-            <!-- Premium Content (Toggle to All if active) -->
+            <!-- Premium Content -->
             <a href="<?= $isPremiumActive ? base_url('post') : base_url('post?premium=1') ?>" class="inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition-colors <?= $isPremiumActive ? 'bg-amber-500/15 text-amber-700 font-bold border border-amber-500/40' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
                 <i data-lucide="star" class="size-3 text-amber-600"></i>
                 <span>Premium Content</span>
@@ -139,12 +199,12 @@ $isPremiumActive = ($filters['premium'] === '1');
         <table class="w-full text-left text-xs table-fixed">
             <thead class="border-b border-border bg-muted/40 text-muted-foreground uppercase tracking-wider font-bold">
                 <tr>
-                    <th class="py-3 px-3 w-[36%]">Article / Headline</th>
-                    <th class="py-3 px-2 w-[13%]">Category</th>
-                    <th class="py-3 px-2 w-[13%]">Author</th>
-                    <th class="py-3 px-2 w-[14%]">Publish Date</th>
-                    <th class="py-3 px-2 w-[11%]">Status</th>
-                    <th class="py-3 px-2 w-[7%] text-right">Views</th>
+                    <th class="py-3 px-3 w-[38%]">Article / Headline</th>
+                    <th class="py-3 px-2 w-[14%]">Kanal / Sub-Kanal</th>
+                    <th class="py-3 px-2 w-[14%]">Author</th>
+                    <th class="py-3 px-2 w-[13%]">Publish Date</th>
+                    <th class="py-3 px-2 w-[10%]">Status</th>
+                    <th class="py-3 px-2 w-[5%] text-right">Views</th>
                     <th class="py-3 px-3 w-[6%] text-right">Action</th>
                 </tr>
             </thead>
@@ -166,7 +226,7 @@ $isPremiumActive = ($filters['premium'] === '1');
                         <!-- Article / Headline -->
                         <td class="py-3 px-3">
                             <div class="flex items-center gap-2.5 min-w-0">
-                                <img src="<?= esc($post['thumbnail']) ?>" alt="" class="size-9 rounded-md object-cover shrink-0 border border-border">
+                                <img src="<?= esc($post['thumbnail']) ?>" alt="" loading="lazy" decoding="async" class="size-9 rounded-md object-cover shrink-0 border border-border">
                                 <div class="min-w-0 flex-1">
                                     <a href="<?= base_url('post/edit/' . $post['id']) ?>" class="block font-medium text-foreground truncate hover:text-primary transition-colors text-xs leading-snug" title="<?= esc($post['title']) ?>">
                                         <?= esc($post['title']) ?>
@@ -178,20 +238,17 @@ $isPremiumActive = ($filters['premium'] === '1');
                                                 <span>Premium</span>
                                             </span>
                                         <?php endif; ?>
-                                        <?php if (!empty($post['is_breaking'])): ?>
-                                            <span class="inline-flex items-center gap-0.5 rounded-sm bg-destructive/15 px-1 py-0.2 text-[8px] font-bold text-destructive uppercase">
-                                                <i data-lucide="alert-circle" class="size-2"></i>
-                                                <span>Breaking</span>
-                                            </span>
-                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
                         </td>
 
-                        <!-- Category -->
+                        <!-- Kanal / Sub-Kanal -->
                         <td class="py-3 px-2 text-muted-foreground truncate">
-                            <?= esc($post['category']) ?>
+                            <span class="font-semibold text-foreground"><?= esc($post['kanal'] ?? $post['category'] ?? 'Market') ?></span>
+                            <?php if (!empty($post['sub_kanal'])): ?>
+                                <span class="text-[10px] text-muted-foreground block truncate">&bull; <?= esc($post['sub_kanal']) ?></span>
+                            <?php endif; ?>
                         </td>
 
                         <!-- Author -->
@@ -230,6 +287,9 @@ $isPremiumActive = ($filters['premium'] === '1');
                         <!-- Action -->
                         <td class="py-3 px-3 text-right">
                             <div class="inline-flex items-center gap-1 justify-end">
+                                <a href="<?= base_url('post/preview/' . $post['id']) ?>" target="_blank" class="inline-flex size-7 items-center justify-center rounded-md border border-input bg-background text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" title="Preview Artikel">
+                                    <i data-lucide="eye" class="size-3"></i>
+                                </a>
                                 <a href="<?= base_url('post/edit/' . $post['id']) ?>" class="inline-flex size-7 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted" title="Edit Post">
                                     <i data-lucide="edit" class="size-3"></i>
                                 </a>
@@ -285,5 +345,6 @@ $isPremiumActive = ($filters['premium'] === '1');
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="/js/pages/post.js"></script>
 <?= $this->endSection() ?>

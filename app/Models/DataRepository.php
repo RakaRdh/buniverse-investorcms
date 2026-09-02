@@ -14,6 +14,8 @@ class DataRepository
         return $dir;
     }
 
+    private static array $cache = [];
+
     private static function getFilePath(string $key): string
     {
         $primary = self::getJsonDir() . DIRECTORY_SEPARATOR . $key . '.json';
@@ -41,7 +43,50 @@ class DataRepository
             self::save('posts', $posts);
         }
 
-        // 2. Categories
+        // 2. Kanals & Sub-kanals
+        if (!file_exists(self::getFilePath('kanals'))) {
+            $kanals = [
+                ['id' => 1, 'name' => 'Market', 'slug' => 'market', 'sub_kanals' => [
+                    ['id' => 101, 'name' => 'Corporate Action', 'slug' => 'corporate-action'],
+                    ['id' => 102, 'name' => 'Stock', 'slug' => 'stock'],
+                    ['id' => 103, 'name' => 'Crypto', 'slug' => 'crypto'],
+                    ['id' => 104, 'name' => 'Bond', 'slug' => 'bond'],
+                    ['id' => 105, 'name' => 'Mutual Fund', 'slug' => 'mutual-fund'],
+                    ['id' => 106, 'name' => 'Commodities', 'slug' => 'commodities']
+                ]],
+                ['id' => 2, 'name' => 'Finance', 'slug' => 'finance', 'sub_kanals' => [
+                    ['id' => 201, 'name' => 'Banking', 'slug' => 'banking'],
+                    ['id' => 202, 'name' => 'Insurance', 'slug' => 'insurance'],
+                    ['id' => 203, 'name' => 'Multifinance', 'slug' => 'multifinance'],
+                    ['id' => 204, 'name' => 'Fintech', 'slug' => 'fintech'],
+                    ['id' => 205, 'name' => 'Others', 'slug' => 'others']
+                ]],
+                ['id' => 3, 'name' => 'Business', 'slug' => 'business', 'sub_kanals' => [
+                    ['id' => 301, 'name' => 'Trade & Industry', 'slug' => 'trade-industry'],
+                    ['id' => 302, 'name' => 'Energy', 'slug' => 'energy'],
+                    ['id' => 303, 'name' => 'Infrastructure', 'slug' => 'infrastructure'],
+                    ['id' => 304, 'name' => 'Property', 'slug' => 'property'],
+                    ['id' => 305, 'name' => 'Telco', 'slug' => 'telco'],
+                    ['id' => 306, 'name' => 'Agribusiness', 'slug' => 'agribusiness'],
+                    ['id' => 307, 'name' => 'Automotive', 'slug' => 'automotive'],
+                    ['id' => 308, 'name' => 'E-Commerce', 'slug' => 'e-commerce'],
+                    ['id' => 309, 'name' => 'UMKM', 'slug' => 'umkm']
+                ]],
+                ['id' => 4, 'name' => 'Macroeconomy', 'slug' => 'macroeconomy', 'sub_kanals' => []],
+                ['id' => 5, 'name' => 'Investory', 'slug' => 'investory', 'sub_kanals' => [
+                    ['id' => 501, 'name' => 'Profil', 'slug' => 'profil'],
+                    ['id' => 502, 'name' => 'Opini', 'slug' => 'opini'],
+                    ['id' => 503, 'name' => 'Tips', 'slug' => 'tips']
+                ]],
+                ['id' => 6, 'name' => 'Money Lab', 'slug' => 'money-lab', 'sub_kanals' => []],
+                ['id' => 7, 'name' => 'National', 'slug' => 'national', 'sub_kanals' => []],
+                ['id' => 8, 'name' => 'International', 'slug' => 'international', 'sub_kanals' => []],
+                ['id' => 9, 'name' => 'Index', 'slug' => 'index', 'sub_kanals' => []]
+            ];
+            self::save('kanals', $kanals);
+        }
+
+        // 2b. Categories (legacy support)
         if (!file_exists(self::getFilePath('categories'))) {
             $categories = [
                 ['id' => 1, 'name' => 'Market Stock', 'slug' => 'market-stock', 'count' => 1420, 'status' => 'Active', 'updated' => '01 Sep 2026 09:30'],
@@ -166,14 +211,25 @@ class DataRepository
             $all = [];
             foreach (glob(self::getJsonDir() . DIRECTORY_SEPARATOR . '*.json') as $file) {
                 $k = basename($file, '.json');
-                $all[$k] = json_decode(file_get_contents($file), true);
+                if (isset(self::$cache[$k])) {
+                    $all[$k] = self::$cache[$k];
+                } else {
+                    $all[$k] = json_decode(file_get_contents($file), true);
+                    self::$cache[$k] = $all[$k];
+                }
             }
             return $all;
         }
 
+        if (isset(self::$cache[$key])) {
+            return self::$cache[$key];
+        }
+
         $file = self::getFilePath($key);
         if (file_exists($file)) {
-            return json_decode(file_get_contents($file), true) ?? [];
+            $data = json_decode(file_get_contents($file), true) ?? [];
+            self::$cache[$key] = $data;
+            return $data;
         }
         return [];
     }
@@ -183,10 +239,12 @@ class DataRepository
         self::getJsonDir();
         $file = self::getFilePath($key);
         file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        self::$cache[$key] = $data;
     }
 
     public static function resetAll(): void
     {
+        self::$cache = [];
         $dir = self::getJsonDir();
         foreach (glob($dir . DIRECTORY_SEPARATOR . '*.json') as $file) {
             @unlink($file);

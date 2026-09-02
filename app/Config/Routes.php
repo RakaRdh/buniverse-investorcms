@@ -27,6 +27,8 @@ $routes->post('/post/update/(:num)', 'Post::update/$1');
 $routes->get('/post/delete/(:num)', 'Post::delete/$1');
 $routes->post('/post/bulk-action', 'Post::bulkAction');
 $routes->get('/post/export', 'Post::export');
+$routes->get('/post/preview/(:num)', 'PostPreview::show/$1');
+$routes->post('/post/preview', 'PostPreview::fromForm');
 
 // Headline Management
 $routes->get('/headline', 'Headline::index');
@@ -52,8 +54,13 @@ $routes->get('/embed-chart', 'EmbedChart::index');
 $routes->post('/embed-chart/save', 'EmbedChart::save');
 $routes->get('/embed-chart/delete/(:num)', 'EmbedChart::delete/$1');
 
-// Editorial Statistics
+// Editorial Statistics & Reporting
 $routes->get('/statistic', 'Statistic::index');
+$routes->get('/statistic/report', 'StatisticReport::index');
+
+// Subscriber Placeholders
+$routes->get('/subscriber', 'Statistic::index');
+$routes->get('/subscriber/stats', 'Statistic::index');
 
 // Mobile Apps Ecosystem
 $routes->get('/apps-version', 'Apps::version');

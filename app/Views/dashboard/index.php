@@ -262,5 +262,6 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="/js/pages/dashboard.js"></script>
 <?= $this->endSection() ?>

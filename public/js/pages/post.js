@@ -51,4 +51,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Flatpickr on More Filter date range
+    if (window.flatpickr) {
+        flatpickr('#postFilterDateFrom', {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d M Y"
+        });
+        flatpickr('#postFilterDateTo', {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d M Y"
+        });
+    }
 });
+
+function toggleMoreFilter() {
+    const panel = document.getElementById('moreFilterPanel');
+    const icon = document.getElementById('moreFilterIcon');
+    if (!panel) return;
+
+    panel.classList.toggle('hidden');
+    if (icon) {
+        icon.classList.toggle('rotate-180');
+    }
+}
+

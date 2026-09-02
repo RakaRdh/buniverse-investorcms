@@ -45,7 +45,11 @@ function applySidebarState(collapsed) {
         if (label) label.textContent = 'Collapse';
     }
 
-    if (window.lucide) window.lucide.createIcons();
+    if (window.lucide && sidebar) {
+        window.lucide.createIcons({
+            root: sidebar
+        });
+    }
 }
 
 // Mobile Navigation Toggle
@@ -126,7 +130,11 @@ function showToast(message, type = 'info') {
     `;
 
     container.appendChild(toast);
-    if (window.lucide) window.lucide.createIcons();
+    if (window.lucide) {
+        window.lucide.createIcons({
+            root: toast
+        });
+    }
 
     setTimeout(() => {
         toast.style.opacity = '0';
@@ -135,3 +143,20 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 200);
     }, 3500);
 }
+
+// Sidebar Dropdown Toggle
+function toggleSidebarDropdown(buttonEl) {
+    const parent = buttonEl.closest('.sidebar-dropdown-wrapper');
+    if (!parent) return;
+
+    const menu = parent.querySelector('.dropdown-menu');
+    const arrow = parent.querySelector('.dropdown-arrow');
+
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+    if (arrow) {
+        arrow.classList.toggle('rotate-180');
+    }
+}
+

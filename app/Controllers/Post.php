@@ -9,13 +9,18 @@ class Post extends BaseController
     public function index()
     {
         $posts = DataRepository::get('posts');
-        $categories = DataRepository::get('categories');
+        $kanals = DataRepository::get('kanals') ?? [];
+        $users = DataRepository::get('users') ?? [];
 
         // Filtering parameters
         $keyword = $this->request->getGet('q');
-        $categoryFilter = $this->request->getGet('category');
+        $kanalFilter = $this->request->getGet('kanal') ?: $this->request->getGet('category');
         $statusFilter = $this->request->getGet('status');
         $premiumFilter = $this->request->getGet('premium');
+        $authorFilter = $this->request->getGet('author');
+        $editorFilter = $this->request->getGet('editor');
+        $dateFromFilter = $this->request->getGet('date_from');
+        $dateToFilter = $this->request->getGet('date_to');
 
         if ($keyword) {
             $posts = array_filter($posts, fn($p) => 
@@ -24,8 +29,12 @@ class Post extends BaseController
             );
         }
 
-        if ($categoryFilter && $categoryFilter !== 'all') {
-            $posts = array_filter($posts, fn($p) => $p['category'] === $categoryFilter);
+        if ($kanalFilter && $kanalFilter !== 'all') {
+            $posts = array_filter($posts, fn($p) => 
+                ($p['kanal'] ?? '') === $kanalFilter || 
+                ($p['category'] ?? '') === $kanalFilter ||
+                str_starts_with($p['category'] ?? '', $kanalFilter)
+            );
         }
 
         if ($statusFilter && $statusFilter !== 'all') {
@@ -34,6 +43,34 @@ class Post extends BaseController
 
         if ($premiumFilter !== null && $premiumFilter !== '' && $premiumFilter !== 'all') {
             $posts = array_filter($posts, fn($p) => (string)$p['is_premium'] === (string)$premiumFilter);
+        }
+
+        if ($authorFilter && $authorFilter !== 'all') {
+            $posts = array_filter($posts, fn($p) => stripos($p['author'] ?? '', $authorFilter) !== false);
+        }
+
+        if ($editorFilter && $editorFilter !== 'all') {
+            $posts = array_filter($posts, fn($p) => ($p['post_by'] ?? '') === $editorFilter);
+        }
+
+        if ($dateFromFilter) {
+            $tsFrom = strtotime($dateFromFilter);
+            if ($tsFrom) {
+                $posts = array_filter($posts, function($p) use ($tsFrom) {
+                    $ts = strtotime($p['publish_date'] ?? $p['create_date'] ?? '');
+                    return $ts && strtotime(date('Y-m-d', $ts)) >= strtotime(date('Y-m-d', $tsFrom));
+                });
+            }
+        }
+
+        if ($dateToFilter) {
+            $tsTo = strtotime($dateToFilter);
+            if ($tsTo) {
+                $posts = array_filter($posts, function($p) use ($tsTo) {
+                    $ts = strtotime($p['publish_date'] ?? $p['create_date'] ?? '');
+                    return $ts && strtotime(date('Y-m-d', $ts)) <= strtotime(date('Y-m-d', $tsTo));
+                });
+            }
         }
 
         $filteredPosts = array_values($posts);
@@ -50,12 +87,17 @@ class Post extends BaseController
             'title' => 'Articles & Posts',
             'breadcrumb' => 'Post / All Articles',
             'posts' => $paginatedPosts,
-            'categories' => $categories,
+            'kanals' => $kanals,
+            'users' => $users,
             'filters' => [
                 'q' => $keyword,
-                'category' => $categoryFilter ?? 'all',
+                'kanal' => $kanalFilter ?? 'all',
                 'status' => $statusFilter ?? 'all',
                 'premium' => $premiumFilter ?? 'all',
+                'author' => $authorFilter ?? 'all',
+                'editor' => $editorFilter ?? 'all',
+                'date_from' => $dateFromFilter ?? '',
+                'date_to' => $dateToFilter ?? '',
             ],
             'pagination' => [
                 'page' => $page,
@@ -70,16 +112,19 @@ class Post extends BaseController
 
     public function new()
     {
-        $categories = DataRepository::get('categories');
-        $users = DataRepository::get('users');
+        $kanals = DataRepository::get('kanals') ?? [];
+        $users = DataRepository::get('users') ?? [];
         $media = DataRepository::get('media_extended') ?? [];
+        $posts = DataRepository::get('posts') ?? [];
 
         return view('post/editor', [
             'title' => 'Create New Post',
             'breadcrumb' => 'Post / New Article',
-            'categories' => $categories,
+            'kanals' => $kanals,
+            'categories' => $kanals, // fallback
             'users' => $users,
             'media' => $media,
+            'allPosts' => $posts,
             'article' => null,
             'isEdit' => false
         ]);
@@ -100,16 +145,18 @@ class Post extends BaseController
             return redirect()->to('/post')->with('error', 'Article not found');
         }
 
-        $categories = DataRepository::get('categories');
-        $users = DataRepository::get('users');
+        $kanals = DataRepository::get('kanals') ?? [];
+        $users = DataRepository::get('users') ?? [];
         $media = DataRepository::get('media_extended') ?? [];
 
         return view('post/editor', [
             'title' => 'Edit Post: ' . $article['title'],
             'breadcrumb' => 'Post / Edit Article',
-            'categories' => $categories,
+            'kanals' => $kanals,
+            'categories' => $kanals,
             'users' => $users,
             'media' => $media,
+            'allPosts' => $posts,
             'article' => $article,
             'isEdit' => true
         ]);
@@ -121,15 +168,29 @@ class Post extends BaseController
         
         $newId = count($posts) > 0 ? max(array_column($posts, 'id')) + 1 : 1;
         $title = $this->request->getPost('title');
+        $kanal = $this->request->getPost('kanal') ?? 'Market';
+        $subKanal = $this->request->getPost('sub_kanal') ?? '';
+        $sumberBerita = $this->request->getPost('source') ?: ($this->request->getPost('sumber_berita') ?: 'Investor.id / Riset');
         
+        $points = [
+            $this->request->getPost('point_1') ?: '',
+            $this->request->getPost('point_2') ?: '',
+            $this->request->getPost('point_3') ?: ''
+        ];
+        $points = array_values(array_filter($points, fn($pt) => trim($pt) !== ''));
+
         $newArticle = [
             'id' => $newId,
             'title' => $title,
             'slug' => url_title($title, '-', true),
             'upper_deck' => $this->request->getPost('upper_deck') ?? '',
             'author' => $this->request->getPost('author') ?? 'Raka Herdika',
-            'category' => $this->request->getPost('category') ?? 'Market Stock',
-            'category_slug' => url_title($this->request->getPost('category') ?? 'market-stock', '-', true),
+            'category' => $subKanal ? "{$kanal} {$subKanal}" : $kanal,
+            'category_slug' => url_title($kanal, '-', true),
+            'kanal' => $kanal,
+            'sub_kanal' => $subKanal,
+            'sumber_berita' => $sumberBerita,
+            'source' => $sumberBerita,
             'post_by' => 'raka_h',
             'create_date' => date('d M Y H:i'),
             'publish_date' => $this->request->getPost('publish_date') ?: date('d M Y H:i'),
@@ -140,9 +201,9 @@ class Post extends BaseController
             'summary' => $this->request->getPost('summary') ?? '',
             'content' => $this->request->getPost('content') ?? '',
             'tags' => $this->request->getPost('tags') ?? '',
-            'source' => $this->request->getPost('source') ?? 'Investor.id Research',
+            'points' => $points,
             'headline_type' => $this->request->getPost('headline_type') ?? 'none',
-            'is_breaking' => (int)($this->request->getPost('is_breaking') ?? 0),
+            'is_breaking' => 0,
         ];
 
         array_unshift($posts, $newArticle);
@@ -156,21 +217,36 @@ class Post extends BaseController
         $posts = DataRepository::get('posts');
         $updated = false;
 
+        $kanal = $this->request->getPost('kanal') ?? 'Market';
+        $subKanal = $this->request->getPost('sub_kanal') ?? '';
+        $sumberBerita = $this->request->getPost('source') ?: ($this->request->getPost('sumber_berita') ?: 'Investor.id / Riset');
+        
+        $points = [
+            $this->request->getPost('point_1') ?: '',
+            $this->request->getPost('point_2') ?: '',
+            $this->request->getPost('point_3') ?: ''
+        ];
+        $points = array_values(array_filter($points, fn($pt) => trim($pt) !== ''));
+
         foreach ($posts as &$p) {
             if ($p['id'] == $id) {
                 $p['title'] = $this->request->getPost('title');
                 $p['upper_deck'] = $this->request->getPost('upper_deck') ?? '';
                 $p['author'] = $this->request->getPost('author');
-                $p['category'] = $this->request->getPost('category');
-                $p['category_slug'] = url_title($this->request->getPost('category') ?? 'market-stock', '-', true);
+                $p['kanal'] = $kanal;
+                $p['sub_kanal'] = $subKanal;
+                $p['category'] = $subKanal ? "{$kanal} {$subKanal}" : $kanal;
+                $p['category_slug'] = url_title($kanal, '-', true);
                 $p['status'] = $this->request->getPost('status');
                 $p['is_premium'] = (int)($this->request->getPost('is_premium') ?? 0);
-                $p['is_breaking'] = (int)($this->request->getPost('is_breaking') ?? 0);
+                $p['is_breaking'] = 0;
                 $p['publish_date'] = $this->request->getPost('publish_date');
                 $p['summary'] = $this->request->getPost('summary');
                 $p['content'] = $this->request->getPost('content');
                 $p['tags'] = $this->request->getPost('tags') ?? '';
-                $p['source'] = $this->request->getPost('source') ?? '';
+                $p['points'] = $points;
+                $p['source'] = $sumberBerita;
+                $p['sumber_berita'] = $sumberBerita;
                 if ($this->request->getPost('thumbnail')) {
                     $p['thumbnail'] = $this->request->getPost('thumbnail');
                 }
