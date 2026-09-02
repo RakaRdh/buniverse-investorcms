@@ -10,12 +10,15 @@ $routeTitles = [
     'media' => ['section' => 'Media', 'page' => 'Library'],
     'files' => ['section' => 'Files', 'page' => 'All Files'],
     'embed-chart' => ['section' => 'Embed Chart', 'page' => 'Charts'],
-    'statistic' => ['section' => 'Statistic', 'page' => 'Analytics'],
+    'statistic' => ['section' => 'Insights', 'page' => 'Trafik & Audiens'],
+    'statistic/report' => ['section' => 'Insights', 'page' => 'Performa Tim Editorial'],
+    'kanal/master' => ['section' => 'Kanal', 'page' => 'Master Kanal'],
+    'kanal/sub' => ['section' => 'Kanal', 'page' => 'Sub Kanal'],
+    'kanal/stats' => ['section' => 'Kanal', 'page' => 'Performa Kanal'],
     'apps-version' => ['section' => 'Apps', 'page' => 'Version'],
     'apps-push-notif' => ['section' => 'Apps', 'page' => 'Push Notif'],
     'apps-feature-content' => ['section' => 'Apps', 'page' => 'Feature Content'],
-    'categories' => ['section' => 'Categories', 'page' => 'All Categories'],
-    'user' => ['section' => 'User', 'page' => 'All Users'],
+    'user' => ['section' => 'Management', 'page' => 'All Users'],
 ];
 
 $crumb = $routeTitles[$currentUri] ?? ['section' => 'Dashboard', 'page' => 'Overview'];
@@ -43,17 +46,15 @@ $crumb = $routeTitles[$currentUri] ?? ['section' => 'Dashboard', 'page' => 'Over
             <input type="search" placeholder="Search articles, media, users…" class="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
         </div>
 
-        <!-- Notification Bell Button -->
-        <button type="button" onclick="showToast('3 new editorial notifications', 'info')" class="relative inline-flex size-10 items-center justify-center rounded-md text-foreground hover:bg-muted" aria-label="Notifications">
-            <i data-lucide="bell" class="size-5"></i>
-            <span class="absolute top-2.5 right-2.5 grid size-4 place-items-center rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground">
-                3
-            </span>
+        <!-- Theme Toggle Switcher Button (Lucide Icons: Sun / Moon) -->
+        <button type="button" onclick="toggleTheme()" id="globalThemeToggleBtn" class="inline-flex size-9 sm:size-10 items-center justify-center rounded-md text-foreground hover:bg-muted transition-colors" title="Ganti Tema (Dark / Light)" aria-label="Toggle Theme">
+            <i data-lucide="moon" class="size-4 sm:size-5 dark:hidden"></i>
+            <i data-lucide="sun" class="size-4 sm:size-5 hidden dark:block"></i>
         </button>
 
         <!-- Help Button -->
-        <a href="https://investor.id" target="_blank" class="inline-flex size-10 items-center justify-center rounded-md text-foreground hover:bg-muted" aria-label="Help and documentation">
-            <i data-lucide="help-circle" class="size-5"></i>
+        <a href="https://investor.id" target="_blank" class="inline-flex size-9 sm:size-10 items-center justify-center rounded-md text-foreground hover:bg-muted transition-colors" aria-label="Help and documentation">
+            <i data-lucide="help-circle" class="size-4 sm:size-5"></i>
         </a>
 
         <!-- User Profile Dropdown Button -->

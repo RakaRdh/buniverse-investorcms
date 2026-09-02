@@ -2,13 +2,14 @@
 
 <?= $this->section('content') ?>
 
+<!-- PageHeader Responsive -->
 <div class="mb-6">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-foreground">Mobile App Versions & Releases</h1>
-            <p class="mt-1 text-xs text-muted-foreground">Manage iOS & Android application releases, build numbers, mandatory update flags, and changelogs.</p>
+            <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl leading-tight">Mobile App Versions &amp; Releases</h1>
+            <p class="mt-1 text-xs sm:text-sm text-muted-foreground">Manage iOS &amp; Android application releases, build numbers, mandatory update flags, and changelogs.</p>
         </div>
-        <button class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow hover:bg-primary/90 transition-colors" onclick="document.getElementById('newVersionModal').style.display='flex'">
+        <button class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow hover:bg-primary/90 transition-colors self-start sm:self-auto" onclick="document.getElementById('newVersionModal').style.display='flex'">
             <i data-lucide="plus" class="size-4"></i>
             <span>Register New Version</span>
         </button>

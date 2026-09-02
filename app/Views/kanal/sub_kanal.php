@@ -1,0 +1,97 @@
+<?= $this->extend('layouts/main') ?>
+
+<?= $this->section('content') ?>
+
+<!-- PageHeader Responsive -->
+<div class="mb-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl leading-tight">Sub Kanal</h1>
+            <p class="mt-1 text-xs sm:text-sm text-muted-foreground">Kelola pemetaan sub-kanal turunan yang terikat pada master kanal berita Investor.id.</p>
+        </div>
+        <button class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow hover:bg-primary/90 transition-colors self-start sm:self-auto" onclick="document.getElementById('newSubKanalModal').style.display='flex'">
+            <i data-lucide="plus" class="size-4"></i>
+            <span>Tambah Sub Kanal</span>
+        </button>
+    </div>
+</div>
+
+<div class="surface-card overflow-hidden">
+    <div class="relative w-full overflow-auto">
+        <table class="w-full caption-bottom text-xs">
+            <thead class="border-b border-border bg-muted/40 font-bold text-muted-foreground uppercase">
+                <tr>
+                    <th class="h-10 px-4 text-left">Nama Sub-Kanal</th>
+                    <th class="h-10 px-4 text-left">Induk Master Kanal</th>
+                    <th class="h-10 px-4 text-left">URL Slug</th>
+                    <th class="h-10 px-4 text-center">Volume Artikel</th>
+                    <th class="h-10 px-4 text-right">Akumulasi Views</th>
+                    <th class="h-10 px-4 text-right">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+                <?php foreach ($subKanals as $sub): ?>
+                <tr class="hover:bg-muted/40 transition-colors">
+                    <td class="p-4 font-bold text-foreground text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="grid size-6 shrink-0 place-items-center rounded-full bg-accent/15 text-accent font-bold text-[10px]">
+                                &bull;
+                            </span>
+                            <span><?= esc($sub['name']) ?></span>
+                        </div>
+                    </td>
+                    <td class="p-4 font-semibold text-primary text-xs">
+                        <span class="inline-flex rounded-md border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px]">
+                            <?= esc($sub['parent_name']) ?>
+                        </span>
+                    </td>
+                    <td class="p-4 font-mono text-muted-foreground text-xs">/kanal/<?= esc($sub['parent_slug']) ?>/<?= esc($sub['slug']) ?></td>
+                    <td class="p-4 text-center font-bold text-foreground">
+                        <?= esc($sub['article_count']) ?> artikel
+                    </td>
+                    <td class="p-4 text-right font-mono text-muted-foreground">
+                        <?= number_format($sub['total_views']) ?>
+                    </td>
+                    <td class="p-4 text-right">
+                        <a href="<?= base_url('post?kanal=' . urlencode($sub['parent_name'])) ?>" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted" title="Lihat Artikel">
+                            <i data-lucide="external-link" class="size-3.5"></i>
+                        </a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Tambah Sub Kanal -->
+<div id="newSubKanalModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.6); z-index: 99; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="surface-card w-full max-w-md p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-border pb-3">
+            <h3 class="text-sm font-bold text-foreground">Tambah Sub Kanal Baru</h3>
+            <button type="button" onclick="document.getElementById('newSubKanalModal').style.display='none'" class="text-muted-foreground hover:text-foreground">
+                <i data-lucide="x" class="size-4"></i>
+            </button>
+        </div>
+        <form method="post" action="<?= base_url('kanal/sub/save') ?>" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Pilih Master Kanal Induk</label>
+                <select name="parent_id" required class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                    <?php foreach ($kanals as $k): ?>
+                    <option value="<?= esc($k['id']) ?>"><?= esc($k['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Nama Sub Kanal</label>
+                <input type="text" name="name" required placeholder="Contoh: Digital Banking, Venture Capital" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-border">
+                <button type="button" onclick="document.getElementById('newSubKanalModal').style.display='none'" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
+                <button type="submit" class="rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground hover:bg-primary/90">Simpan Sub-Kanal</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<?= $this->endSection() ?>

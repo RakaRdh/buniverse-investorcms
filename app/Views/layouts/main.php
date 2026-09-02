@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= esc($title ?? 'Investor.ID CMS') ?> — Newsroom Workspace</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/img/investor-logo.ico">
+    <link rel="shortcut icon" href="/img/investor-logo.ico">
+
     <!-- Modern Typography: Inter (Streamlined Weights) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,6 +25,21 @@
 
     <!-- Page Specific CSS -->
     <?= $this->renderSection('styles') ?>
+
+    <!-- Anti-Flicker Zero-FOUC Dark Mode Pre-renderer -->
+    <script>
+        (function() {
+            try {
+                const storedTheme = localStorage.getItem('investor_theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
 </head>
 <body class="bg-background text-foreground font-sans antialiased">
 
@@ -30,7 +49,7 @@
 
     <!-- Mobile Drawer Overlay & Sheet Navigation -->
     <div id="mobileDrawerOverlay" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden lg:hidden transition-opacity duration-200" onclick="toggleMobileNav(false)"></div>
-    <div id="mobileDrawerSheet" class="fixed inset-y-0 left-0 z-50 w-[280px] bg-sidebar border-r border-sidebar-border -translate-x-full transition-transform duration-200 ease-out lg:hidden">
+    <div id="mobileDrawerSheet" class="fixed inset-y-0 left-0 z-50 w-[310px] sm:w-[320px] bg-sidebar border-r border-sidebar-border -translate-x-full transition-transform duration-200 ease-out lg:hidden">
         <?= $this->include('layouts/sidebar_content', ['isMobile' => true]) ?>
     </div>
 
@@ -71,6 +90,14 @@
 </div>
 
 <div id="toast-container"></div>
+
+<!-- Global Back to Top Floating Button -->
+<button type="button" 
+        id="backToTopBtn" 
+        title="Kembali ke atas"
+        class="fixed bottom-6 right-6 z-40 grid size-10 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus-visible:outline-none transition-all duration-200 opacity-0 pointer-events-none translate-y-4">
+    <i data-lucide="arrow-up" class="size-4"></i>
+</button>
 
 <!-- Custom Modern Newsroom JS -->
 <script src="/js/newsroom.js"></script>

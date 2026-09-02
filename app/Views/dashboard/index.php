@@ -20,19 +20,21 @@ if ($hour < 11) {
 $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Editor';
 ?>
 
-<!-- PageHeader Replica (PageHeader.tsx) -->
-<div class="mb-8">
-    <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-end sm:justify-between">
+<!-- PageHeader Responsive Layout -->
+<div class="mb-6 sm:mb-8">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0">
-            <h1 class="truncate text-2xl font-bold tracking-tight text-foreground sm:text-[28px]"><?= $timeGreeting ?>, <?= esc($userName) ?></h1>
-            <p class="mt-1 text-sm text-muted-foreground">Berikut ikhtisar terkini redaksi Investor.id Newsroom hari ini.</p>
+            <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl lg:text-[28px] leading-tight">
+                <?= $timeGreeting ?>, <?= esc($userName) ?>
+            </h1>
+            <p class="mt-1 text-xs sm:text-sm text-muted-foreground">Berikut ikhtisar terkini redaksi Investor.id Newsroom hari ini.</p>
         </div>
         <div class="flex shrink-0 flex-wrap items-center gap-2">
-            <a href="<?= base_url('post/new') ?>" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors">
+            <a href="<?= base_url('post/new') ?>" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs sm:text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors">
                 <i data-lucide="plus" class="size-4"></i>
                 <span>New Post</span>
             </a>
-            <a href="<?= base_url('headline') ?>" class="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-muted transition-colors">
+            <a href="<?= base_url('headline') ?>" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-xs sm:text-sm font-medium text-foreground shadow-sm hover:bg-muted transition-colors">
                 <i data-lucide="newspaper" class="size-4"></i>
                 <span>Curate Headline</span>
             </a>
@@ -40,65 +42,65 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
     </div>
 </div>
 
-<!-- MetricCard Grid (MetricCard.tsx Replica) -->
-<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+<!-- MetricCard Grid (2x2 on Mobile, 4 Cols on Desktop) -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
     <!-- Card 1 -->
-    <div class="surface-card p-5 transition-shadow duration-150 hover:shadow-raised">
-        <div class="flex items-center justify-between gap-3">
-            <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Today's Articles</span>
-            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary">
-                <i data-lucide="file-text" class="size-[18px]"></i>
+    <div class="surface-card p-3.5 sm:p-5 transition-shadow duration-150 hover:shadow-raised">
+        <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">Today's Articles</span>
+            <span class="grid size-7 sm:size-8 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary">
+                <i data-lucide="file-text" class="size-4 sm:size-[18px]"></i>
             </span>
         </div>
-        <p class="mt-3 text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['todayArticles'] ?></p>
-        <p class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-success">
-            <i data-lucide="arrow-up-right" class="size-3.5"></i>
+        <p class="mt-2 sm:mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['todayArticles'] ?></p>
+        <p class="mt-1 sm:mt-2 inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium text-success">
+            <i data-lucide="arrow-up-right" class="size-3"></i>
             <span>+12%</span>
-            <span class="text-muted-foreground">vs yesterday</span>
+            <span class="hidden sm:inline text-muted-foreground">vs yesterday</span>
         </p>
     </div>
 
     <!-- Card 2 -->
-    <div class="surface-card p-5 transition-shadow duration-150 hover:shadow-raised">
-        <div class="flex items-center justify-between gap-3">
-            <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Published</span>
-            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-success/10 text-success">
-                <i data-lucide="check-circle" class="size-[18px]"></i>
+    <div class="surface-card p-3.5 sm:p-5 transition-shadow duration-150 hover:shadow-raised">
+        <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">Published</span>
+            <span class="grid size-7 sm:size-8 shrink-0 place-items-center rounded-lg bg-success/10 text-success">
+                <i data-lucide="check-circle" class="size-4 sm:size-[18px]"></i>
             </span>
         </div>
-        <p class="mt-3 text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['published'] ?></p>
-        <p class="mt-2 text-xs text-muted-foreground">
+        <p class="mt-2 sm:mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['published'] ?></p>
+        <p class="mt-1 sm:mt-2 text-[11px] sm:text-xs text-muted-foreground truncate">
             94% on-time delivery
         </p>
     </div>
 
     <!-- Card 3 -->
-    <div class="surface-card p-5 transition-shadow duration-150 hover:shadow-raised">
-        <div class="flex items-center justify-between gap-3">
-            <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Drafts & In Review</span>
-            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-warning/15 text-warning">
-                <i data-lucide="clock" class="size-[18px]"></i>
+    <div class="surface-card p-3.5 sm:p-5 transition-shadow duration-150 hover:shadow-raised">
+        <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">In Review</span>
+            <span class="grid size-7 sm:size-8 shrink-0 place-items-center rounded-lg bg-warning/15 text-warning">
+                <i data-lucide="clock" class="size-4 sm:size-[18px]"></i>
             </span>
         </div>
-        <p class="mt-3 text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['drafts'] + $metrics['review'] ?></p>
-        <p class="mt-2 text-xs font-medium text-warning">
-            <?= $metrics['review'] ?> articles pending review
+        <p class="mt-2 sm:mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['drafts'] + $metrics['review'] ?></p>
+        <p class="mt-1 sm:mt-2 text-[11px] sm:text-xs font-medium text-warning truncate">
+            <?= $metrics['review'] ?> pending review
         </p>
     </div>
 
     <!-- Card 4 -->
-    <div class="surface-card p-5 transition-shadow duration-150 hover:shadow-raised">
-        <div class="flex items-center justify-between gap-3">
-            <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Total Views Today</span>
-            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-accent/15 text-accent">
-                <i data-lucide="eye" class="size-[18px]"></i>
+    <div class="surface-card p-3.5 sm:p-5 transition-shadow duration-150 hover:shadow-raised">
+        <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">Total Views</span>
+            <span class="grid size-7 sm:size-8 shrink-0 place-items-center rounded-lg bg-accent/15 text-accent">
+                <i data-lucide="eye" class="size-4 sm:size-[18px]"></i>
             </span>
         </div>
-        <p class="mt-3 text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['totalViews'] ?></p>
-        <p class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-success">
-            <i data-lucide="arrow-up-right" class="size-3.5"></i>
+        <p class="mt-2 sm:mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['totalViews'] ?></p>
+        <p class="mt-1 sm:mt-2 inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium text-success">
+            <i data-lucide="arrow-up-right" class="size-3"></i>
             <span>+18.4%</span>
-            <span class="text-muted-foreground">vs last week</span>
+            <span class="hidden sm:inline text-muted-foreground">growth</span>
         </p>
     </div>
 </div>
@@ -107,23 +109,23 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     <!-- Chart Card (SectionCard.tsx) -->
     <div class="surface-card lg:col-span-2">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-4 border-b border-border">
             <div>
-                <h2 class="text-sm font-semibold text-foreground">Publishing & Traffic Activity</h2>
-                <p class="mt-0.5 text-xs text-muted-foreground">Article publishing volume and real-time readership cadence</p>
+                <h2 class="text-sm font-semibold text-foreground">Editorial Publishing Activity</h2>
+                <p class="mt-0.5 text-xs text-muted-foreground">Volume artikel dan draft yang diproduksi</p>
             </div>
             <div class="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1 text-xs font-medium">
-                <button type="button" id="btnPeriodToday" onclick="switchDashboardPeriod('today')" class="period-btn rounded-md bg-background px-2.5 py-1 text-foreground shadow-xs transition-all font-semibold">Today</button>
+                <button type="button" id="btnPeriodToday" onclick="switchDashboardPeriod('today')" class="period-btn rounded-md bg-background px-2.5 py-1 text-foreground shadow-xs font-semibold transition-all">Today</button>
                 <button type="button" id="btnPeriod7d" onclick="switchDashboardPeriod('7d')" class="period-btn rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground transition-all">7 Days</button>
                 <button type="button" id="btnPeriod30d" onclick="switchDashboardPeriod('30d')" class="period-btn rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground transition-all">30 Days</button>
             </div>
         </div>
-        <div class="p-4">
+        <div class="p-5">
             <div id="publishingChart" class="min-h-[280px]"></div>
         </div>
     </div>
 
-    <!-- Quick Actions & Live Stream -->
+    <!-- Quick Actions & Live Stream (Restored to original design) -->
     <div class="surface-card flex flex-col justify-between">
         <div>
             <div class="px-5 py-4 border-b border-border">
@@ -176,9 +178,9 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
     </div>
 </div>
 
-<!-- Section 3: Top Articles Table -->
+<!-- Section 3: Top Performing Articles (Responsive Cards on Mobile, Table on Desktop) -->
 <div class="surface-card overflow-hidden">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-border">
+    <div class="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-border">
         <div>
             <h2 class="text-sm font-semibold text-foreground">Top Performing Articles Today</h2>
             <p class="mt-0.5 text-xs text-muted-foreground">Real-time reader traffic, engagement, and ranking</p>
@@ -187,7 +189,53 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
             Full Analytics
         </a>
     </div>
-    <div class="relative w-full overflow-auto">
+
+    <!-- Mobile Cards Layout (Matching Gambar 3) -->
+    <div class="divide-y divide-border block sm:hidden">
+        <?php $rank = 1; foreach ($topArticles as $art): ?>
+        <?php 
+            $status = strtolower($art['status']);
+            $badgeClass = match($status) {
+                'published' => 'bg-success/12 text-success border-success/25',
+                'draft' => 'bg-muted text-muted-foreground border-border',
+                'scheduled' => 'bg-accent/12 text-accent border-accent/25',
+                'review' => 'bg-warning/15 text-warning border-warning/30',
+                default => 'bg-muted text-muted-foreground border-border'
+            };
+        ?>
+        <div class="p-3.5 space-y-2.5">
+            <div class="flex items-start justify-between gap-2">
+                <a href="<?= base_url('post/edit/' . $art['id']) ?>" class="font-medium text-xs leading-snug text-foreground hover:text-primary transition-colors flex-1 line-clamp-2">
+                    <?= esc($art['title']) ?>
+                </a>
+                <a href="<?= base_url('post/edit/' . $art['id']) ?>" class="inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-input bg-background text-muted-foreground" title="Edit Post">
+                    <i data-lucide="more-horizontal" class="size-3.5"></i>
+                </a>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span class="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.2 font-medium capitalize <?= $badgeClass ?>">
+                    <span class="size-1 rounded-full bg-current"></span>
+                    <?= esc($art['status']) ?>
+                </span>
+                <?php if ($art['is_premium']): ?>
+                    <span class="inline-flex items-center rounded-sm bg-premium px-1.5 py-0.2 text-[9px] font-semibold tracking-wide text-premium-foreground uppercase">
+                        Premium
+                    </span>
+                <?php endif; ?>
+                <span class="text-muted-foreground font-medium"><?= esc($art['category']) ?></span>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
+                <span class="truncate">Oleh <?= esc($art['author']) ?></span>
+                <span class="font-bold text-foreground"><?= number_format($art['views']) ?> views</span>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Desktop Table Layout -->
+    <div class="relative w-full overflow-auto hidden sm:block">
         <table class="w-full caption-bottom text-sm">
             <thead class="[&_tr]:border-b border-border bg-muted/40">
                 <tr class="text-left font-medium text-muted-foreground text-xs uppercase tracking-wider">

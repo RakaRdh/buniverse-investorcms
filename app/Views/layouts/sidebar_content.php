@@ -17,7 +17,15 @@ $navGroups = [
         'label' => 'Insights',
         'items' => [
             ['label' => 'Embed Chart', 'to' => 'embed-chart', 'icon' => 'line-chart'],
-            ['label' => 'Statistic', 'to' => 'statistic', 'icon' => 'bar-chart-3'],
+            [
+                'label' => 'Statistic',
+                'type' => 'dropdown',
+                'icon' => 'bar-chart-3',
+                'children' => [
+                    ['label' => 'Trafik & Audiens', 'to' => 'statistic'],
+                    ['label' => 'Performa Tim Editorial', 'to' => 'statistic/report'],
+                ]
+            ],
         ]
     ],
     [
@@ -32,15 +40,15 @@ $navGroups = [
         'label' => 'Management',
         'items' => [
             [
-                'label' => 'Subscriber',
+                'label' => 'Kanal',
                 'type' => 'dropdown',
-                'icon' => 'users-round',
+                'icon' => 'layers',
                 'children' => [
-                    ['label' => 'Subscriber List', 'to' => 'subscriber'],
-                    ['label' => 'Subscriber Stats', 'to' => 'subscriber/stats'],
+                    ['label' => 'Master Kanal', 'to' => 'kanal/master'],
+                    ['label' => 'Sub Kanal', 'to' => 'kanal/sub'],
+                    ['label' => 'Performa Kanal', 'to' => 'kanal/stats'],
                 ]
             ],
-            ['label' => 'Categories', 'to' => 'categories', 'icon' => 'tags'],
             ['label' => 'User', 'to' => 'user', 'icon' => 'users'],
         ]
     ]
@@ -50,9 +58,7 @@ $navGroups = [
 <div class="flex h-screen flex-col justify-between bg-sidebar text-sidebar-foreground select-none overflow-hidden">
     <!-- Wordmark / Brand Header -->
     <div class="flex h-16 shrink-0 items-center gap-3 px-4 border-b border-sidebar-border/40">
-        <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sm font-bold text-sidebar-primary-foreground shadow-sm">
-            ID
-        </span>
+        <img src="/img/investor-logo.jpg" alt="Investor.ID Logo" class="size-9 shrink-0 rounded-lg object-cover shadow-sm">
         <div class="min-w-0 brand-desc">
             <span class="block truncate text-sm font-bold tracking-tight text-sidebar-accent-foreground">
                 INVESTOR<span class="text-sidebar-primary">.ID</span>
@@ -85,22 +91,25 @@ $navGroups = [
                             <li class="sidebar-dropdown-wrapper">
                                 <button type="button" 
                                         onclick="toggleSidebarDropdown(this)"
-                                        class="nav-item-link group relative flex w-full items-center justify-between gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors duration-150 <?= $isChildActive ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' ?>">
+                                        class="nav-item-link group relative flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs transition-colors duration-150 <?= $isChildActive ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' ?>">
                                     
-                                    <div class="flex items-center gap-2.5 min-w-0">
-                                        <i data-lucide="<?= esc($item['icon']) ?>" class="size-4 shrink-0 <?= $isChildActive ? 'text-sidebar-primary' : '' ?>" aria-hidden="true"></i>
-                                        <span class="nav-label truncate"><?= esc($item['label']) ?></span>
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <i data-lucide="<?= esc($item['icon']) ?>" class="size-4.5 shrink-0 <?= $isChildActive ? 'text-sidebar-primary' : '' ?>" aria-hidden="true"></i>
+                                        <span class="nav-label truncate font-medium text-xs sm:text-[13px]"><?= esc($item['label']) ?></span>
                                     </div>
                                     <i data-lucide="chevron-down" class="size-3.5 shrink-0 transition-transform duration-200 text-sidebar-foreground/50 dropdown-arrow <?= $isChildActive ? 'rotate-180' : '' ?>" aria-hidden="true"></i>
                                 </button>
                                 
-                                <ul class="pl-6 pr-1 py-1 space-y-0.5 <?= $isChildActive ? '' : 'hidden' ?> dropdown-menu">
+                                <ul class="pl-7 pr-1 py-1 space-y-1 <?= $isChildActive ? '' : 'hidden' ?> dropdown-menu">
                                     <?php foreach ($item['children'] as $child): ?>
-                                        <?php $isSubActive = str_starts_with($currentUri, $child['to']); ?>
+                                        <?php 
+                                            $isSubActive = ($child['to'] === 'statistic' && $currentUri === 'statistic')
+                                                || ($child['to'] !== 'statistic' && ($currentUri === $child['to'] || str_starts_with($currentUri, $child['to'] . '/')));
+                                        ?>
                                         <li>
                                             <a href="<?= base_url($child['to']) ?>"
-                                               class="flex items-center gap-2 rounded-md px-2 py-1 text-[11px] transition-colors <?= $isSubActive ? 'font-bold text-sidebar-primary bg-sidebar-accent/40' : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/30' ?>">
-                                                <span class="size-1 rounded-full <?= $isSubActive ? 'bg-sidebar-primary' : 'bg-sidebar-foreground/40' ?>"></span>
+                                               class="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs transition-colors <?= $isSubActive ? 'font-bold text-sidebar-primary bg-sidebar-accent/50 shadow-2xs' : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/30' ?>">
+                                                <span class="size-1.5 rounded-full <?= $isSubActive ? 'bg-sidebar-primary' : 'bg-sidebar-foreground/40' ?>"></span>
                                                 <span><?= esc($child['label']) ?></span>
                                             </a>
                                         </li>
@@ -116,14 +125,14 @@ $navGroups = [
                             <li>
                                 <a href="<?= base_url($item['to']) ?>"
                                    title="<?= esc($item['label']) ?>"
-                                   class="nav-item-link group relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors duration-150 <?= $isActive ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-xs' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' ?>">
+                                   class="nav-item-link group relative flex items-center gap-3 rounded-lg px-3 py-2 text-xs transition-colors duration-150 <?= $isActive ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-xs' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' ?>">
                                     
                                     <?php if ($isActive): ?>
                                         <span class="absolute top-1 bottom-1 -left-2 w-0.5 rounded-full bg-sidebar-primary" aria-hidden="true"></span>
                                     <?php endif; ?>
 
-                                    <i data-lucide="<?= esc($item['icon']) ?>" class="size-4 shrink-0 <?= $isActive ? 'text-sidebar-primary' : '' ?>" aria-hidden="true"></i>
-                                    <span class="nav-label truncate"><?= esc($item['label']) ?></span>
+                                    <i data-lucide="<?= esc($item['icon']) ?>" class="size-4.5 shrink-0 <?= $isActive ? 'text-sidebar-primary' : '' ?>" aria-hidden="true"></i>
+                                    <span class="nav-label truncate font-medium text-xs sm:text-[13px]"><?= esc($item['label']) ?></span>
                                 </a>
                             </li>
                         <?php endif; ?>

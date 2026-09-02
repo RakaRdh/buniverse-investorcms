@@ -6,15 +6,25 @@
 
 <?= $this->section('content') ?>
 
-<!-- Filtering Bar (No Title column, search and category only) -->
+<!-- PageHeader Responsive -->
+<div class="mb-6">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl leading-tight">Headline &amp; Cover Curation</h1>
+            <p class="mt-1 text-xs sm:text-sm text-muted-foreground">Kelola urutan dan penetapan artikel yang tampil sebagai headline utama di portal Investor.id.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Filtering Bar -->
 <div class="surface-card p-4 mb-6">
     <form method="get" action="<?= base_url('headline') ?>" class="flex flex-wrap items-center gap-3">
         <span class="text-xs font-bold text-foreground">Filtering:</span>
-        <div class="flex-1 min-w-[220px]">
-            <input type="text" name="q" value="<?= esc($filters['q']) ?>" placeholder="Cari artikel..." class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+        <div class="flex-1 min-w-[200px]">
+            <input type="text" name="q" value="<?= esc($filters['q']) ?>" placeholder="Cari artikel..." class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
         </div>
-        <div class="w-48">
-            <select name="category" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+        <div class="w-44">
+            <select name="category" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                 <option value="all">Category: All</option>
                 <?php foreach ($categories as $cat): ?>
                     <option value="<?= esc($cat['name']) ?>" <?= ($filters['category'] === $cat['name']) ? 'selected' : '' ?>>
@@ -34,11 +44,85 @@
     </form>
 </div>
 
-<!-- 2-Panel Layout Matching Prompt & Gambar 2 -->
+<!-- MOBILE ONLY TOP SECTION: Curated Headline (Hanya Muncul di Mobile) -->
+<div class="block sm:hidden surface-card p-4 mb-6 border border-primary/30 shadow-sm bg-card">
+    <form method="post" action="<?= base_url('headline/save') ?>" class="space-y-3.5">
+        <div class="flex items-center justify-between border-b border-border pb-2.5">
+            <div class="flex items-center gap-2">
+                <i data-lucide="sparkles" class="size-4 text-primary"></i>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-foreground">Headline Terpilih (Mobile)</h2>
+            </div>
+            <button type="submit" class="inline-flex items-center gap-1 rounded bg-[#2B6CB0] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 shadow-2xs">
+                <i data-lucide="save" class="size-3.5"></i>
+                <span>Simpan</span>
+            </button>
+        </div>
+
+        <select name="target_category" class="flex h-8.5 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold shadow-sm focus-visible:outline-none">
+            <option value="Headline" selected>Kanal: Headline</option>
+            <option value="Trending">Kanal: Trending</option>
+            <option value="Special Report">Kanal: Special Report</option>
+            <option value="Market Flash">Kanal: Market Flash</option>
+        </select>
+
+        <div class="space-y-2">
+            <?php if (empty($headlines)): ?>
+                <div class="py-4 text-center text-xs text-muted-foreground">Belum ada headline terpilih.</div>
+            <?php else: ?>
+                <?php $pos = 1; foreach ($headlines as $hl): ?>
+                <div class="flex items-start gap-2.5 p-2.5 rounded-md border border-border bg-muted/40">
+                    <span class="grid size-6 shrink-0 place-items-center rounded bg-primary text-primary-foreground font-bold text-[11px]">#<?= $pos++ ?></span>
+                    <span class="text-xs font-medium text-foreground flex-1 line-clamp-2"><?= esc($hl['title']) ?></span>
+                    <button type="button" onclick="confirmRemoveHeadline(<?= $hl['id'] ?>, '<?= esc(addslashes($hl['title'])) ?>')" class="text-destructive hover:opacity-75 p-0.5">
+                        <i data-lucide="x" class="size-3.5"></i>
+                    </button>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </form>
+</div>
+
+<!-- 2-Panel Layout Matching Original Desktop UI (Left: Published List, Right: Headline Queue) -->
 <div class="headline-grid-layout">
-    <!-- Left Column: Published Articles List (Tabel List Published) -->
+    <!-- Left Column: Published Articles List -->
     <div class="surface-card overflow-hidden">
-        <div class="relative w-full overflow-auto">
+        <!-- Mobile Cards View for Articles -->
+        <div class="divide-y divide-border block sm:hidden">
+            <div class="p-3.5 bg-muted/30 border-b border-border font-bold text-xs uppercase tracking-wider text-foreground">
+                Semua Artikel Published
+            </div>
+            <?php if (empty($availablePosts)): ?>
+                <div class="p-8 text-center text-muted-foreground text-xs">No published articles available.</div>
+            <?php else: ?>
+                <?php foreach ($availablePosts as $post): ?>
+                <div class="p-3.5 flex items-start justify-between gap-3">
+                    <div class="space-y-1 min-w-0 flex-1">
+                        <span class="block font-medium text-foreground text-xs leading-snug">
+                            <?php if ($post['is_premium']): ?>
+                                <span class="inline-flex items-center rounded-sm bg-amber-500/15 px-1 py-0.2 text-[9px] font-bold text-amber-700 uppercase mr-1">[Premium]</span>
+                            <?php endif; ?>
+                            <?= esc($post['title']) ?>
+                        </span>
+                        <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
+                            <span><?= esc($post['category']) ?></span>
+                            <span>&bull;</span>
+                            <span><?= esc($post['publish_date']) ?></span>
+                        </div>
+                    </div>
+                    <button type="button" 
+                            onclick="confirmAddHeadline(<?= $post['id'] ?>, '<?= esc(addslashes($post['title'])) ?>')"
+                            class="inline-flex shrink-0 size-8 items-center justify-center rounded-md bg-[#2B6CB0] text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-xs" 
+                            title="Pilih / Jadikan Headline">
+                        <i data-lucide="corner-down-right" class="size-3.5"></i>
+                    </button>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+        <!-- Desktop Table View -->
+        <div class="relative w-full overflow-auto hidden sm:block">
             <table class="w-full caption-bottom text-sm">
                 <thead class="[&_tr]:border-b border-border bg-muted/40">
                     <tr class="text-left font-bold text-foreground text-xs">
@@ -85,8 +169,8 @@
         </div>
     </div>
 
-    <!-- Right Column: Dropdown Category & Target Headline Queue -->
-    <div class="space-y-4">
+    <!-- Right Column: Dropdown Category & Target Headline Queue (Desktop View) -->
+    <div class="space-y-4 hidden sm:block">
         <form method="post" action="<?= base_url('headline/save') ?>" class="surface-card p-5 space-y-4">
             <div>
                 <label class="block text-xs font-bold text-foreground mb-1.5">Select Category</label>

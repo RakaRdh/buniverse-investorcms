@@ -2,268 +2,169 @@
 
 <?= $this->section('styles') ?>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+.matrix-table th, .matrix-table td {
+    white-space: nowrap;
+}
+.matrix-cell-active {
+    background-color: hsl(var(--primary) / 0.12);
+    color: hsl(var(--primary));
+    font-weight: 700;
+}
+</style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 
-<!-- Page Header with Date Filter -->
+<!-- Page Header with Tabs Responsive -->
 <div class="mb-6">
-    <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-foreground">Editorial Production & Productivity Report</h1>
-            <p class="mt-1 text-xs text-muted-foreground">Laporan ringkas volume penerbitan artikel per author, editor, contributor, dan rekap harian (maksimal rentang 30 hari).</p>
+            <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl leading-tight">Performa Tim Editorial</h1>
+            <p class="mt-1 text-xs sm:text-sm text-muted-foreground">Matriks sebaran artikel per hari (format tanggal h/b) dan akumulasi views tim redaksi (maksimal rentang 30 hari).</p>
         </div>
 
-        <!-- Date Filter Toolbar -->
-        <form method="get" action="<?= base_url('statistic/report') ?>" id="reportFilterForm" class="flex flex-wrap items-center gap-2">
-            <div class="flex items-center gap-1.5 rounded-lg border border-border bg-background p-1.5 shadow-xs">
-                <i data-lucide="calendar" class="size-4 text-primary ml-1"></i>
-                <input type="text" name="from" id="reportDateFrom" value="<?= esc($fromDate) ?>" class="h-7 w-28 bg-transparent px-1 text-xs font-semibold text-foreground focus:outline-none cursor-pointer" placeholder="Dari Tanggal">
-                <span class="text-xs text-muted-foreground font-medium">s/d</span>
-                <input type="text" name="to" id="reportDateTo" value="<?= esc($toDate) ?>" class="h-7 w-28 bg-transparent px-1 text-xs font-semibold text-foreground focus:outline-none cursor-pointer" placeholder="Sampai Tanggal">
-            </div>
-            
-            <button type="submit" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-bold text-primary-foreground shadow hover:bg-primary/90 transition-colors">
-                <i data-lucide="filter" class="size-3.5"></i>
-                <span>Terapkan Filter</span>
-            </button>
-
-            <a href="<?= base_url('statistic/report') ?>" class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" title="Reset ke 30 Hari Terakhir">
-                <i data-lucide="rotate-ccw" class="size-3.5"></i>
+        <!-- Role Tab Filter -->
+        <div class="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-muted/40 p-1 text-xs font-semibold self-start sm:self-auto">
+            <a href="<?= base_url('statistic/report?tab=author&from=' . $fromDate . '&to=' . $toDate) ?>" class="rounded-md px-2.5 py-1 sm:px-3 sm:py-1.5 transition-all <?= $tab === 'author' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground' ?>">
+                Author (Jurnalis)
             </a>
-        </form>
+            <a href="<?= base_url('statistic/report?tab=editor&from=' . $fromDate . '&to=' . $toDate) ?>" class="rounded-md px-2.5 py-1 sm:px-3 sm:py-1.5 transition-all <?= $tab === 'editor' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground' ?>">
+                Editor Redaksi
+            </a>
+            <a href="<?= base_url('statistic/report?tab=contributor&from=' . $fromDate . '&to=' . $toDate) ?>" class="rounded-md px-2.5 py-1 sm:px-3 sm:py-1.5 transition-all <?= $tab === 'contributor' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground' ?>">
+                Contributor
+            </a>
+        </div>
     </div>
 </div>
 
-<!-- Active Period Badge Note -->
-<div class="flex items-center justify-between mb-6 p-3 rounded-lg border border-primary/20 bg-primary/5 text-xs">
-    <div class="flex items-center gap-2">
-        <span class="inline-flex size-2 rounded-full bg-primary animate-pulse"></span>
-        <span class="text-muted-foreground">Periode Terpilih:</span>
-        <strong class="text-foreground font-semibold"><?= date('d M Y', strtotime($fromDate)) ?> — <?= date('d M Y', strtotime($toDate)) ?></strong>
-        <span class="text-muted-foreground">(Maksimal 30 hari kalender)</span>
-    </div>
-    <div class="text-muted-foreground">
-        Total Artikel dalam Rentang: <strong class="text-primary font-bold"><?= $totalFilteredArticles ?></strong>
-    </div>
+<!-- Date Filter & Summary Toolbar Responsive -->
+<div class="surface-card p-4 mb-6">
+    <form method="get" action="<?= base_url('statistic/report') ?>" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <input type="hidden" name="tab" value="<?= esc($tab) ?>">
+
+        <div class="flex items-center gap-2 text-xs">
+            <span class="inline-flex size-2 shrink-0 rounded-full bg-primary animate-pulse"></span>
+            <div class="min-w-0">
+                <span class="text-muted-foreground font-medium">Periode:</span>
+                <span class="font-bold text-foreground"><?= date('d M Y', strtotime($fromDate)) ?> — <?= date('d M Y', strtotime($toDate)) ?></span>
+                <span class="text-[11px] text-muted-foreground">(<?= count($dateColumns) ?> hari)</span>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-1 rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-xs flex-1 sm:flex-initial">
+                <i data-lucide="calendar" class="size-3.5 text-primary shrink-0"></i>
+                <input type="text" name="from" id="reportDateFrom" value="<?= esc($fromDate) ?>" class="h-6 w-24 bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer" placeholder="YYYY-MM-DD">
+                <span class="text-muted-foreground font-medium px-0.5">s/d</span>
+                <input type="text" name="to" id="reportDateTo" value="<?= esc($toDate) ?>" class="h-6 w-24 bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer" placeholder="YYYY-MM-DD">
+            </div>
+
+            <button type="submit" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-3.5 text-xs font-bold text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
+                <i data-lucide="filter" class="size-3"></i>
+                <span>Terapkan Rentang</span>
+            </button>
+        </div>
+    </form>
 </div>
 
-<div class="space-y-8">
-    
-    <!-- 1. Author Report Section -->
-    <div class="surface-card overflow-hidden">
-        <div class="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
-            <div class="flex items-center gap-2.5">
-                <span class="grid size-7 place-items-center rounded-md bg-primary/10 text-primary">
-                    <i data-lucide="pen-tool" class="size-4"></i>
-                </span>
-                <div>
-                    <h2 class="text-sm font-bold text-foreground">1. Laporan Produktivitas Author (Jurnalis)</h2>
-                    <p class="text-[11px] text-muted-foreground">Jumlah artikel yang ditulis dan diterbitkan dalam rentang tanggal terpilih.</p>
-                </div>
-            </div>
-            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                <?= count($authorReport) ?> Authors
-            </span>
-        </div>
+<?php
+// Pick current dataset based on tab
+$activeMatrix = match($tab) {
+    'editor' => $editorMatrix,
+    'contributor' => $contribMatrix,
+    default => $authorMatrix,
+};
+$roleLabel = match($tab) {
+    'editor' => 'Editor Redaksi',
+    'contributor' => 'Contributor',
+    default => 'Author (Jurnalis)',
+};
+?>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-                <thead class="border-b border-border bg-muted/40 text-muted-foreground uppercase font-bold">
-                    <tr>
-                        <th class="py-3 px-4 w-12 text-center">No</th>
-                        <th class="py-3 px-4">Nama Author</th>
-                        <th class="py-3 px-4">Role & Email</th>
-                        <th class="py-3 px-4 text-center">Artikel Diterbitkan</th>
-                        <th class="py-3 px-4 text-right">Total Views</th>
-                        <th class="py-3 px-4 text-right">Rata-rata Views</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                    <?php if (empty($authorReport)): ?>
-                        <tr><td colspan="6" class="py-6 text-center text-muted-foreground">Tidak ada data author pada periode ini.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($authorReport as $idx => $row): ?>
-                        <tr class="hover:bg-muted/40 transition-colors">
-                            <td class="py-3 px-4 text-center font-mono text-muted-foreground"><?= $idx + 1 ?></td>
-                            <td class="py-3 px-4 font-bold text-foreground"><?= esc($row['user']['name']) ?></td>
-                            <td class="py-3 px-4 text-muted-foreground">
-                                <span class="inline-flex rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium mr-1.5"><?= esc($row['user']['role']) ?></span>
-                                <?= esc($row['user']['email']) ?>
-                            </td>
-                            <td class="py-3 px-4 text-center">
-                                <span class="inline-flex rounded-md bg-success/15 px-2.5 py-0.5 text-xs font-bold text-success border border-success/30">
-                                    <?= $row['published_articles'] ?> Artikel
+<!-- Matrix Table Container -->
+<div class="surface-card overflow-hidden mb-8">
+    <div class="px-5 py-3.5 border-b border-border bg-muted/20 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i data-lucide="table-2" class="size-4 text-primary"></i>
+            <h2 class="text-sm font-bold text-foreground">Matriks Performa: <?= esc($roleLabel) ?></h2>
+        </div>
+        <span class="text-xs font-medium text-muted-foreground"><?= count($activeMatrix) ?> Personil Terdaftar</span>
+    </div>
+
+    <div class="relative w-full overflow-x-auto custom-sidebar-scroll">
+        <table class="w-full text-left text-xs matrix-table">
+            <thead class="border-b border-border bg-muted/50 font-bold text-muted-foreground uppercase text-[11px] sticky top-0">
+                <tr>
+                    <th class="py-3 px-3.5 sticky left-0 z-20 bg-background/95 backdrop-blur-xs border-r border-border min-w-[180px]">Nama</th>
+                    <th class="py-3 px-3 text-center border-r border-border min-w-[90px]">Role</th>
+                    
+                    <!-- Date Columns: Format '3/9', '4/9', etc. -->
+                    <?php foreach ($dateColumns as $col): ?>
+                    <th class="py-3 px-2 text-center border-r border-border/60 min-w-[42px]" title="<?= esc($col['full_date']) ?>">
+                        <span class="block text-foreground text-xs"><?= esc($col['short_label']) ?></span>
+                        <span class="block text-[9px] text-muted-foreground/70 font-normal"><?= esc($col['day_name']) ?></span>
+                    </th>
+                    <?php endforeach; ?>
+
+                    <th class="py-3 px-3.5 text-center border-r border-border min-w-[90px] bg-primary/5 text-primary font-bold">Total Terbit</th>
+                    <th class="py-3 px-3.5 text-right min-w-[110px] bg-primary/5 text-primary font-bold">Views</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+                <?php if (empty($activeMatrix)): ?>
+                <tr>
+                    <td colspan="<?= count($dateColumns) + 4 ?>" class="py-8 text-center text-muted-foreground">
+                        Tidak ada data personil pada role ini dalam rentang waktu yang dipilih.
+                    </td>
+                </tr>
+                <?php else: ?>
+                    <?php foreach ($activeMatrix as $row): ?>
+                    <tr class="hover:bg-muted/30 transition-colors">
+                        <!-- Column 1: Nama (Sticky Left) -->
+                        <td class="py-2.5 px-3.5 sticky left-0 z-10 bg-background border-r border-border font-bold text-foreground">
+                            <div class="flex items-center gap-2">
+                                <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+                                    <?= esc(substr($row['name'], 0, 1)) ?>
                                 </span>
-                            </td>
-                            <td class="py-3 px-4 text-right font-semibold text-foreground"><?= number_format($row['total_views']) ?></td>
-                            <td class="py-3 px-4 text-right font-mono text-muted-foreground"><?= number_format($row['avg_views']) ?></td>
-                        </tr>
+                                <span class="truncate"><?= esc($row['name']) ?></span>
+                            </div>
+                        </td>
+
+                        <!-- Column 2: Role -->
+                        <td class="py-2.5 px-3 text-center border-r border-border">
+                            <span class="inline-flex rounded-md border border-border px-2 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground">
+                                <?= esc($row['role']) ?>
+                            </span>
+                        </td>
+
+                        <!-- Column 3 to XX: Tanggal (format '3/9') -->
+                        <?php foreach ($dateColumns as $col): ?>
+                        <?php 
+                            $c = $row['daily_counts'][$col['full_date']] ?? 0;
+                            $hasArticle = $c > 0;
+                        ?>
+                        <td class="py-2 px-1 text-center border-r border-border/50 text-xs <?= $hasArticle ? 'matrix-cell-active' : 'text-muted-foreground/40 font-mono' ?>">
+                            <?= $hasArticle ? esc($c) : '-' ?>
+                        </td>
                         <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <!-- 2. Editor Report Section -->
-    <div class="surface-card overflow-hidden">
-        <div class="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
-            <div class="flex items-center gap-2.5">
-                <span class="grid size-7 place-items-center rounded-md bg-accent/10 text-accent">
-                    <i data-lucide="check-check" class="size-4"></i>
-                </span>
-                <div>
-                    <h2 class="text-sm font-bold text-foreground">2. Laporan Kinerja Editor Redaksi</h2>
-                    <p class="text-[11px] text-muted-foreground">Jumlah artikel yang disunting, direview, dan dipublikasikan oleh masing-masing editor.</p>
-                </div>
-            </div>
-            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
-                <?= count($editorReport) ?> Editors
-            </span>
-        </div>
+                        <!-- Total Terbit Column -->
+                        <td class="py-2.5 px-3 text-center font-bold text-primary border-r border-border bg-primary/5">
+                            <?= esc($row['published_count']) ?>
+                        </td>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-                <thead class="border-b border-border bg-muted/40 text-muted-foreground uppercase font-bold">
-                    <tr>
-                        <th class="py-3 px-4 w-12 text-center">No</th>
-                        <th class="py-3 px-4">Nama Editor</th>
-                        <th class="py-3 px-4">Role Akun</th>
-                        <th class="py-3 px-4 text-center">Artikel Dipublikasikan</th>
-                        <th class="py-3 px-4 text-center">Total Artikel Disunting</th>
-                        <th class="py-3 px-4 text-right">Total Akumulasi Views</th>
+                        <!-- Total Views Column -->
+                        <td class="py-2.5 px-3.5 text-right font-mono font-bold text-foreground bg-primary/5">
+                            <?= number_format($row['total_views']) ?>
+                        </td>
                     </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                    <?php if (empty($editorReport)): ?>
-                        <tr><td colspan="6" class="py-6 text-center text-muted-foreground">Tidak ada data editor pada periode ini.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($editorReport as $idx => $row): ?>
-                        <tr class="hover:bg-muted/40 transition-colors">
-                            <td class="py-3 px-4 text-center font-mono text-muted-foreground"><?= $idx + 1 ?></td>
-                            <td class="py-3 px-4 font-bold text-foreground"><?= esc($row['user']['name']) ?></td>
-                            <td class="py-3 px-4">
-                                <span class="inline-flex rounded border border-accent/30 bg-accent/10 px-2 py-0.5 text-[11px] font-bold text-accent"><?= esc($row['user']['role']) ?></span>
-                            </td>
-                            <td class="py-3 px-4 text-center">
-                                <span class="inline-flex rounded-md bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary border border-primary/25">
-                                    <?= $row['published_articles'] ?> Artikel
-                                </span>
-                            </td>
-                            <td class="py-3 px-4 text-center font-semibold text-muted-foreground"><?= $row['total_reviewed'] ?> naskah</td>
-                            <td class="py-3 px-4 text-right font-semibold text-foreground"><?= number_format($row['total_views']) ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
-
-    <!-- 3. Contributor & Daily Articles Row (2-Grid Side by Side) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        
-        <!-- 3a. Contributor Section -->
-        <div class="surface-card overflow-hidden">
-            <div class="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
-                <div class="flex items-center gap-2.5">
-                    <span class="grid size-7 place-items-center rounded-md bg-amber-500/10 text-amber-600">
-                        <i data-lucide="users" class="size-4"></i>
-                    </span>
-                    <div>
-                        <h2 class="text-sm font-bold text-foreground">3. Laporan Contributor</h2>
-                        <p class="text-[11px] text-muted-foreground">Penerbitan naskah kontributor luar / desk.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="overflow-x-auto max-h-[420px]">
-                <table class="w-full text-left text-xs">
-                    <thead class="border-b border-border bg-muted/40 text-muted-foreground uppercase font-bold sticky top-0 bg-background">
-                        <tr>
-                            <th class="py-3 px-4">Nama Contributor</th>
-                            <th class="py-3 px-4 text-center">Published</th>
-                            <th class="py-3 px-4 text-center">Draft/Review</th>
-                            <th class="py-3 px-4 text-right">Total Naskah</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-border">
-                        <?php if (empty($contribReport)): ?>
-                            <tr><td colspan="4" class="py-6 text-center text-muted-foreground">Tidak ada data contributor.</td></tr>
-                        <?php else: ?>
-                            <?php foreach ($contribReport as $row): ?>
-                            <tr class="hover:bg-muted/40 transition-colors">
-                                <td class="py-3 px-4 font-bold text-foreground">
-                                    <?= esc($row['user']['name']) ?>
-                                    <span class="block text-[10px] text-muted-foreground font-normal"><?= esc($row['user']['email']) ?></span>
-                                </td>
-                                <td class="py-3 px-4 text-center font-semibold text-success"><?= $row['published_count'] ?></td>
-                                <td class="py-3 px-4 text-center font-semibold text-warning"><?= $row['pending_count'] ?></td>
-                                <td class="py-3 px-4 text-right font-bold text-foreground"><?= $row['total_articles'] ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 3b. Daily Releases Table Section -->
-        <div class="surface-card overflow-hidden">
-            <div class="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
-                <div class="flex items-center gap-2.5">
-                    <span class="grid size-7 place-items-center rounded-md bg-emerald-500/10 text-emerald-600">
-                        <i data-lucide="bar-chart-2" class="size-4"></i>
-                    </span>
-                    <div>
-                        <h2 class="text-sm font-bold text-foreground">4. Jumlah Artikel Dirilis Per Hari</h2>
-                        <p class="text-[11px] text-muted-foreground">Distribusi output berita harian portal.</p>
-                    </div>
-                </div>
-                <span class="text-xs font-mono text-muted-foreground">
-                    <?= count($dailyReleases) ?> Hari
-                </span>
-            </div>
-
-            <div class="overflow-x-auto max-h-[420px]">
-                <table class="w-full text-left text-xs">
-                    <thead class="border-b border-border bg-muted/40 text-muted-foreground uppercase font-bold sticky top-0 bg-background">
-                        <tr>
-                            <th class="py-3 px-4">Tanggal Rilis</th>
-                            <th class="py-3 px-4">Hari</th>
-                            <th class="py-3 px-4 text-center">Volume Artikel</th>
-                            <th class="py-3 px-4 text-right">Total Views</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-border">
-                        <?php if (empty($dailyReleases)): ?>
-                            <tr><td colspan="4" class="py-6 text-center text-muted-foreground">Tidak ada rilis artikel dalam rentang ini.</td></tr>
-                        <?php else: ?>
-                            <?php foreach ($dailyReleases as $d): ?>
-                            <tr class="hover:bg-muted/40 transition-colors">
-                                <td class="py-2.5 px-4 font-bold text-foreground"><?= esc($d['date_formatted']) ?></td>
-                                <td class="py-2.5 px-4 text-muted-foreground"><?= esc($d['day_name']) ?></td>
-                                <td class="py-2.5 px-4 text-center">
-                                    <?php if ($d['count'] > 0): ?>
-                                        <span class="inline-flex items-center justify-center min-w-6 rounded bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-700">
-                                            <?= $d['count'] ?>
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="text-muted-foreground/60 font-mono">0</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="py-2.5 px-4 text-right font-mono text-muted-foreground"><?= number_format($d['views']) ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-
 </div>
 
 <?= $this->endSection() ?>
@@ -284,21 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
             altInput: true,
             altFormat: "d M Y",
             maxDate: "today"
-        });
-    }
-
-    const form = document.getElementById('reportFilterForm');
-    if (form) {
-        form.addEventListener('submit', (e) => {
-            const from = document.getElementById('reportDateFrom').value;
-            const to = document.getElementById('reportDateTo').value;
-            if (from && to) {
-                const diffTime = Math.abs(new Date(to) - new Date(from));
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                if (diffDays > 30) {
-                    alert('Rentang tanggal maksimal adalah 30 hari. Sistem akan otomatis menyesuaikan rentang.');
-                }
-            }
         });
     }
 });

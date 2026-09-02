@@ -64,11 +64,23 @@ document.addEventListener('DOMContentLoaded', () => {
             yaxis: {
                 labels: { style: { colors: '#94A3B8', fontSize: '11px', fontFamily: 'Inter, sans-serif' } }
             },
-            grid: { borderColor: '#F1F5F9' }
+            grid: { borderColor: document.documentElement.classList.contains('dark') ? '#1F293D' : '#F1F5F9' },
+            theme: { mode: document.documentElement.classList.contains('dark') ? 'dark' : 'light' }
         };
 
         dashboardChart = new ApexCharts(chartEl, options);
         dashboardChart.render();
+
+        window.addEventListener('newsroom_theme_change', (e) => {
+            const isDark = e.detail.theme === 'dark';
+            if (dashboardChart) {
+                dashboardChart.updateOptions({
+                    theme: { mode: isDark ? 'dark' : 'light' },
+                    grid: { borderColor: isDark ? '#1F293D' : '#F1F5F9' },
+                    colors: isDark ? ['#60A5FA', '#38BDF8'] : ['#1F4E79', '#3991CF']
+                });
+            }
+        });
     }
 });
 

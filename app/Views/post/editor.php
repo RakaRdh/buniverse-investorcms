@@ -11,281 +11,47 @@
 <?= $this->section('content') ?>
 
 <form id="postEditorForm" method="post" action="<?= $isEdit ? base_url('post/update/' . $article['id']) : base_url('post/save') ?>">
-    <!-- Top Action Bar & Header -->
+    <!-- Top Action Bar & Header Responsive -->
     <div class="mb-6">
-        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:items-center sm:justify-between">
-            <div class="min-w-0">
-                <div class="flex items-center gap-3">
-                    <a href="<?= base_url('post') ?>" class="inline-flex items-center justify-center rounded-md border border-input bg-background p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Kembali ke Daftar Artikel">
-                        <i data-lucide="arrow-left" class="size-4"></i>
-                    </a>
-                    <div>
-                        <h1 class="truncate text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                            <?= $isEdit ? 'Edit Artikel Berita' : 'Tambah Artikel Baru' ?>
-                        </h1>
-                        <p class="text-xs text-muted-foreground">
-                            <?= $isEdit ? 'Perbarui konten, metadata editorial, dan jadwal penayangan' : 'Tulis naskah berita baru dan distribusikan ke kanal Investor.id' ?>
-                        </p>
-                    </div>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <a href="<?= base_url('post') ?>" class="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Kembali ke Daftar Artikel">
+                    <i data-lucide="arrow-left" class="size-4"></i>
+                </a>
+                <div class="min-w-0">
+                    <h1 class="truncate text-lg sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
+                        <?= $isEdit ? 'Edit Artikel Berita' : 'Tambah Artikel Baru' ?>
+                    </h1>
+                    <p class="text-xs sm:text-sm text-muted-foreground truncate">
+                        <?= $isEdit ? 'Perbarui konten, metadata editorial, dan jadwal penayangan' : 'Tulis naskah berita baru dan distribusikan ke kanal Investor.id' ?>
+                    </p>
                 </div>
             </div>
             
-            <div class="flex shrink-0 flex-wrap items-center gap-2">
-                <!-- Preview Button (Opens New Tab) -->
-                <button type="button" onclick="previewArticlePage()" class="inline-flex items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted hover:text-primary transition-colors shadow-xs">
-                    <i data-lucide="eye" class="size-4 text-primary"></i>
-                    <span>Preview Artikel</span>
-                </button>
-
+            <div class="flex items-center gap-2 self-stretch sm:self-auto">
                 <!-- Save Draft Button -->
-                <button type="submit" name="status" value="Draft" class="inline-flex items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors shadow-xs">
-                    <i data-lucide="file-down" class="size-4 text-slate-500"></i>
+                <button type="submit" name="status" value="Draft" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors shadow-xs">
+                    <i data-lucide="file-down" class="size-4 text-muted-foreground"></i>
                     <span>Simpan Draft</span>
                 </button>
 
                 <!-- Primary Publish / Save Button -->
-                <button type="submit" class="inline-flex items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
+                <button type="submit" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
                     <i data-lucide="save" class="size-4"></i>
-                    <span><?= $isEdit ? 'Simpan Perubahan' : 'Terbitkan Artikel' ?></span>
+                    <span><?= $isEdit ? 'Simpan' : 'Terbitkan Artikel' ?></span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 2-Column Canvas Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <!-- 2-Column Canvas Layout (Featured Image on Top in Mobile, Sidebar on Desktop) -->
+    <div class="flex flex-col lg:grid lg:grid-cols-3 gap-6 items-start">
         
-        <!-- Left: Main Composition Canvas -->
-        <div class="surface-card p-5 sm:p-6 lg:col-span-2 space-y-5">
+        <!-- Top on Mobile / Right Column on Desktop: Featured Image & Publishing Settings -->
+        <div class="w-full space-y-5 lg:order-2 lg:col-span-1 lg:sticky lg:top-20">
             
-            <!-- A. Scrape Artikel dari URL Eksternal (Placeholder Box) -->
-            <div class="p-4 rounded-xl border border-primary/25 bg-primary/5 space-y-2">
-                <div class="flex items-center gap-2 text-primary">
-                    <i data-lucide="link" class="size-4 text-primary"></i>
-                    <span class="text-xs font-bold tracking-tight">Scrape Artikel dari URL Berita Eksternal</span>
-                </div>
-                <p class="text-[11px] text-muted-foreground">Tempel link artikel dari situs berita yang diizinkan (Antara News). AI akan mengekstrak isi berita dan gambar thumbnail secara otomatis.</p>
-                <div class="flex items-center gap-2 pt-1">
-                    <input type="url" id="scrapeUrlInput" placeholder="https://www.antaranews.com/berita/..." class="flex h-9 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
-                    <button type="button" onclick="handleScrapePlaceholder()" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground shadow hover:bg-primary/90 transition-colors shrink-0">
-                        <i data-lucide="rotate-cw" class="size-3.5"></i>
-                        <span>Scrape Artikel</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- B. Upper Deck & Premium Flag -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                <div class="sm:col-span-2">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Upper Deck (Opsional)</label>
-                    <input type="text" name="upper_deck" value="<?= esc($article['upper_deck'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Contoh: LAPORAN KHUSUS / EKSKLUSIF / KINERJA EMITEN">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Artikel Premium</label>
-                    <select name="is_premium" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                        <option value="0" <?= empty($article['is_premium']) ? 'selected' : '' ?>>Tidak (Gratis)</option>
-                        <option value="1" <?= !empty($article['is_premium']) ? 'selected' : '' ?>>Ya (Member Only)</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- C. Judul Artikel (Uniform Font Size + AI Assistance Button) -->
-            <div>
-                <div class="flex items-center justify-between mb-1.5">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground">
-                        Judul Artikel <span class="text-destructive">*</span>
-                    </label>
-                    <button type="button" onclick="handleAiAssistance('judul')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
-                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
-                        <span>GENERATE JUDUL VIA AI</span>
-                    </button>
-                </div>
-                <input type="text" name="title" required value="<?= esc($article['title'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Masukkan judul artikel berita yang lugas dan menarik...">
-            </div>
-
-            <!-- D. Editor & Penulis (Author Byline) Inline -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Editor</label>
-                    <input type="text" readonly value="<?= esc(session('user_name') ?? 'Raka Herdika') ?>" class="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm cursor-not-allowed">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">
-                        Penulis (Author By Line) <span class="text-destructive">*</span>
-                    </label>
-                    <select name="author" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" required>
-                        <?php foreach ($users as $u): ?>
-                            <option value="<?= esc($u['name']) ?>" <?= ($article['author'] ?? session('user_name') ?? 'Raka Herdika') === $u['name'] ? 'selected' : '' ?>>
-                                <?= esc($u['name']) ?> (<?= esc($u['role']) ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <span class="text-[10px] text-muted-foreground mt-0.5 block">*) Penulis tercantum di byline artikel</span>
-                </div>
-            </div>
-
-            <!-- E. Uraian Singkat (Lead / Summary) Full Width + AI Button -->
-            <div>
-                <div class="flex items-center justify-between mb-1.5">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground">Uraian Singkat (Lead / Summary)</label>
-                    <button type="button" onclick="handleAiAssistance('summary')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
-                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
-                        <span>GENERATE SUMMARY VIA AI</span>
-                    </button>
-                </div>
-                <textarea name="summary" rows="3" maxlength="280" class="flex w-full rounded-md border border-input bg-background p-3 text-xs leading-relaxed shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Ringkasan 1-2 kalimat pengantar artikel untuk cuplikan sosial media dan feed..."><?= esc($article['summary'] ?? '') ?></textarea>
-                <span class="text-[10px] text-muted-foreground mt-0.5 block font-medium">Maksimal 280 karakter.</span>
-            </div>
-
-            <!-- F. Kategori / Kanal, Sub-Kanal, dan Sumber Berita Berurutan (Di bawah summary) -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl border border-border bg-muted/20">
-                <!-- Dropdown Kanal -->
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">
-                        Kanal <span class="text-destructive">*</span>
-                    </label>
-                    <select name="kanal" id="kanalSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="onKanalChange(this.value)" required>
-                        <option value="">-- Pilih Kanal --</option>
-                        <?php foreach ($kanals as $kn): ?>
-                            <?php 
-                                $currKanal = $article['kanal'] ?? ($article['category'] ?? '');
-                                $isSelected = ($currKanal === $kn['name']) || (str_starts_with($currKanal, $kn['name']));
-                            ?>
-                            <option value="<?= esc($kn['name']) ?>" <?= $isSelected ? 'selected' : '' ?>>
-                                <?= esc($kn['name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <!-- Dropdown Sub-Kanal (Disabled jika kanal belum dipilih) -->
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">
-                        Sub Kanal
-                    </label>
-                    <select name="sub_kanal" id="subKanalSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed">
-                        <option value="">-- Silahkan Pilih Kanal Terlebih Dahulu --</option>
-                    </select>
-                </div>
-
-                <!-- Sumber Berita -->
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Sumber Berita</label>
-                    <input type="text" name="source" value="<?= esc($article['source'] ?? $article['sumber_berita'] ?? 'Investor.id / Riset') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Contoh: IDX, BI, Reuters">
-                </div>
-            </div>
-
-            <!-- G. 3 Poin Utama Artikel (Points + AI Button) -->
-            <div class="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-3">
-                <div class="flex items-center justify-between">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                        <i data-lucide="list-ordered" class="size-4 text-primary"></i>
-                        <span>3 Poin Utama Artikel (Points)</span>
-                    </label>
-                    <button type="button" onclick="handleAiAssistance('points')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
-                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
-                        <span>GENERATE 3 POINTS VIA AI</span>
-                    </button>
-                </div>
-                
-                <?php 
-                    $pts = $article['points'] ?? [
-                        'Poin ringkasan pertama',
-                        'Poin ringkasan kedua',
-                        'Poin ringkasan ketiga'
-                    ];
-                ?>
-                <div class="space-y-2">
-                    <div class="flex items-center gap-2">
-                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">1</span>
-                        <input type="text" name="point_1" id="pointInput1" value="<?= esc($pts[0] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting pertama artikel...">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">2</span>
-                        <input type="text" name="point_2" id="pointInput2" value="<?= esc($pts[1] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting kedua artikel...">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">3</span>
-                        <input type="text" name="point_3" id="pointInput3" value="<?= esc($pts[2] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting ketiga artikel...">
-                    </div>
-                </div>
-            </div>
-
-            <!-- H. Body Artikel with Enhanced Toolkit & Extended Length (480px min-height) -->
-            <div class="space-y-2 pt-2 border-t border-border">
-                <div class="flex items-center justify-between">
-                    <label class="text-xs font-bold uppercase tracking-wider text-foreground">
-                        Body Artikel <span class="text-destructive">*</span>
-                    </label>
-                </div>
-
-                <!-- Custom Embed Toolbar Row -->
-                <div class="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/70 border border-border">
-                    <span class="text-[10px] font-bold text-muted-foreground uppercase mr-1 px-1">Sisipkan:</span>
-                    <button type="button" onclick="openArticleLinkModal()" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
-                        <i data-lucide="link-2" class="size-3 text-primary"></i>
-                        <span>Add Article Link</span>
-                    </button>
-                    <button type="button" onclick="insertEmbedTool('embed_chart')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
-                        <i data-lucide="line-chart" class="size-3 text-accent"></i>
-                        <span>Embed Chart</span>
-                    </button>
-                    <button type="button" onclick="openMediaChooserModal('quill')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
-                        <i data-lucide="image" class="size-3 text-primary"></i>
-                        <span>Insert Media</span>
-                    </button>
-                    <button type="button" onclick="insertEmbedTool('embed_socmed')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
-                        <i data-lucide="code-2" class="size-3 text-amber-600"></i>
-                        <span>Embed Socmed/Doc</span>
-                    </button>
-                    <button type="button" onclick="insertEmbedTool('stock_chart')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
-                        <i data-lucide="trending-up" class="size-3 text-indigo-600"></i>
-                        <span>Stock Chart</span>
-                    </button>
-                    <button type="button" onclick="insertEmbedTool('page_break')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
-                        <i data-lucide="scissors" class="size-3 text-slate-500"></i>
-                        <span>Page Break</span>
-                    </button>
-                </div>
-
-                <!-- Quill WYSIWYG Container (Min height 480px) -->
-                <div id="quillEditor" class="min-h-[480px]"></div>
-                <!-- Hidden input that holds the HTML value for POST submit -->
-                <input type="hidden" name="content" id="hiddenContentInput" value="<?= esc($article['content'] ?? '') ?>">
-            </div>
-
-            <!-- I. Kata Kunci (Tags) Dipindahkan ke Bawah Body + AI Button -->
-            <div class="pt-2 border-t border-border">
-                <div class="flex items-center justify-between mb-1.5">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground">Kata Kunci (Tags)</label>
-                    <button type="button" onclick="handleAiAssistance('tags')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
-                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
-                        <span>GENERATE TAGS VIA AI</span>
-                    </button>
-                </div>
-                <input type="text" name="tags" id="tagsInput" value="<?= esc($article['tags'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="IHSG, Saham, Dividen, Bank Mandiri">
-                <span class="text-[10px] text-muted-foreground mt-0.5 block">Pisahkan setiap kata kunci dengan tanda koma (,).</span>
-            </div>
-
-            <!-- Bottom Action Footer -->
-            <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
-                <button type="button" onclick="previewArticlePage()" class="inline-flex items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-primary shadow-xs hover:bg-primary hover:text-white transition-colors">
-                    <i data-lucide="eye" class="size-4"></i>
-                    <span>PREVIEW ARTIKEL</span>
-                </button>
-                
-                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
-                    <i data-lucide="save" class="size-4"></i>
-                    <span>SIMPAN ARTIKEL</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Right: Publishing Settings & Media Sidebar -->
-        <div class="space-y-5">
-            
-            <!-- 1. Featured Image & Cover Preview Card -->
-            <div class="surface-card p-5 space-y-3">
+            <!-- 1. Featured Image & Cover Preview Card (with Primary Preview Button) -->
+            <div class="surface-card p-5 space-y-3 shadow-sm border border-border">
                 <div class="flex items-center justify-between border-b border-border pb-2.5">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">Featured Image / Cover</h3>
                     <span class="text-[10px] text-muted-foreground font-mono">16:9 Ratio</span>
@@ -315,6 +81,14 @@
                             <span>Upload Lokal</span>
                             <input type="file" id="localFileInput" accept="image/*" class="hidden" onchange="handleLocalImageUpload(this)">
                         </label>
+                    </div>
+
+                    <!-- Single Standalone Preview Button inside Featured Image Section -->
+                    <div class="pt-2 border-t border-border">
+                        <button type="button" onclick="previewArticlePage()" class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary shadow-2xs hover:bg-primary hover:text-white transition-colors">
+                            <i data-lucide="eye" class="size-4"></i>
+                            <span>Preview Artikel</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -356,7 +130,7 @@
                                 <span class="text-muted-foreground text-[10px]">WIB</span>
                             </div>
                         </div>
-                        <input type="range" id="hourSlider" min="0" max="23" value="9" oninput="onHourSliderChange(this.value)" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+                        <input type="range" id="hourSlider" min="0" max="23" value="9" oninput="onHourSliderChange(this.value)" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
                     </div>
 
                     <!-- Time: Menit (Slider + Number input) -->
@@ -368,7 +142,7 @@
                                 <span class="text-muted-foreground text-[10px]">m</span>
                             </div>
                         </div>
-                        <input type="range" id="minuteSlider" min="0" max="59" value="0" oninput="onMinuteSliderChange(this.value)" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+                        <input type="range" id="minuteSlider" min="0" max="59" value="0" oninput="onMinuteSliderChange(this.value)" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
                     </div>
 
                     <div class="p-2 rounded bg-background border border-border text-[11px] flex items-center justify-between">
@@ -380,7 +154,260 @@
                 <!-- Hidden Input holding full Publish Date formatted -->
                 <input type="hidden" name="publish_date" id="publishDateHiddenInput" value="<?= esc($article['publish_date'] ?? date('d M Y H:i')) ?>">
             </div>
+        </div>
+        
+        <!-- Main Composition Canvas (Order 1 on Desktop, Below Featured Image on Mobile) -->
+        <div class="surface-card p-5 sm:p-6 w-full lg:order-1 lg:col-span-2 space-y-5">
+            
+            <!-- A. Scrape Artikel dari URL Eksternal (Placeholder Box) -->
+            <div class="p-4 rounded-xl border border-primary/25 bg-primary/5 space-y-2">
+                <div class="flex items-center gap-2 text-primary">
+                    <i data-lucide="link" class="size-4 text-primary"></i>
+                    <span class="text-xs font-bold tracking-tight">Scrape Artikel dari URL Berita Eksternal</span>
+                </div>
+                <p class="text-[11px] text-muted-foreground">Tempel link artikel dari situs berita yang diizinkan (Antara News). AI akan mengekstrak isi berita dan gambar thumbnail secara otomatis.</p>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                    <input type="url" id="scrapeUrlInput" placeholder="https://www.antaranews.com/berita/..." class="flex h-9 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                    <button type="button" onclick="handleScrapePlaceholder()" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
+                        <i data-lucide="rotate-cw" class="size-3.5"></i>
+                        <span>Scrape Artikel</span>
+                    </button>
+                </div>
+            </div>
 
+            <!-- B. Upper Deck & Premium Flag -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Upper Deck (Opsional)</label>
+                    <input type="text" name="upper_deck" value="<?= esc($article['upper_deck'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Contoh: LAPORAN KHUSUS / EKSKLUSIF / KINERJA EMITEN">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Artikel Premium</label>
+                    <select name="is_premium" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                        <option value="0" <?= empty($article['is_premium']) ? 'selected' : '' ?>>Tidak (Gratis)</option>
+                        <option value="1" <?= !empty($article['is_premium']) ? 'selected' : '' ?>>Ya (Member Only)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- C. Judul Artikel (Character Counter Max 70 + Mobile Bottom AI Button) -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground">
+                        Judul Artikel <span class="text-destructive">*</span>
+                    </label>
+                    <!-- Desktop AI Button -->
+                    <button type="button" onclick="handleAiAssistance('judul')" class="hidden sm:inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
+                        <span>GENERATE JUDUL VIA AI</span>
+                    </button>
+                </div>
+                <input type="text" name="title" id="articleTitleInput" required maxlength="70" value="<?= esc($article['title'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Masukkan judul artikel berita yang lugas dan menarik...">
+                
+                <div class="flex items-center justify-between text-[11px] pt-0.5">
+                    <!-- Mobile Bottom AI Button -->
+                    <button type="button" onclick="handleAiAssistance('judul')" class="inline-flex sm:hidden items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-1 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
+                        <span>Generate Judul via AI</span>
+                    </button>
+                    <div class="ml-auto text-muted-foreground font-mono" id="titleCharCounter">
+                        <span id="titleCharCount">0</span>/70 karakter
+                    </div>
+                </div>
+            </div>
+
+            <!-- D. Editor & Penulis (Author Byline) Inline -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Editor</label>
+                    <input type="text" readonly value="<?= esc(session('user_name') ?? 'Raka Herdika') ?>" class="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">
+                        Penulis (Author By Line) <span class="text-destructive">*</span>
+                    </label>
+                    <select name="author" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" required>
+                        <?php foreach ($users as $u): ?>
+                            <option value="<?= esc($u['name']) ?>" <?= ($article['author'] ?? session('user_name') ?? 'Raka Herdika') === $u['name'] ? 'selected' : '' ?>>
+                                <?= esc($u['name']) ?> (<?= esc($u['role']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="text-[10px] text-muted-foreground mt-0.5 block">*) Penulis tercantum di byline artikel</span>
+                </div>
+            </div>
+
+            <!-- E. Uraian Singkat (Lead / Summary) (Min 110, Max 160 Char Counter + Mobile Bottom AI Button) -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground">Uraian Singkat (Lead / Summary)</label>
+                    <!-- Desktop AI Button -->
+                    <button type="button" onclick="handleAiAssistance('summary')" class="hidden sm:inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
+                        <span>GENERATE SUMMARY VIA AI</span>
+                    </button>
+                </div>
+                <textarea name="summary" id="articleSummaryInput" rows="3" maxlength="160" class="flex w-full rounded-md border border-input bg-background p-3 text-xs leading-relaxed shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Ringkasan 1-2 kalimat pengantar artikel untuk cuplikan sosial media dan feed..."><?= esc($article['summary'] ?? '') ?></textarea>
+                
+                <div class="flex items-center justify-between text-[11px] pt-0.5">
+                    <!-- Mobile Bottom AI Button -->
+                    <button type="button" onclick="handleAiAssistance('summary')" class="inline-flex sm:hidden items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-1 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
+                        <span>Generate Summary via AI</span>
+                    </button>
+                    <div class="ml-auto text-muted-foreground font-mono" id="summaryCharCounter">
+                        <span id="summaryCharCount">0</span>/160 karakter <span id="summaryCharHint" class="text-[10px] font-sans text-amber-500">(Min. 110 char)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- F. Kategori / Kanal, Sub-Kanal, dan Sumber Berita Berurutan (Di bawah summary) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl border border-border bg-muted/20">
+                <!-- Dropdown Kanal -->
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">
+                        Kanal <span class="text-destructive">*</span>
+                    </label>
+                    <select name="kanal" id="kanalSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="onKanalChange(this.value)" required>
+                        <option value="">-- Pilih Kanal --</option>
+                        <?php foreach ($kanals as $kn): ?>
+                            <?php 
+                                $currKanal = $article['kanal'] ?? ($article['category'] ?? '');
+                                $isSelected = ($currKanal === $kn['name']) || (str_starts_with($currKanal, $kn['name']));
+                            ?>
+                            <option value="<?= esc($kn['name']) ?>" <?= $isSelected ? 'selected' : '' ?>>
+                                <?= esc($kn['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Sub-Kanal Multi-Select Checkbox Dropdown (Disabled & Greyed out until master kanal chosen) -->
+                <div class="relative" id="subKanalContainer">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">
+                        Sub Kanal <span class="text-[10px] text-muted-foreground font-normal">(Bisa pilih &gt; 1)</span>
+                    </label>
+                    
+                    <button type="button" 
+                            id="subKanalDropdownBtn" 
+                            disabled 
+                            onclick="toggleSubKanalMenu()"
+                            class="flex h-9 w-full items-center justify-between rounded-md border border-input bg-muted/60 px-3 py-1 text-xs text-muted-foreground cursor-not-allowed shadow-sm transition-colors focus-visible:outline-none">
+                        <span id="subKanalSelectedLabel" class="truncate">-- Pilih Master Kanal Dulu --</span>
+                        <i data-lucide="chevron-down" id="subKanalDropdownArrow" class="size-3.5 shrink-0 text-muted-foreground/60 transition-transform duration-150"></i>
+                    </button>
+
+                    <!-- Checkbox options dropdown list -->
+                    <div id="subKanalMenu" class="absolute left-0 top-full z-40 mt-1 hidden w-full rounded-md border border-border bg-card p-2 shadow-lg max-h-48 overflow-y-auto custom-sidebar-scroll space-y-1">
+                        <div id="subKanalOptionsList" class="space-y-1">
+                            <!-- Populated dynamically via JS based on selected master kanal -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sumber Berita -->
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Sumber Berita</label>
+                    <input type="text" name="source" value="<?= esc($article['source'] ?? $article['sumber_berita'] ?? 'Investor.id / Riset') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Contoh: IDX, BI, Reuters">
+                </div>
+            </div>
+
+            <!-- G. 3 Poin Utama Artikel (Points + AI Button) -->
+            <div class="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                        <i data-lucide="list-ordered" class="size-4 text-primary"></i>
+                        <span>3 Poin Utama Artikel (Points)</span>
+                    </label>
+                    <button type="button" onclick="handleAiAssistance('points')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
+                        <span>GENERATE 3 POINTS VIA AI</span>
+                    </button>
+                </div>
+                
+                <?php
+                    $pts = $article['points'] ?? ['', '', ''];
+                    if (!is_array($pts)) $pts = ['', '', ''];
+                ?>
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">1</span>
+                        <input type="text" name="point_1" id="pointInput1" value="<?= esc($pts[0] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting pertama artikel...">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">2</span>
+                        <input type="text" name="point_2" id="pointInput2" value="<?= esc($pts[1] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting kedua artikel...">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">3</span>
+                        <input type="text" name="point_3" id="pointInput3" value="<?= esc($pts[2] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting ketiga artikel...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- H. Body Artikel (Expanded Quill WYSIWYG Editor - Min Height 550px, No Label) -->
+            <div class="space-y-2 pt-2 border-t border-border">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold uppercase tracking-wider text-foreground">
+                        Body Artikel <span class="text-destructive">*</span>
+                    </label>
+                </div>
+
+                <!-- Custom Embed Toolbar Row -->
+                <div class="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/70 border border-border">
+                    <span class="text-[10px] font-bold text-muted-foreground uppercase mr-1 px-1">Sisipkan:</span>
+                    <button type="button" onclick="openArticleLinkModal()" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
+                        <i data-lucide="link-2" class="size-3 text-primary"></i>
+                        <span>Add Article Link</span>
+                    </button>
+                    <button type="button" onclick="insertEmbedTool('embed_chart')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
+                        <i data-lucide="line-chart" class="size-3 text-accent"></i>
+                        <span>Embed Chart</span>
+                    </button>
+                    <button type="button" onclick="openMediaChooserModal('quill')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
+                        <i data-lucide="image" class="size-3 text-primary"></i>
+                        <span>Insert Media</span>
+                    </button>
+                    <button type="button" onclick="insertEmbedTool('embed_socmed')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
+                        <i data-lucide="code-2" class="size-3 text-amber-600"></i>
+                        <span>Embed Socmed/Doc</span>
+                    </button>
+                    <button type="button" onclick="insertEmbedTool('stock_chart')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
+                        <i data-lucide="trending-up" class="size-3 text-indigo-600"></i>
+                        <span>Stock Chart</span>
+                    </button>
+                    <button type="button" onclick="insertEmbedTool('page_break')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
+                        <i data-lucide="scissors" class="size-3 text-slate-500"></i>
+                        <span>Page Break</span>
+                    </button>
+                </div>
+
+                <!-- Quill WYSIWYG Container (Min height 550px) -->
+                <div id="quillEditor" class="min-h-[550px]"></div>
+                <!-- Hidden input that holds the HTML value for POST submit -->
+                <input type="hidden" name="content" id="hiddenContentInput" value="<?= esc($article['content'] ?? '') ?>">
+            </div>
+
+            <!-- I. Kata Kunci (Tags) Dipindahkan ke Bawah Body + AI Button -->
+            <div class="pt-2 border-t border-border">
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground">Kata Kunci (Tags)</label>
+                    <button type="button" onclick="handleAiAssistance('tags')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
+                        <span>GENERATE TAGS VIA AI</span>
+                    </button>
+                </div>
+                <input type="text" name="tags" id="tagsInput" value="<?= esc($article['tags'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="IHSG, Saham, Dividen, Bank Mandiri">
+                <span class="text-[10px] text-muted-foreground mt-0.5 block">Pisahkan setiap kata kunci dengan tanda koma (,).</span>
+            </div>
+
+            <!-- Bottom Action Footer -->
+            <div class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-border">
+                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
+                    <i data-lucide="save" class="size-4"></i>
+                    <span>SIMPAN ARTIKEL</span>
+                </button>
+            </div>
         </div>
     </div>
 </form>

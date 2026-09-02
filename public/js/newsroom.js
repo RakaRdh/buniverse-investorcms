@@ -144,19 +144,80 @@ function showToast(message, type = 'info') {
     }, 3500);
 }
 
-// Sidebar Dropdown Toggle
+// Sidebar Dropdown Toggle (Accordion behavior: only 1 dropdown open at a time)
 function toggleSidebarDropdown(buttonEl) {
     const parent = buttonEl.closest('.sidebar-dropdown-wrapper');
     if (!parent) return;
 
-    const menu = parent.querySelector('.dropdown-menu');
-    const arrow = parent.querySelector('.dropdown-arrow');
+    const currentMenu = parent.querySelector('.dropdown-menu');
+    const currentArrow = parent.querySelector('.dropdown-arrow');
+    const isCurrentlyHidden = currentMenu ? currentMenu.classList.contains('hidden') : true;
 
-    if (menu) {
-        menu.classList.toggle('hidden');
-    }
-    if (arrow) {
-        arrow.classList.toggle('rotate-180');
+    // Close all other dropdowns in sidebar
+    document.querySelectorAll('.sidebar-dropdown-wrapper').forEach(wrapper => {
+        const menu = wrapper.querySelector('.dropdown-menu');
+        const arrow = wrapper.querySelector('.dropdown-arrow');
+        if (menu) menu.classList.add('hidden');
+        if (arrow) arrow.classList.remove('rotate-180');
+    });
+
+    // Toggle clicked dropdown
+    if (currentMenu && isCurrentlyHidden) {
+        currentMenu.classList.remove('hidden');
+        if (currentArrow) currentArrow.classList.add('rotate-180');
     }
 }
+
+// Theme Toggle Engine (Dark / Light Mode with Lucide Icon Sync)
+function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    const theme = isDark ? 'dark' : 'light';
+    localStorage.setItem('investor_theme', theme);
+
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+
+    // Trigger theme change event for third-party charts if present
+    window.dispatchEvent(new CustomEvent('newsroom_theme_change', { detail: { theme } }));
+}
+
+// Back to Top Button Engine
+function initBackToTop() {
+    const btn = document.getElementById('backToTopBtn');
+    if (!btn) return;
+
+    function checkScroll() {
+        const scrolled = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        if (scrolled > 150) {
+            btn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            btn.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0');
+        } else {
+            btn.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
+            btn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+        }
+    }
+
+    window.addEventListener('scroll', checkScroll, { passive: true });
+    document.addEventListener('scroll', checkScroll, { passive: true });
+
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+        document.documentElement.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
+    // Check once immediately
+    checkScroll();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initBackToTop();
+});
 

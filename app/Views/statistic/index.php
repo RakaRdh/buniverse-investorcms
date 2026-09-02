@@ -1,18 +1,15 @@
 <?= $this->extend('layouts/main') ?>
 
-<?= $this->section('styles') ?>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<?= $this->endSection() ?>
-
 <?= $this->section('content') ?>
 
+<!-- PageHeader Responsive -->
 <div class="mb-6">
-    <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-foreground">Editorial Statistics & Audience Analytics</h1>
-            <p class="mt-1 text-xs text-muted-foreground">Granular data insights on reader behavior, traffic channels, category momentum, and editorial throughput.</p>
+            <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl leading-tight">Audience Statistics &amp; Traffic Analytics</h1>
+            <p class="mt-1 text-xs sm:text-sm text-muted-foreground">Ikhtisar metrik audiens, momentum kanal berita, dan distribusi performa platform Investor.id.</p>
         </div>
-        <div class="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1 text-xs font-medium">
+        <div class="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1 text-xs font-medium self-start sm:self-auto">
             <button type="button" id="btnStatToday" onclick="switchStatisticPeriod('today')" class="stat-period-btn rounded-md bg-background px-2.5 py-1 text-foreground shadow-xs transition-all font-semibold">Today</button>
             <button type="button" id="btnStat7d" onclick="switchStatisticPeriod('7d')" class="stat-period-btn rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground transition-all">Last 7 Days</button>
             <button type="button" id="btnStatMtd" onclick="switchStatisticPeriod('mtd')" class="stat-period-btn rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground transition-all">Month to Date</button>
@@ -20,348 +17,168 @@
     </div>
 </div>
 
-<!-- Metrics Cards Grid -->
-<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-    <div class="surface-card p-5">
-        <div class="flex items-center justify-between gap-3">
-            <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Total Pageviews</span>
-            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary">
-                <i data-lucide="eye" class="size-[18px]"></i>
+<!-- Metrics Cards Grid (2x2 on Mobile, 4 Cols on Desktop) -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-6 sm:mb-8">
+    <div class="surface-card p-3 sm:p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-1.5">
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wider text-muted-foreground uppercase truncate">Pageviews</span>
+            <span class="grid size-6.5 sm:size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                <i data-lucide="eye" class="size-3.5 sm:size-[18px]"></i>
             </span>
         </div>
-        <p class="mt-3 text-3xl font-semibold tracking-tight text-foreground"><?= esc($metrics['totalPageviews']) ?></p>
-        <p class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-success">
-            <i data-lucide="arrow-up-right" class="size-3.5"></i>
+        <p class="mt-2 sm:mt-3 text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground truncate"><?= esc($metrics['totalPageviews']) ?></p>
+        <p class="mt-1 sm:mt-2 inline-flex items-center gap-1 text-[10px] sm:text-xs font-medium text-success truncate">
+            <i data-lucide="arrow-up-right" class="size-3"></i>
             <span>+14.2%</span>
-            <span class="text-muted-foreground">vs last week</span>
+            <span class="hidden sm:inline text-muted-foreground">vs last week</span>
         </p>
     </div>
 
-    <div class="surface-card p-5">
-        <div class="flex items-center justify-between gap-3">
-            <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Avg. Read Time</span>
-            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
-                <i data-lucide="clock" class="size-[18px]"></i>
+    <div class="surface-card p-3 sm:p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-1.5">
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wider text-muted-foreground uppercase truncate">Read Time</span>
+            <span class="grid size-6.5 sm:size-8 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
+                <i data-lucide="clock" class="size-3.5 sm:size-[18px]"></i>
             </span>
         </div>
-        <p class="mt-3 text-3xl font-semibold tracking-tight text-foreground"><?= esc($metrics['avgReadTime']) ?></p>
-        <p class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-success">
-            <i data-lucide="arrow-up-right" class="size-3.5"></i>
+        <p class="mt-2 sm:mt-3 text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground truncate"><?= esc($metrics['avgReadTime']) ?></p>
+        <p class="mt-1 sm:mt-2 inline-flex items-center gap-1 text-[10px] sm:text-xs font-medium text-success truncate">
+            <i data-lucide="arrow-up-right" class="size-3"></i>
             <span>+8.5%</span>
-            <span class="text-muted-foreground">retention</span>
+            <span class="hidden sm:inline text-muted-foreground">retention</span>
         </p>
     </div>
 
-    <div class="surface-card p-5">
-        <div class="flex items-center justify-between gap-3">
-            <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Premium Subscribers</span>
-            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-warning/15 text-warning">
-                <i data-lucide="star" class="size-[18px]"></i>
+    <div class="surface-card p-3 sm:p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-1.5">
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wider text-muted-foreground uppercase truncate">Subscribers</span>
+            <span class="grid size-6.5 sm:size-8 shrink-0 place-items-center rounded-lg bg-warning/15 text-warning">
+                <i data-lucide="star" class="size-3.5 sm:size-[18px]"></i>
             </span>
         </div>
-        <p class="mt-3 text-3xl font-semibold tracking-tight text-foreground"><?= esc($metrics['premiumSubscribers']) ?></p>
-        <p class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-success">
-            <i data-lucide="arrow-up-right" class="size-3.5"></i>
-            <span><?= esc($metrics['premiumArticles']) ?> articles</span>
-            <span class="text-muted-foreground">in paywall</span>
+        <p class="mt-2 sm:mt-3 text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground truncate"><?= esc($metrics['premiumSubscribers']) ?></p>
+        <p class="mt-1 sm:mt-2 inline-flex items-center gap-1 text-[10px] sm:text-xs font-medium text-success truncate">
+            <i data-lucide="arrow-up-right" class="size-3"></i>
+            <span><?= esc($metrics['premiumArticles']) ?></span>
+            <span class="text-muted-foreground truncate">articles</span>
         </p>
     </div>
 
-    <div class="surface-card p-5">
-        <div class="flex items-center justify-between gap-3">
-            <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Social & Referrals</span>
-            <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-success/10 text-success">
-                <i data-lucide="share-2" class="size-[18px]"></i>
+    <div class="surface-card p-3 sm:p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-1.5">
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wider text-muted-foreground uppercase truncate">Referrals</span>
+            <span class="grid size-6.5 sm:size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                <i data-lucide="share-2" class="size-3.5 sm:size-[18px]"></i>
             </span>
         </div>
-        <p class="mt-3 text-3xl font-semibold tracking-tight text-foreground"><?= esc($metrics['socialReferralPct']) ?></p>
-        <p class="mt-2 text-xs text-muted-foreground">Google Discover & IDX Feed</p>
+        <p class="mt-2 sm:mt-3 text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground truncate"><?= esc($metrics['socialReferralPct']) ?></p>
+        <p class="mt-1 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground truncate">Discover &amp; Feed</p>
     </div>
 </div>
 
 <!-- Charts Row -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     <div class="surface-card lg:col-span-2 p-5 space-y-4">
-        <h2 class="text-sm font-semibold text-foreground">Audience Traffic Breakdown</h2>
+        <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-foreground">Audience Traffic Breakdown</h2>
+            <span class="text-[11px] text-muted-foreground">Hourly & Daily Visitor Trends</span>
+        </div>
         <div id="trafficChart" class="min-h-[280px]"></div>
     </div>
 
     <div class="surface-card p-5 space-y-4">
-        <h2 class="text-sm font-semibold text-foreground">Kanal Distribution</h2>
+        <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-foreground">Kanal Distribution</h2>
+            <span class="text-[11px] text-muted-foreground">Top 5 Kanals</span>
+        </div>
         <div id="categoryChart" class="min-h-[280px]"></div>
     </div>
 </div>
 
-<!-- Editorial Performance & Production Section (Interactive Dropdown Role Filter) -->
-<div class="surface-card overflow-hidden mb-8" id="editorialReportSection">
-    
-    <!-- Section Toolbar Header with Dropdown & Date Range -->
-    <div class="px-5 py-4 border-b border-border bg-muted/20 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-2.5">
-            <span class="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
-                <i data-lucide="clipboard-check" class="size-4"></i>
-            </span>
+<!-- Additional Platform Insights Card Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="surface-card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Device Distribution</h3>
+            <i data-lucide="smartphone" class="size-4 text-primary"></i>
+        </div>
+        <div class="space-y-2 pt-1">
             <div>
-                <h2 class="text-sm font-bold text-foreground">Editorial Team Performance & Article Output</h2>
-                <p class="text-[11px] text-muted-foreground">Lihat data kinerja berdasarkan peran jurnalis (Author), editor penyunting, kontributor, atau rekap rilis harian.</p>
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="font-medium text-foreground">Mobile Web & Apps</span>
+                    <span class="font-bold text-primary">76.4%</span>
+                </div>
+                <div class="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div class="h-full bg-primary rounded-full" style="width: 76.4%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="font-medium text-foreground">Desktop Browser</span>
+                    <span class="font-bold text-accent">21.2%</span>
+                </div>
+                <div class="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div class="h-full bg-accent rounded-full" style="width: 21.2%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="font-medium text-foreground">Tablet & Other</span>
+                    <span class="font-bold text-muted-foreground">2.4%</span>
+                </div>
+                <div class="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div class="h-full bg-muted-foreground/50 rounded-full" style="width: 2.4%"></div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Role Select Dropdown & Date Filter Form -->
-        <form method="get" action="<?= base_url('statistic') ?>#editorialReportSection" class="flex flex-wrap items-center gap-2">
-            <!-- View Type Dropdown -->
-            <div class="min-w-[170px]">
-                <select name="view_type" class="flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="this.form.submit()">
-                    <option value="all" <?= $viewType === 'all' ? 'selected' : '' ?>>Tampilkan: Semua Role</option>
-                    <option value="author" <?= $viewType === 'author' ? 'selected' : '' ?>>Khusus: Author (Jurnalis)</option>
-                    <option value="editor" <?= $viewType === 'editor' ? 'selected' : '' ?>>Khusus: Editor Redaksi</option>
-                    <option value="contributor" <?= $viewType === 'contributor' ? 'selected' : '' ?>>Khusus: Contributor</option>
-                    <option value="daily" <?= $viewType === 'daily' ? 'selected' : '' ?>>Khusus: Artikel Rilis Harian</option>
-                </select>
+    <div class="surface-card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Top Referral Sources</h3>
+            <i data-lucide="globe" class="size-4 text-accent"></i>
+        </div>
+        <div class="space-y-2 text-xs pt-1">
+            <div class="flex items-center justify-between py-1 border-b border-border/50">
+                <span class="text-foreground font-medium">Google News & Discover</span>
+                <span class="font-bold text-foreground">48.2%</span>
             </div>
-
-            <!-- Date Range Inputs (Flatpickr) -->
-            <div class="flex items-center gap-1.5 rounded-md border border-input bg-background px-2 py-0.5 shadow-xs">
-                <i data-lucide="calendar" class="size-3.5 text-primary"></i>
-                <input type="text" name="from" id="statDateFrom" value="<?= esc($fromDate) ?>" class="h-6 w-20 bg-transparent text-[11px] font-semibold text-foreground focus:outline-none cursor-pointer" placeholder="YYYY-MM-DD">
-                <span class="text-[11px] text-muted-foreground font-medium">s/d</span>
-                <input type="text" name="to" id="statDateTo" value="<?= esc($toDate) ?>" class="h-6 w-20 bg-transparent text-[11px] font-semibold text-foreground focus:outline-none cursor-pointer" placeholder="YYYY-MM-DD">
+            <div class="flex items-center justify-between py-1 border-b border-border/50">
+                <span class="text-foreground font-medium">Direct URL & Bookmark</span>
+                <span class="font-bold text-foreground">24.5%</span>
             </div>
-
-            <button type="submit" class="inline-flex h-8 items-center justify-center gap-1 rounded-md bg-primary px-3 text-xs font-bold text-primary-foreground shadow hover:bg-primary/90 transition-colors">
-                <i data-lucide="filter" class="size-3"></i>
-                <span>Filter</span>
-            </button>
-        </form>
-    </div>
-
-    <!-- Active Period Summary Note -->
-    <div class="flex items-center justify-between px-5 py-2.5 border-b border-border bg-primary/5 text-xs">
-        <div class="flex items-center gap-2">
-            <span class="inline-flex size-2 rounded-full bg-primary animate-pulse"></span>
-            <span class="text-muted-foreground">Periode Data:</span>
-            <strong class="text-foreground font-semibold"><?= date('d M Y', strtotime($fromDate)) ?> — <?= date('d M Y', strtotime($toDate)) ?></strong>
-            <span class="text-muted-foreground text-[11px]">(Maks. 30 hari)</span>
-        </div>
-        <div class="text-muted-foreground text-[11px]">
-            Total Naskah: <strong class="text-primary font-bold"><?= $totalFilteredArticles ?></strong> artikel
+            <div class="flex items-center justify-between py-1 border-b border-border/50">
+                <span class="text-foreground font-medium">Social Media (X, IG, LinkedIn)</span>
+                <span class="font-bold text-foreground">16.3%</span>
+            </div>
+            <div class="flex items-center justify-between py-1">
+                <span class="text-foreground font-medium">Syndication / Aggregators</span>
+                <span class="font-bold text-foreground">11.0%</span>
+            </div>
         </div>
     </div>
 
-    <!-- 1. AUTHOR PERFORMANCE TABLE (Shown if view_type == 'all' or 'author') -->
-    <?php if ($viewType === 'all' || $viewType === 'author'): ?>
-    <div class="p-4 border-b border-border">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <i data-lucide="pen-tool" class="size-3.5 text-primary"></i>
-                <span>Performa Author (Jurnalis)</span>
-            </h3>
-            <span class="text-[11px] font-semibold text-muted-foreground"><?= count($authorStats) ?> Authors</span>
+    <div class="surface-card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Quick Action</h3>
+            <i data-lucide="arrow-right-circle" class="size-4 text-primary"></i>
         </div>
-        
-        <div class="relative w-full overflow-auto">
-            <table class="w-full text-left text-xs">
-                <thead class="border-b border-border bg-muted/40 font-bold text-muted-foreground uppercase">
-                    <tr>
-                        <th class="py-2.5 px-3">Journalist</th>
-                        <th class="py-2.5 px-3">Role</th>
-                        <th class="py-2.5 px-3 text-center">Artikel Published</th>
-                        <th class="py-2.5 px-3 text-right">Total Views</th>
-                        <th class="py-2.5 px-3 text-right">Avg. Views</th>
-                        <th class="py-2.5 px-3 text-center">Engagement</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                    <?php foreach ($authorStats as $st): ?>
-                    <?php
-                        $u = $st['user'];
-                        $uParts = explode(' ', $u['name']);
-                        $uInitials = strtoupper(substr($uParts[0], 0, 1) . (isset($uParts[1]) ? substr($uParts[1], 0, 1) : ''));
-                    ?>
-                    <tr class="hover:bg-muted/40 transition-colors">
-                        <td class="py-2.5 px-3">
-                            <div class="flex items-center gap-2.5">
-                                <span class="grid size-7 shrink-0 place-items-center rounded-full bg-primary/10 text-primary font-bold text-[10px] border border-primary/20">
-                                    <?= esc($uInitials) ?>
-                                </span>
-                                <div>
-                                    <span class="font-bold text-foreground text-xs block"><?= esc($u['name']) ?></span>
-                                    <span class="text-[10px] text-muted-foreground"><?= esc($u['email']) ?></span>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-2.5 px-3">
-                            <span class="inline-flex rounded-md border border-muted px-2 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground"><?= esc($u['role']) ?></span>
-                        </td>
-                        <td class="py-2.5 px-3 text-center font-bold text-success">
-                            <span class="inline-flex rounded bg-success/10 border border-success/25 px-2 py-0.5 text-[11px]">
-                                <?= esc($st['published_count']) ?> artikel
-                            </span>
-                        </td>
-                        <td class="py-2.5 px-3 text-right font-semibold text-foreground"><?= number_format($st['total_views']) ?></td>
-                        <td class="py-2.5 px-3 text-right font-mono text-muted-foreground"><?= number_format($st['avg_views']) ?></td>
-                        <td class="py-2.5 px-3 text-center font-bold text-primary"><?= esc($st['engagement']) ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <p class="text-xs text-muted-foreground leading-relaxed">
+            Untuk melihat detail performa harian jurnalis atau editor per tanggal dalam 30 hari, silakan buka menu Laporan Tim Editorial.
+        </p>
+        <div class="pt-2">
+            <a href="<?= base_url('statistic/report') ?>" class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/90 transition-colors">
+                <i data-lucide="clipboard-list" class="size-3.5"></i>
+                <span>Buka Performa Tim Editorial</span>
+            </a>
         </div>
     </div>
-    <?php endif; ?>
-
-    <!-- 2. EDITOR PERFORMANCE TABLE (Shown if view_type == 'all' or 'editor') -->
-    <?php if ($viewType === 'all' || $viewType === 'editor'): ?>
-    <div class="p-4 border-b border-border">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <i data-lucide="check-check" class="size-3.5 text-accent"></i>
-                <span>Performa Editor Redaksi</span>
-            </h3>
-            <span class="text-[11px] font-semibold text-muted-foreground"><?= count($editorStats) ?> Editors</span>
-        </div>
-
-        <div class="relative w-full overflow-auto">
-            <table class="w-full text-left text-xs">
-                <thead class="border-b border-border bg-muted/40 font-bold text-muted-foreground uppercase">
-                    <tr>
-                        <th class="py-2.5 px-3">Nama Editor</th>
-                        <th class="py-2.5 px-3">Role Akun</th>
-                        <th class="py-2.5 px-3 text-center">Artikel Dipublikasikan</th>
-                        <th class="py-2.5 px-3 text-center">Total Naskah Disunting</th>
-                        <th class="py-2.5 px-3 text-right">Akumulasi Views</th>
-                        <th class="py-2.5 px-3 text-center">Performa</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                    <?php foreach ($editorStats as $st): ?>
-                    <?php
-                        $u = $st['user'];
-                        $uParts = explode(' ', $u['name']);
-                        $uInitials = strtoupper(substr($uParts[0], 0, 1) . (isset($uParts[1]) ? substr($uParts[1], 0, 1) : ''));
-                    ?>
-                    <tr class="hover:bg-muted/40 transition-colors">
-                        <td class="py-2.5 px-3">
-                            <div class="flex items-center gap-2.5">
-                                <span class="grid size-7 shrink-0 place-items-center rounded-full bg-accent/10 text-accent font-bold text-[10px] border border-accent/20">
-                                    <?= esc($uInitials) ?>
-                                </span>
-                                <div>
-                                    <span class="font-bold text-foreground text-xs block"><?= esc($u['name']) ?></span>
-                                    <span class="text-[10px] text-muted-foreground">@<?= esc($u['username']) ?></span>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-2.5 px-3">
-                            <span class="inline-flex rounded-md border border-accent/25 bg-accent/10 px-2 py-0.5 text-[10px] font-bold text-accent"><?= esc($u['role']) ?></span>
-                        </td>
-                        <td class="py-2.5 px-3 text-center font-bold text-primary">
-                            <span class="inline-flex rounded bg-primary/10 border border-primary/25 px-2 py-0.5 text-[11px]">
-                                <?= esc($st['published_count']) ?> artikel
-                            </span>
-                        </td>
-                        <td class="py-2.5 px-3 text-center font-medium text-muted-foreground"><?= esc($st['total_posts']) ?> naskah</td>
-                        <td class="py-2.5 px-3 text-right font-semibold text-foreground"><?= number_format($st['total_views']) ?></td>
-                        <td class="py-2.5 px-3 text-center font-bold text-success"><?= esc($st['engagement']) ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <?php endif; ?>
-
-    <!-- 3. CONTRIBUTOR PERFORMANCE (Shown if view_type == 'all' or 'contributor') -->
-    <?php if ($viewType === 'all' || $viewType === 'contributor'): ?>
-    <div class="p-4 border-b border-border">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <i data-lucide="users" class="size-3.5 text-amber-600"></i>
-                <span>Laporan Contributor</span>
-            </h3>
-            <span class="text-[11px] font-semibold text-muted-foreground"><?= count($contribStats) ?> Contributors</span>
-        </div>
-
-        <div class="relative w-full overflow-auto">
-            <table class="w-full text-left text-xs">
-                <thead class="border-b border-border bg-muted/40 font-bold text-muted-foreground uppercase">
-                    <tr>
-                        <th class="py-2.5 px-3">Nama Contributor</th>
-                        <th class="py-2.5 px-3 text-center">Published</th>
-                        <th class="py-2.5 px-3 text-center">Draft / Review</th>
-                        <th class="py-2.5 px-3 text-right">Total Naskah</th>
-                        <th class="py-2.5 px-3 text-right">Total Views</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                    <?php foreach ($contribStats as $st): ?>
-                    <tr class="hover:bg-muted/40 transition-colors">
-                        <td class="py-2.5 px-3 font-bold text-foreground">
-                            <?= esc($st['user']['name']) ?>
-                            <span class="block text-[10px] text-muted-foreground font-normal"><?= esc($st['user']['email']) ?></span>
-                        </td>
-                        <td class="py-2.5 px-3 text-center font-bold text-success"><?= $st['published_count'] ?></td>
-                        <td class="py-2.5 px-3 text-center font-bold text-warning"><?= $st['pending_count'] ?></td>
-                        <td class="py-2.5 px-3 text-right font-bold text-foreground"><?= $st['total_posts'] ?></td>
-                        <td class="py-2.5 px-3 text-right font-mono text-muted-foreground"><?= number_format($st['total_views']) ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <?php endif; ?>
-
-    <!-- 4. DAILY ARTICLE RELEASES TABLE (Shown if view_type == 'all' or 'daily') -->
-    <?php if ($viewType === 'all' || $viewType === 'daily'): ?>
-    <div class="p-4">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <i data-lucide="bar-chart-2" class="size-3.5 text-primary"></i>
-                <span>Jumlah Artikel Dirilis Per Hari</span>
-            </h3>
-            <span class="text-[11px] font-mono text-muted-foreground"><?= count($dailyReleases) ?> Hari</span>
-        </div>
-
-        <div class="relative w-full overflow-auto max-h-[360px]">
-            <table class="w-full text-left text-xs">
-                <thead class="border-b border-border bg-muted/40 font-bold text-muted-foreground uppercase sticky top-0 bg-background">
-                    <tr>
-                        <th class="py-2.5 px-3">Tanggal Rilis</th>
-                        <th class="py-2.5 px-3">Hari</th>
-                        <th class="py-2.5 px-3 text-center">Volume Artikel Terbit</th>
-                        <th class="py-2.5 px-3 text-right">Total Akumulasi Views</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                    <?php foreach ($dailyReleases as $d): ?>
-                    <tr class="hover:bg-muted/40 transition-colors">
-                        <td class="py-2 px-3 font-bold text-foreground"><?= esc($d['date_formatted']) ?></td>
-                        <td class="py-2 px-3 text-muted-foreground"><?= esc($d['day_name']) ?></td>
-                        <td class="py-2 px-3 text-center">
-                            <?php if ($d['count'] > 0): ?>
-                                <span class="inline-flex items-center justify-center min-w-6 rounded bg-primary/15 border border-primary/25 px-2 py-0.5 text-xs font-bold text-primary">
-                                    <?= $d['count'] ?> artikel
-                                </span>
-                            <?php else: ?>
-                                <span class="text-muted-foreground/50 font-mono">0</span>
-                            <?php endif; ?>
-                        </td>
-                        <td class="py-2 px-3 text-right font-mono text-muted-foreground"><?= number_format($d['views']) ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <?php endif; ?>
-
 </div>
 
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 let trafficChart = null;
 
@@ -399,22 +216,8 @@ const statTrafficDatasets = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.flatpickr) {
-        flatpickr("#statDateFrom", {
-            dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "d M Y",
-            maxDate: "today"
-        });
-        flatpickr("#statDateTo", {
-            dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "d M Y",
-            maxDate: "today"
-        });
-    }
-
     if (window.ApexCharts) {
+        const isDark = document.documentElement.classList.contains('dark');
         trafficChart = new ApexCharts(document.querySelector("#trafficChart"), {
             series: statTrafficDatasets.today.series,
             chart: { 
@@ -424,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 fontFamily: 'Inter, sans-serif',
                 animations: { enabled: true, easing: 'easeinout', speed: 400 }
             },
-            colors: ['#1F4E79', '#3991CF'],
+            colors: isDark ? ['#60A5FA', '#38BDF8'] : ['#1F4E79', '#3991CF'],
             stroke: { curve: 'smooth', width: 2.5 },
             xaxis: { 
                 categories: statTrafficDatasets.today.categories,
@@ -433,17 +236,40 @@ document.addEventListener('DOMContentLoaded', () => {
             yaxis: {
                 labels: { style: { colors: '#94A3B8', fontSize: '11px', fontFamily: 'Inter, sans-serif' } }
             },
-            grid: { borderColor: '#F1F5F9' }
+            grid: { borderColor: isDark ? '#1F293D' : '#F1F5F9' },
+            theme: { mode: isDark ? 'dark' : 'light' }
         });
         trafficChart.render();
 
-        new ApexCharts(document.querySelector("#categoryChart"), {
+        const catChart = new ApexCharts(document.querySelector("#categoryChart"), {
             series: <?= json_encode($chartData['catSeries']) ?>,
             labels: <?= json_encode($chartData['catLabels']) ?>,
             chart: { type: 'donut', height: 280, fontFamily: 'Inter, sans-serif' },
-            colors: ['#1F4E79', '#3991CF', '#F79009', '#12B76A', '#9E77ED'],
-            legend: { position: 'bottom' }
-        }).render();
+            colors: ['#3B82F6', '#60A5FA', '#F59E0B', '#10B981', '#A855F7'],
+            theme: { mode: isDark ? 'dark' : 'light' },
+            legend: { 
+                position: 'bottom',
+                labels: { colors: isDark ? '#F1F5F9' : '#1E293B' }
+            }
+        });
+        catChart.render();
+
+        window.addEventListener('newsroom_theme_change', (e) => {
+            const dark = e.detail.theme === 'dark';
+            if (trafficChart) {
+                trafficChart.updateOptions({
+                    theme: { mode: dark ? 'dark' : 'light' },
+                    grid: { borderColor: dark ? '#1F293D' : '#F1F5F9' },
+                    colors: dark ? ['#60A5FA', '#38BDF8'] : ['#1F4E79', '#3991CF']
+                });
+            }
+            if (catChart) {
+                catChart.updateOptions({
+                    theme: { mode: dark ? 'dark' : 'light' },
+                    legend: { labels: { colors: dark ? '#F1F5F9' : '#1E293B' } }
+                });
+            }
+        });
     }
 });
 

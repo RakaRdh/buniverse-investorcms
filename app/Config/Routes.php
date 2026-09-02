@@ -58,9 +58,13 @@ $routes->get('/embed-chart/delete/(:num)', 'EmbedChart::delete/$1');
 $routes->get('/statistic', 'Statistic::index');
 $routes->get('/statistic/report', 'StatisticReport::index');
 
-// Subscriber Placeholders
-$routes->get('/subscriber', 'Statistic::index');
-$routes->get('/subscriber/stats', 'Statistic::index');
+// Kanal & Sub-Kanal Taxonomy & Performance
+$routes->get('/kanal', 'Kanal::master');
+$routes->get('/kanal/master', 'Kanal::master');
+$routes->post('/kanal/master/save', 'Kanal::saveMaster');
+$routes->get('/kanal/sub', 'Kanal::subKanal');
+$routes->post('/kanal/sub/save', 'Kanal::saveSub');
+$routes->get('/kanal/stats', 'Kanal::stats');
 
 // Mobile Apps Ecosystem
 $routes->get('/apps-version', 'Apps::version');
@@ -72,8 +76,8 @@ $routes->post('/apps-push-notif/create', 'Apps::createPushNotif');
 $routes->get('/apps-feature-content', 'Apps::featureContent');
 $routes->post('/apps-feature-content/save', 'Apps::saveFeatureContent');
 
-// Category Taxonomy
-$routes->get('/categories', 'Categories::index');
+// Category Taxonomy (Legacy Redirect)
+$routes->get('/categories', 'Kanal::master');
 $routes->post('/categories/save', 'Categories::save');
 $routes->get('/categories/delete/(:num)', 'Categories::delete/$1');
 

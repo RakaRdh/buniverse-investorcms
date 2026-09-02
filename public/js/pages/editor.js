@@ -82,7 +82,65 @@ document.addEventListener('DOMContentLoaded', () => {
     if (kanalSelect && kanalSelect.value) {
         onKanalChange(kanalSelect.value, window.__ARTICLE_CURRENT_SUBKANAL__ || '');
     }
+
+    // 6. Initialize Realtime Character Counters (Judul & Summary)
+    initCharCounters();
 });
+
+function initCharCounters() {
+    const titleInput = document.getElementById('articleTitleInput');
+    const titleCount = document.getElementById('titleCharCount');
+    const summaryInput = document.getElementById('articleSummaryInput');
+    const summaryCount = document.getElementById('summaryCharCount');
+    const summaryHint = document.getElementById('summaryCharHint');
+
+    function updateTitleCount() {
+        if (!titleInput || !titleCount) return;
+        const len = titleInput.value.length;
+        titleCount.textContent = len;
+        if (len >= 70) {
+            titleCount.classList.add('text-destructive', 'font-bold');
+        } else {
+            titleCount.classList.remove('text-destructive', 'font-bold');
+        }
+    }
+
+    function updateSummaryCount() {
+        if (!summaryInput || !summaryCount) return;
+        const len = summaryInput.value.length;
+        summaryCount.textContent = len;
+
+        if (summaryHint) {
+            if (len === 0) {
+                summaryHint.textContent = '(Min. 110 char)';
+                summaryHint.className = 'text-[10px] font-sans text-amber-500';
+            } else if (len < 110) {
+                summaryHint.textContent = `(Kurang ${110 - len} char)`;
+                summaryHint.className = 'text-[10px] font-sans text-amber-500 font-semibold';
+                summaryCount.classList.remove('text-success');
+            } else if (len <= 160) {
+                summaryHint.textContent = '✓ Pas (110–160 char)';
+                summaryHint.className = 'text-[10px] font-sans text-success font-semibold';
+                summaryCount.classList.add('text-success');
+                summaryCount.classList.remove('text-destructive');
+            } else {
+                summaryHint.textContent = '(Maksimal 160 char)';
+                summaryHint.className = 'text-[10px] font-sans text-destructive font-semibold';
+                summaryCount.classList.add('text-destructive');
+            }
+        }
+    }
+
+    if (titleInput) {
+        titleInput.addEventListener('input', updateTitleCount);
+        updateTitleCount();
+    }
+
+    if (summaryInput) {
+        summaryInput.addEventListener('input', updateSummaryCount);
+        updateSummaryCount();
+    }
+}
 
 // Toggle Scheduled Box
 function toggleScheduledSection(show) {
@@ -153,14 +211,26 @@ function updateFullPublishDate() {
     if (displayLabel) displayLabel.textContent = fullStr;
 }
 
-// 6. Cascading Kanal -> Sub-Kanal Dropdown Handler
+// 6. Cascading Kanal -> Sub-Kanal Multi-Select Checkbox Dropdown Handler
 function onKanalChange(kanalName, preselectSub = '') {
-    const subSelect = document.getElementById('subKanalSelect');
-    if (!subSelect) return;
+    const btn = document.getElementById('subKanalDropdownBtn');
+    const label = document.getElementById('subKanalSelectedLabel');
+    const menu = document.getElementById('subKanalMenu');
+    const optionsList = document.getElementById('subKanalOptionsList');
+
+    if (!btn || !label || !optionsList) return;
+
+    // Reset sub-kanal menu
+    if (menu) menu.classList.add('hidden');
+    const arrow = document.getElementById('subKanalDropdownArrow');
+    if (arrow) arrow.classList.remove('rotate-180');
 
     if (!kanalName) {
-        subSelect.innerHTML = '<option value="">-- Silahkan Pilih Kanal Terlebih Dahulu --</option>';
-        subSelect.disabled = true;
+        btn.disabled = true;
+        btn.classList.add('bg-muted/60', 'text-muted-foreground', 'cursor-not-allowed');
+        btn.classList.remove('bg-background', 'text-foreground', 'cursor-pointer', 'border-input');
+        label.textContent = '-- Pilih Master Kanal Dulu --';
+        optionsList.innerHTML = '';
         return;
     }
 
@@ -168,16 +238,78 @@ function onKanalChange(kanalName, preselectSub = '') {
     const found = kanals.find(k => k.name.toLowerCase() === kanalName.toLowerCase());
 
     if (found && Array.isArray(found.sub_kanals) && found.sub_kanals.length > 0) {
-        subSelect.disabled = false;
-        let html = '<option value="">-- Pilih Sub-Kanal --</option>';
+        btn.disabled = false;
+        btn.classList.remove('bg-muted/60', 'text-muted-foreground', 'cursor-not-allowed');
+        btn.classList.add('bg-background', 'text-foreground', 'cursor-pointer', 'border-input');
+
+        // Parse preselected items (can be comma-separated or single string)
+        const preselectedArr = preselectSub ? preselectSub.split(',').map(s => s.trim().toLowerCase()) : [];
+
+        let html = '';
         found.sub_kanals.forEach(sub => {
-            const isSel = (preselectSub && preselectSub.toLowerCase() === sub.name.toLowerCase()) ? 'selected' : '';
-            html += `<option value="${sub.name}" ${isSel}>${sub.name}</option>`;
+            const isChecked = preselectedArr.includes(sub.name.toLowerCase()) ? 'checked' : '';
+            html += `
+                <label class="flex items-center gap-2 p-1.5 rounded hover:bg-muted/60 cursor-pointer text-xs select-none">
+                    <input type="checkbox" name="sub_kanal[]" value="${sub.name}" ${isChecked} onchange="updateSubKanalLabel()" class="rounded border-input text-primary focus:ring-primary size-3.5">
+                    <span class="text-foreground font-medium">${sub.name}</span>
+                </label>
+            `;
         });
-        subSelect.innerHTML = html;
+        optionsList.innerHTML = html;
+        updateSubKanalLabel();
     } else {
-        subSelect.innerHTML = '<option value="">(Tidak Ada Sub-Kanal)</option>';
-        subSelect.disabled = true;
+        btn.disabled = true;
+        btn.classList.add('bg-muted/60', 'text-muted-foreground', 'cursor-not-allowed');
+        btn.classList.remove('bg-background', 'text-foreground', 'cursor-pointer', 'border-input');
+        label.textContent = '(Tidak Ada Sub-Kanal)';
+        optionsList.innerHTML = '';
+    }
+}
+
+function toggleSubKanalMenu() {
+    const btn = document.getElementById('subKanalDropdownBtn');
+    if (btn && btn.disabled) return;
+
+    const menu = document.getElementById('subKanalMenu');
+    const arrow = document.getElementById('subKanalDropdownArrow');
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+    if (arrow) {
+        arrow.classList.toggle('rotate-180');
+    }
+}
+
+// Close subkanal menu when clicking outside
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('subKanalContainer');
+    const menu = document.getElementById('subKanalMenu');
+    const arrow = document.getElementById('subKanalDropdownArrow');
+    if (container && menu && !menu.classList.contains('hidden')) {
+        if (!container.contains(e.target)) {
+            menu.classList.add('hidden');
+            if (arrow) arrow.classList.remove('rotate-180');
+        }
+    }
+});
+
+function updateSubKanalLabel() {
+    const label = document.getElementById('subKanalSelectedLabel');
+    if (!label) return;
+
+    const checkedBoxes = Array.from(document.querySelectorAll('input[name="sub_kanal[]"]:checked'));
+    if (checkedBoxes.length === 0) {
+        label.textContent = '-- Pilih Sub-Kanal (Bisa > 1) --';
+        label.classList.add('text-muted-foreground');
+        label.classList.remove('font-bold', 'text-primary');
+    } else if (checkedBoxes.length === 1) {
+        label.textContent = checkedBoxes[0].value;
+        label.classList.remove('text-muted-foreground');
+        label.classList.add('font-bold', 'text-primary');
+    } else {
+        label.textContent = `${checkedBoxes.length} Sub-Kanal Dipilih (${checkedBoxes.map(c => c.value).join(', ')})`;
+        label.classList.remove('text-muted-foreground');
+        label.classList.add('font-bold', 'text-primary');
     }
 }
 

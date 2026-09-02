@@ -8,17 +8,17 @@
 
 <!-- Header & Toolbar Matching Prompt 3 (Card based layout with search and upload new) -->
 <div class="surface-card p-4 mb-6">
-    <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-            <a href="<?= base_url('media/new') ?>" class="inline-flex items-center gap-2 rounded-md bg-[#ED8936] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-[#ED8936]/90 transition-colors">
+            <a href="<?= base_url('media/new') ?>" class="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-md bg-[#ED8936] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-[#ED8936]/90 transition-colors">
                 <i data-lucide="upload" class="size-4"></i>
                 <span>Upload New</span>
             </a>
         </div>
 
-        <form method="get" action="<?= base_url('media') ?>" class="flex items-center gap-2 flex-1 max-w-md justify-end">
+        <form method="get" action="<?= base_url('media') ?>" class="flex flex-wrap items-center gap-2 flex-1 max-w-md justify-start sm:justify-end">
             <span class="text-xs font-bold text-foreground">Pencarian:</span>
-            <input type="text" name="q" value="<?= esc($keyword) ?>" placeholder="Cari media, caption, atau user..." class="flex h-9 w-64 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+            <input type="text" name="q" value="<?= esc($keyword) ?>" placeholder="Cari media, caption, atau user..." class="flex h-9 flex-1 sm:w-64 rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             <button type="submit" class="inline-flex items-center justify-center rounded-md bg-[#2B6CB0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-[#2B6CB0]/90">
                 Search
             </button>

@@ -2,13 +2,14 @@
 
 <?= $this->section('content') ?>
 
+<!-- PageHeader Responsive -->
 <div class="mb-6">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-foreground">User & Editorial Staff Management</h1>
-            <p class="mt-1 text-xs text-muted-foreground">Manage newsroom journalists, managing editors, authors, contributors, and role permissions.</p>
+            <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl leading-tight">User &amp; Editorial Staff Management</h1>
+            <p class="mt-1 text-xs sm:text-sm text-muted-foreground">Manage newsroom journalists, managing editors, authors, contributors, and role permissions.</p>
         </div>
-        <button class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow hover:bg-primary/90 transition-colors" onclick="document.getElementById('newUserModal').style.display='flex'">
+        <button class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow hover:bg-primary/90 transition-colors self-start sm:self-auto" onclick="document.getElementById('newUserModal').style.display='flex'">
             <i data-lucide="user-plus" class="size-4"></i>
             <span>Add New Staff</span>
         </button>

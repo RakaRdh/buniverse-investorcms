@@ -169,7 +169,12 @@ class Post extends BaseController
         $newId = count($posts) > 0 ? max(array_column($posts, 'id')) + 1 : 1;
         $title = $this->request->getPost('title');
         $kanal = $this->request->getPost('kanal') ?? 'Market';
-        $subKanal = $this->request->getPost('sub_kanal') ?? '';
+        $rawSubKanal = $this->request->getPost('sub_kanal');
+        if (is_array($rawSubKanal)) {
+            $subKanal = implode(', ', array_filter($rawSubKanal));
+        } else {
+            $subKanal = $rawSubKanal ?? '';
+        }
         $sumberBerita = $this->request->getPost('source') ?: ($this->request->getPost('sumber_berita') ?: 'Investor.id / Riset');
         
         $points = [
@@ -218,7 +223,12 @@ class Post extends BaseController
         $updated = false;
 
         $kanal = $this->request->getPost('kanal') ?? 'Market';
-        $subKanal = $this->request->getPost('sub_kanal') ?? '';
+        $rawSubKanal = $this->request->getPost('sub_kanal');
+        if (is_array($rawSubKanal)) {
+            $subKanal = implode(', ', array_filter($rawSubKanal));
+        } else {
+            $subKanal = $rawSubKanal ?? '';
+        }
         $sumberBerita = $this->request->getPost('source') ?: ($this->request->getPost('sumber_berita') ?: 'Investor.id / Riset');
         
         $points = [

@@ -11,6 +11,9 @@ class StatisticReport extends BaseController
         $posts = DataRepository::get('posts') ?? [];
         $users = DataRepository::get('users') ?? [];
 
+        // Tab selection: 'author' (default) or 'editor' or 'contributor' or 'daily'
+        $tab = $this->request->getGet('tab') ?: 'author';
+
         // Date range filtering (Default: 30 days ago until today)
         $todayStr = date('Y-m-d');
         $defaultFromStr = date('Y-m-d', strtotime('-30 days'));
@@ -36,103 +39,134 @@ class StatisticReport extends BaseController
             $fromDate = date('Y-m-d', $fromTimestamp);
         }
 
+        // Build list of dates in the range for column headers (format: '3/9', '4/9', etc.)
+        $dateColumns = [];
+        $curr = $fromTimestamp;
+        while ($curr <= $toTimestamp) {
+            $dateColumns[] = [
+                'full_date' => date('Y-m-d', $curr),
+                'short_label' => date('j/n', $curr), // e.g. 3/9
+                'day_name' => date('D', $curr),
+            ];
+            $curr = strtotime('+1 day', $curr);
+        }
+
         // Filter posts within range
         $filteredPosts = array_filter($posts, function($p) use ($fromTimestamp, $toTimestamp) {
             $pubDateStr = $p['publish_date'] ?? $p['create_date'] ?? '';
             $ts = strtotime($pubDateStr);
             if (!$ts) return false;
-            // compare date bounds (inclusive)
             $pDate = strtotime(date('Y-m-d', $ts));
             return ($pDate >= strtotime(date('Y-m-d', $fromTimestamp)) && $pDate <= strtotime(date('Y-m-d', $toTimestamp)));
         });
 
-        // 1. Author Report (users with role 'Author')
+        // 1. Author Matrix Report (Users with role 'Author')
         $authorUsers = array_filter($users, fn($u) => ($u['role'] ?? '') === 'Author');
-        $authorReport = [];
+        $authorMatrix = [];
         foreach ($authorUsers as $u) {
             $uPosts = array_filter($filteredPosts, fn($p) => ($p['post_by'] ?? '') === $u['username'] || stripos($p['author'] ?? '', $u['name']) !== false);
             $published = array_filter($uPosts, fn($p) => ($p['status'] ?? '') === 'Published');
-            $views = array_sum(array_column($uPosts, 'views'));
-            
-            $authorReport[] = [
+            $totalViews = array_sum(array_column($uPosts, 'views'));
+
+            // Count per date column
+            $dailyCounts = [];
+            foreach ($dateColumns as $col) {
+                $colDate = $col['full_date'];
+                $countOnDate = 0;
+                foreach ($published as $p) {
+                    $pTs = strtotime($p['publish_date'] ?? $p['create_date'] ?? '');
+                    if ($pTs && date('Y-m-d', $pTs) === $colDate) {
+                        $countOnDate++;
+                    }
+                }
+                $dailyCounts[$colDate] = $countOnDate;
+            }
+
+            $authorMatrix[] = [
                 'user' => $u,
-                'total_articles' => count($uPosts),
-                'published_articles' => count($published),
-                'total_views' => $views,
-                'avg_views' => count($published) > 0 ? round($views / count($published)) : 0,
+                'name' => $u['name'],
+                'role' => $u['role'],
+                'daily_counts' => $dailyCounts,
+                'published_count' => count($published),
+                'total_views' => $totalViews,
             ];
         }
-        usort($authorReport, fn($a, $b) => $b['published_articles'] <=> $a['published_articles']);
+        usort($authorMatrix, fn($a, $b) => $b['published_count'] <=> $a['published_count']);
 
-        // 2. Editor Report (users with role 'Editor' or 'Admin')
+        // 2. Editor Matrix Report (Users with role 'Editor' or 'Admin')
         $editorUsers = array_filter($users, fn($u) => in_array($u['role'] ?? '', ['Editor', 'Admin']));
-        $editorReport = [];
+        $editorMatrix = [];
         foreach ($editorUsers as $u) {
             $uPosts = array_filter($filteredPosts, fn($p) => ($p['post_by'] ?? '') === $u['username']);
             $published = array_filter($uPosts, fn($p) => ($p['status'] ?? '') === 'Published');
-            $views = array_sum(array_column($uPosts, 'views'));
+            $totalViews = array_sum(array_column($uPosts, 'views'));
 
-            $editorReport[] = [
+            $dailyCounts = [];
+            foreach ($dateColumns as $col) {
+                $colDate = $col['full_date'];
+                $countOnDate = 0;
+                foreach ($published as $p) {
+                    $pTs = strtotime($p['publish_date'] ?? $p['create_date'] ?? '');
+                    if ($pTs && date('Y-m-d', $pTs) === $colDate) {
+                        $countOnDate++;
+                    }
+                }
+                $dailyCounts[$colDate] = $countOnDate;
+            }
+
+            $editorMatrix[] = [
                 'user' => $u,
-                'total_reviewed' => count($uPosts),
-                'published_articles' => count($published),
-                'total_views' => $views,
+                'name' => $u['name'],
+                'role' => $u['role'],
+                'daily_counts' => $dailyCounts,
+                'published_count' => count($published),
+                'total_views' => $totalViews,
             ];
         }
-        usort($editorReport, fn($a, $b) => $b['published_articles'] <=> $a['published_articles']);
+        usort($editorMatrix, fn($a, $b) => $b['published_count'] <=> $a['published_count']);
 
-        // 3. Contributor Report (users with role 'Contributor')
+        // 3. Contributor Matrix Report
         $contribUsers = array_filter($users, fn($u) => ($u['role'] ?? '') === 'Contributor');
-        $contribReport = [];
+        $contribMatrix = [];
         foreach ($contribUsers as $u) {
             $uPosts = array_filter($filteredPosts, fn($p) => ($p['post_by'] ?? '') === $u['username'] || stripos($p['author'] ?? '', $u['name']) !== false);
             $published = array_filter($uPosts, fn($p) => ($p['status'] ?? '') === 'Published');
-            $draft = array_filter($uPosts, fn($p) => in_array($p['status'] ?? '', ['Draft', 'Review']));
+            $totalViews = array_sum(array_column($uPosts, 'views'));
 
-            $contribReport[] = [
+            $dailyCounts = [];
+            foreach ($dateColumns as $col) {
+                $colDate = $col['full_date'];
+                $countOnDate = 0;
+                foreach ($published as $p) {
+                    $pTs = strtotime($p['publish_date'] ?? $p['create_date'] ?? '');
+                    if ($pTs && date('Y-m-d', $pTs) === $colDate) {
+                        $countOnDate++;
+                    }
+                }
+                $dailyCounts[$colDate] = $countOnDate;
+            }
+
+            $contribMatrix[] = [
                 'user' => $u,
-                'total_articles' => count($uPosts),
+                'name' => $u['name'],
+                'role' => $u['role'],
+                'daily_counts' => $dailyCounts,
                 'published_count' => count($published),
-                'pending_count' => count($draft),
+                'total_views' => $totalViews,
             ];
         }
-        usort($contribReport, fn($a, $b) => $b['total_articles'] <=> $a['total_articles']);
-
-        // 4. Daily Article Releases (articles per day in range)
-        $dailyReleases = [];
-        $curr = $fromTimestamp;
-        while ($curr <= $toTimestamp) {
-            $dStr = date('Y-m-d', $curr);
-            $dFormatted = date('d M Y', $curr);
-            $dayArticles = array_filter($filteredPosts, function($p) use ($dStr) {
-                $pubDateStr = $p['publish_date'] ?? $p['create_date'] ?? '';
-                $ts = strtotime($pubDateStr);
-                return $ts && date('Y-m-d', $ts) === $dStr && ($p['status'] ?? '') === 'Published';
-            });
-            $totalViews = array_sum(array_column($dayArticles, 'views'));
-
-            $dailyReleases[] = [
-                'date_raw' => $dStr,
-                'date_formatted' => $dFormatted,
-                'day_name' => date('l', $curr),
-                'count' => count($dayArticles),
-                'views' => $totalViews,
-            ];
-            $curr = strtotime('+1 day', $curr);
-        }
-        // reverse to show newest date first
-        $dailyReleases = array_reverse($dailyReleases);
 
         return view('statistic/report', [
-            'title' => 'Editorial Productivity & Release Report',
-            'breadcrumb' => 'Insights / Editorial Report',
+            'title' => 'Editorial Performance Matrix Report',
+            'breadcrumb' => 'Insights / Editorial Performance',
+            'tab' => $tab,
             'fromDate' => $fromDate,
             'toDate' => $toDate,
+            'dateColumns' => $dateColumns,
+            'authorMatrix' => $authorMatrix,
+            'editorMatrix' => $editorMatrix,
+            'contribMatrix' => $contribMatrix,
             'totalFilteredArticles' => count($filteredPosts),
-            'authorReport' => $authorReport,
-            'editorReport' => $editorReport,
-            'contribReport' => $contribReport,
-            'dailyReleases' => $dailyReleases,
         ]);
     }
 }

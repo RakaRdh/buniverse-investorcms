@@ -11,19 +11,37 @@
   font-family: inherit;
 }
 
+.dark .ql-toolbar.ql-snow .ql-stroke {
+  stroke: hsl(var(--foreground));
+}
+
+.dark .ql-toolbar.ql-snow .ql-fill {
+  fill: hsl(var(--foreground));
+}
+
+.dark .ql-toolbar.ql-snow .ql-picker {
+  color: hsl(var(--foreground));
+}
+
+.dark .ql-toolbar.ql-snow .ql-picker-options {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
 .ql-container.ql-snow {
   border-bottom-left-radius: 0.5rem;
   border-bottom-right-radius: 0.5rem;
   border-color: hsl(var(--border));
   background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   font-family: inherit;
   font-size: 0.9375rem;
-  min-height: 280px;
+  min-height: 550px;
 }
 
 .ql-editor {
-  min-height: 280px;
-  line-height: 1.7;
+  min-height: 550px;
+  line-height: 1.75;
 }
 
 .ql-editor p {

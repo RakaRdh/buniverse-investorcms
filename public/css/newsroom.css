@@ -49,6 +49,51 @@
     --premium: 38 92% 50%;
     --premium-foreground: 0 0% 100%;
   }
+
+  .dark {
+    --background: 222 47% 8%;          /* #0B0F19 Deep Obsidian Canvas */
+    --foreground: 210 40% 96%;          /* #F1F5F9 Anti-glare primary text */
+
+    --card: 222 40% 12%;                /* #121927 Layered Surface Card */
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 38% 15%;             /* #162032 Elevated Modal/Popover */
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 213 94% 68%;             /* #60A5FA High contrast cobalt */
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;           /* #1E293B */
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 217 33% 16%;               /* #1B2436 */
+    --muted-foreground: 215 20% 65%;     /* #94A3B8 Secondary soft text */
+
+    --accent: 213 94% 68%;              /* #60A5FA */
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 69% 58%;
+    --warning: 38 92% 50%;
+
+    --border: 217 30% 19%;              /* #1F293D Clean subtle border */
+    --input: 217 30% 19%;
+    --ring: 213 94% 68%;
+
+    --sidebar-background: 222 48% 6%;   /* #080C14 Darker sidebar contrast */
+    --sidebar-foreground: 214 20% 91%;
+    --sidebar-primary: 213 94% 68%;
+    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-accent: 222 38% 14%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 217 30% 16%;
+    --sidebar-ring: 213 94% 68%;
+
+    --premium: 43 96% 56%;
+    --premium-foreground: 222 47% 11%;
+  }
 }
 
 * {
@@ -69,6 +114,23 @@ body {
 main table, 
 main .surface-card table {
   font-size: 0.8125rem; /* ~13px for table data cells */
+}
+
+/* Uniform placeholder typography & reduced subtle opacity across all inputs */
+::placeholder,
+::-webkit-input-placeholder,
+::-moz-placeholder,
+:-ms-input-placeholder {
+  font-size: 0.8125rem !important; /* uniform 13px */
+  opacity: 0.55 !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark ::placeholder,
+.dark ::-webkit-input-placeholder,
+.dark ::-moz-placeholder,
+.dark :-ms-input-placeholder {
+  opacity: 0.45 !important;
 }
 
 /* Custom Surface Card utility matching Lovable */

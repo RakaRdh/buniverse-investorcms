@@ -22,11 +22,15 @@ class Dashboard extends BaseController
         usort($topArticles, fn($a, $b) => $b['views'] <=> $a['views']);
         $topArticles = array_slice($topArticles, 0, 5);
 
+        // Pending review articles
+        $pendingArticles = array_values(array_filter($posts, fn($p) => in_array($p['status'] ?? '', ['Review', 'Draft'])));
+
         return view('dashboard/index', [
             'title' => 'Newsroom Overview',
             'breadcrumb' => 'Dashboard',
             'posts' => $posts,
             'topArticles' => $topArticles,
+            'pendingArticles' => $pendingArticles,
             'metrics' => [
                 'todayArticles' => count($posts),
                 'published' => $publishedCount,
