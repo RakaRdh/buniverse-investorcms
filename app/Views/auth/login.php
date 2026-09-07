@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Masuk — Investor.ID Newsroom CMS</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/img/investor-logo.ico">
+    <link rel="shortcut icon" href="/img/investor-logo.ico">
+    
     <!-- Modern Typography: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -144,13 +148,13 @@
                             Akun Demo Cepat (Klik untuk Isi):
                         </p>
                         <div class="grid grid-cols-2 gap-2 text-xs">
-                            <button type="button" onclick="fillDemo('raka.herdika@investor.id', 'admin123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                            <button type="button" onclick="fillDemo('raka.herdika@investor.id', 'password123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
                                 <span class="font-bold text-[#0F172A]">Raka (Admin)</span>
-                                <span class="text-[10px] text-slate-500 font-mono">admin123</span>
+                                <span class="text-[10px] text-slate-500 font-mono">password123</span>
                             </button>
-                            <button type="button" onclick="fillDemo('natasha.k@investor.id', 'editor123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                            <button type="button" onclick="fillDemo('natasha.k@investor.id', 'password123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
                                 <span class="font-bold text-[#0F172A]">Natasha (Editor)</span>
-                                <span class="text-[10px] text-slate-500 font-mono">editor123</span>
+                                <span class="text-[10px] text-slate-500 font-mono">password123</span>
                             </button>
                         </div>
                     </div>

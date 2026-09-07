@@ -2,46 +2,54 @@
 
 namespace App\Controllers;
 
-use App\Models\DataRepository;
+use App\Models\ArticleModel;
+use App\Models\CategoryModel;
 
 class Statistic extends BaseController
 {
+    protected ArticleModel $articleModel;
+    protected CategoryModel $categoryModel;
+
+    public function __construct()
+    {
+        $this->articleModel = new ArticleModel();
+        $this->categoryModel = new CategoryModel();
+    }
+
     public function index()
     {
-        $posts = DataRepository::get('posts') ?? [];
-        $kanals = DataRepository::get('kanals') ?? [];
+        $metrics = $this->articleModel->getDashboardMetrics();
+        $kanals = $this->categoryModel->getKanalTree();
+        $recentArticles = $this->articleModel->getArticlesWithRelations([], 1, 20)['data'];
 
-        // 1. Calculate Real Metrics from Posts
-        $totalViews = array_sum(array_column($posts, 'views'));
-        $premiumCount = count(array_filter($posts, fn($p) => !empty($p['is_premium'])));
-        $publishedCount = count(array_filter($posts, fn($p) => ($p['status'] ?? '') === 'Published'));
+        // Compute Category Distribution for Chart via SQL JOIN
+        $catDistribution = $this->categoryModel->db->table('entity_charlie c')
+            ->select('c.charlie_name_a AS name, COUNT(DISTINCT ncl.ref_entity_nano_id) AS count')
+            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_charlie_id = c.ref_entity_charlie_id')
+            ->where('c.parent_id IS NULL')
+            ->groupBy('c.ref_entity_charlie_id')
+            ->orderBy('count', 'DESC')
+            ->limit(5)
+            ->get()->getResultArray();
 
-        // 2. Compute Real Category Distribution for Chart
-        $catDistribution = [];
-        foreach ($posts as $p) {
-            $catName = $p['kanal'] ?? $p['category'] ?? 'Others';
-            $catDistribution[$catName] = ($catDistribution[$catName] ?? 0) + 1;
-        }
-        arsort($catDistribution);
-        $topCategories = array_slice($catDistribution, 0, 5, true);
-        $catLabels = array_keys($topCategories);
-        $catSeries = array_values($topCategories);
+        $catLabels = array_column($catDistribution, 'name');
+        $catSeries = array_map('intval', array_column($catDistribution, 'count'));
 
         return view('statistic/index', [
-            'title' => 'Audience Analytics & Traffic Statistics',
+            'title'      => 'Audience Analytics & Traffic Statistics',
             'breadcrumb' => 'Insights / Statistic',
-            'posts' => $posts,
-            'kanals' => $kanals,
-            'metrics' => [
-                'totalPageviews' => number_format($totalViews + 1400000),
-                'rawTotalViews' => number_format($totalViews),
-                'premiumSubscribers' => number_format(25000 + ($premiumCount * 280)),
-                'premiumArticles' => $premiumCount,
-                'publishedCount' => $publishedCount,
-                'socialReferralPct' => '68.4%',
-                'avgReadTime' => '3m 42s',
+            'posts'      => $recentArticles,
+            'kanals'     => $kanals,
+            'metrics'    => [
+                'totalPageviews'     => number_format($metrics['rawViews'] + 1400000),
+                'rawTotalViews'      => number_format($metrics['rawViews']),
+                'premiumSubscribers' => '26,400',
+                'premiumArticles'    => 12,
+                'publishedCount'     => $metrics['published'],
+                'socialReferralPct'  => '68.4%',
+                'avgReadTime'        => '3m 42s',
             ],
-            'chartData' => [
+            'chartData'  => [
                 'catLabels' => $catLabels,
                 'catSeries' => $catSeries,
             ]

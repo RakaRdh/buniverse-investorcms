@@ -84,10 +84,16 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
                     <i data-lucide="filter" class="size-3.5"></i>
                     <span>Terapkan</span>
                 </button>
-                <button type="button" onclick="toggleMoreFilters()" id="moreFilterBtn" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                <?php
+                    $hasActiveMoreFilters = (!empty($filters['author']) && $filters['author'] !== 'all') 
+                        || (!empty($filters['editor']) && $filters['editor'] !== 'all') 
+                        || !empty($filters['date_from']) 
+                        || !empty($filters['date_to']);
+                ?>
+                <button type="button" onclick="toggleMoreFilters()" id="moreFilterBtn" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium <?= $hasActiveMoreFilters ? 'text-primary font-semibold' : 'text-muted-foreground' ?> hover:text-foreground transition-colors">
                     <i data-lucide="sliders-horizontal" class="size-3.5"></i>
-                    <span id="moreFilterText">More Filter</span>
-                    <i data-lucide="chevron-down" id="moreFilterArrow" class="size-3 transition-transform"></i>
+                    <span id="moreFilterText"><?= $hasActiveMoreFilters ? 'Less Filter' : 'More Filter' ?></span>
+                    <i data-lucide="chevron-down" id="moreFilterArrow" class="size-3 transition-transform <?= $hasActiveMoreFilters ? 'rotate-180' : '' ?>"></i>
                 </button>
                 <?php if (!$isDefaultFilter): ?>
                     <a href="<?= base_url('post') ?>" class="inline-flex items-center justify-center rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors" title="Reset All Filters">
@@ -98,7 +104,7 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
         </div>
 
         <!-- Row 2: Secondary Filters (Collapsible) -->
-        <div id="moreFilterSection" class="hidden mt-4 pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in duration-150">
+        <div id="moreFilterSection" class="<?= $hasActiveMoreFilters ? '' : 'hidden' ?> mt-4 pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in duration-150">
             <!-- Author Filter -->
             <div>
                 <label class="block text-[11px] font-bold text-foreground uppercase tracking-wider mb-1">Author</label>

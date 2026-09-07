@@ -217,3 +217,49 @@ main .surface-card table {
   from { transform: translateY(16px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* ==========================================================================
+   Missing Standard Utility & Standardized Modal System
+   ========================================================================== */
+.max-w-lg { max-width: 32rem !important; }   /* 512px standard */
+.max-w-2xl { max-width: 44rem !important; }  /* 704px selector standard */
+.max-w-4xl { max-width: 56rem !important; }  /* 896px */
+.max-w-6xl { max-width: 72rem !important; }  /* 1152px */
+.max-h-\[80vh\] { max-height: 80vh !important; }
+.max-h-\[82vh\] { max-height: 82vh !important; }
+.max-h-\[85vh\] { max-height: 85vh !important; }
+.max-h-\[90vh\] { max-height: 90vh !important; }
+
+.modal-dialog-container {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 31, 51, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.modal-dialog-card {
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.modal-dialog-form {
+  max-width: 32rem !important;
+}
+
+.modal-dialog-selector {
+  max-width: 44rem !important;
+}

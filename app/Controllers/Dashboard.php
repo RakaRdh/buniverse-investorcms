@@ -2,43 +2,31 @@
 
 namespace App\Controllers;
 
-use App\Models\DataRepository;
+use App\Models\ArticleModel;
 
 class Dashboard extends BaseController
 {
+    protected ArticleModel $articleModel;
+
+    public function __construct()
+    {
+        $this->articleModel = new ArticleModel();
+    }
+
     public function index()
     {
-        $posts = DataRepository::get('posts');
-        $users = DataRepository::get('users');
-
-        $totalViews = array_sum(array_column($posts, 'views'));
-        $publishedCount = count(array_filter($posts, fn($p) => ($p['status'] ?? '') === 'Published'));
-        $draftCount = count(array_filter($posts, fn($p) => ($p['status'] ?? '') === 'Draft'));
-        $scheduledCount = count(array_filter($posts, fn($p) => ($p['status'] ?? '') === 'Scheduled'));
-        $reviewCount = count(array_filter($posts, fn($p) => ($p['status'] ?? '') === 'Review'));
-
-        // Sort by views desc for top performing
-        $topArticles = $posts;
-        usort($topArticles, fn($a, $b) => $b['views'] <=> $a['views']);
-        $topArticles = array_slice($topArticles, 0, 5);
-
-        // Pending review articles
-        $pendingArticles = array_values(array_filter($posts, fn($p) => in_array($p['status'] ?? '', ['Review', 'Draft'])));
+        $metrics = $this->articleModel->getDashboardMetrics();
+        $topArticles = $this->articleModel->getTopArticles(5);
+        $pendingArticles = $this->articleModel->getPendingArticles(5);
+        $recentArticles = $this->articleModel->getArticlesWithRelations([], 1, 10)['data'];
 
         return view('dashboard/index', [
-            'title' => 'Newsroom Overview',
-            'breadcrumb' => 'Dashboard',
-            'posts' => $posts,
-            'topArticles' => $topArticles,
+            'title'           => 'Newsroom Overview',
+            'breadcrumb'      => 'Dashboard',
+            'posts'           => $recentArticles,
+            'topArticles'     => $topArticles,
             'pendingArticles' => $pendingArticles,
-            'metrics' => [
-                'todayArticles' => count($posts),
-                'published' => $publishedCount,
-                'drafts' => $draftCount,
-                'scheduled' => $scheduledCount,
-                'review' => $reviewCount,
-                'totalViews' => number_format($totalViews + 1200000),
-            ]
+            'metrics'         => $metrics
         ]);
     }
 }

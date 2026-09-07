@@ -2,45 +2,42 @@
 
 namespace App\Controllers;
 
-use App\Models\DataRepository;
+use App\Models\MediaModel;
 
 class Media extends BaseController
 {
+    protected MediaModel $mediaModel;
+
+    public function __construct()
+    {
+        $this->mediaModel = new MediaModel();
+    }
+
     public function index()
     {
-        $media = DataRepository::get('media_extended') ?? [];
-
         $keyword = $this->request->getGet('q');
-        if ($keyword) {
-            $media = array_filter($media, fn($m) => 
-                stripos($m['title'], $keyword) !== false || 
-                stripos($m['caption'], $keyword) !== false ||
-                stripos($m['user'], $keyword) !== false
-            );
-        }
-
-        $filteredMedia = array_values($media);
-        $totalItems = count($filteredMedia);
-        $perPage = 6;
         $page = max(1, (int)($this->request->getGet('page') ?? 1));
+        $perPage = 6;
+
+        $result = $this->mediaModel->getMediaWithRelations($page, $perPage, $keyword);
+        $totalItems = $result['total'];
         $totalPages = max(1, (int)ceil($totalItems / $perPage));
         if ($page > $totalPages) $page = $totalPages;
 
         $offset = ($page - 1) * $perPage;
-        $paginatedMedia = array_slice($filteredMedia, $offset, $perPage);
 
         return view('media/index', [
-            'title' => 'Media Management',
+            'title'      => 'Media Management',
             'breadcrumb' => 'Media / Library',
-            'media' => $paginatedMedia,
-            'keyword' => $keyword ?? '',
+            'media'      => $result['data'],
+            'keyword'    => $keyword ?? '',
             'pagination' => [
-                'page' => $page,
-                'perPage' => $perPage,
+                'page'       => $page,
+                'perPage'    => $perPage,
                 'totalItems' => $totalItems,
                 'totalPages' => $totalPages,
-                'from' => $totalItems > 0 ? $offset + 1 : 0,
-                'to' => min($offset + $perPage, $totalItems),
+                'from'       => $totalItems > 0 ? $offset + 1 : 0,
+                'to'         => min($offset + $perPage, $totalItems),
             ]
         ]);
     }
@@ -48,78 +45,102 @@ class Media extends BaseController
     public function new()
     {
         return view('media/upload', [
-            'title' => 'Upload Media',
+            'title'      => 'Upload Media',
             'breadcrumb' => 'Media / Upload New',
-            'media' => null,
-            'isEdit' => false
+            'media'      => null,
+            'isEdit'     => false
         ]);
     }
 
     public function edit($id)
     {
-        $mediaList = DataRepository::get('media_extended') ?? [];
-        $item = null;
-        foreach ($mediaList as $m) {
-            if ($m['id'] == $id) {
-                $item = $m;
-                break;
-            }
+        $item = $this->mediaModel->find((int)$id);
+
+        if ($item) {
+            $item = [
+                'id'      => $item['ref_entity_media_id'],
+                'title'   => $item['attr_resource_title'],
+                'image'   => $item['attr_resource_name'],
+                'caption' => $item['attr_short_description'],
+                'source'  => $item['attr_origin_source'],
+            ];
         }
 
         return view('media/upload', [
-            'title' => 'Edit Media Information',
+            'title'      => 'Edit Media Information',
             'breadcrumb' => 'Media / Edit',
-            'media' => $item,
-            'isEdit' => true
+            'media'      => $item,
+            'isEdit'     => true
         ]);
     }
 
     public function save()
     {
-        $mediaList = DataRepository::get('media_extended') ?? [];
-        $newId = count($mediaList) > 0 ? max(array_column($mediaList, 'id')) + 1 : 1;
+        $sessionUser = session()->get('user_id') ?: 1;
+        $username = session()->get('user_username') ?: 'raka_h';
 
-        $newItem = [
-            'id' => $newId,
-            'title' => $this->request->getPost('title'),
-            'caption' => $this->request->getPost('caption'),
-            'image' => $this->request->getPost('image') ?: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=600&auto=format&fit=crop&q=80',
-            'source' => $this->request->getPost('source') ?: '/',
-            'date' => date('d/m/y H:i'),
-            'user' => 'andika_m'
-        ];
+        $imagePath = $this->request->getPost('image');
 
-        array_unshift($mediaList, $newItem);
-        DataRepository::save('media_extended', $mediaList);
+        // Handle local file upload if provided
+        $file = $this->request->getFile('media_file');
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $uploadDir = FCPATH . 'uploads/media';
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0777, true);
+            }
+            $newName = $file->getRandomName();
+            $file->move($uploadDir, $newName);
+            $imagePath = '/uploads/media/' . $newName;
+        }
 
-        return redirect()->to('/media')->with('success', 'Media asset uploaded successfully!');
+        if (empty($imagePath)) {
+            $imagePath = '/img/article1.jpg';
+        }
+
+        $this->mediaModel->insert([
+            'attr_resource_title'    => $this->request->getPost('title') ?? 'Media Item',
+            'attr_short_description' => $this->request->getPost('caption') ?? '',
+            'attr_full_description'  => $this->request->getPost('caption') ?? '',
+            'attr_resource_name'     => $imagePath,
+            'attr_origin_source'     => $this->request->getPost('source') ?: 'Investor.id / Riset',
+            'attr_aubert_name'       => $username,
+            'ref_entity_principal_id'=> $sessionUser,
+        ]);
+
+        return redirect()->to('/media')->with('success', 'Media asset berhasil disimpan ke database!');
     }
 
     public function update($id)
     {
-        $mediaList = DataRepository::get('media_extended') ?? [];
-        foreach ($mediaList as &$m) {
-            if ($m['id'] == $id) {
-                $m['title'] = $this->request->getPost('title');
-                $m['caption'] = $this->request->getPost('caption');
-                $m['source'] = $this->request->getPost('source') ?: '/';
-                if ($this->request->getPost('image')) {
-                    $m['image'] = $this->request->getPost('image');
-                }
-                break;
+        $updateData = [
+            'attr_resource_title'    => $this->request->getPost('title'),
+            'attr_short_description' => $this->request->getPost('caption'),
+            'attr_full_description'  => $this->request->getPost('caption'),
+            'attr_origin_source'     => $this->request->getPost('source') ?: 'Investor.id / Riset',
+        ];
+
+        // Check for local file upload first
+        $file = $this->request->getFile('media_file');
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $uploadDir = FCPATH . 'uploads/media';
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0777, true);
             }
+            $newName = $file->getRandomName();
+            $file->move($uploadDir, $newName);
+            $updateData['attr_resource_name'] = '/uploads/media/' . $newName;
+        } elseif ($this->request->getPost('image')) {
+            $updateData['attr_resource_name'] = $this->request->getPost('image');
         }
-        DataRepository::save('media_extended', $mediaList);
+
+        $this->mediaModel->update((int)$id, $updateData);
 
         return redirect()->to('/media')->with('success', 'Media information updated!');
     }
 
     public function delete($id)
     {
-        $mediaList = DataRepository::get('media_extended') ?? [];
-        $mediaList = array_values(array_filter($mediaList, fn($m) => $m['id'] != $id));
-        DataRepository::save('media_extended', $mediaList);
-
+        $this->mediaModel->delete((int)$id);
         return redirect()->to('/media')->with('success', 'Media asset removed.');
     }
 }

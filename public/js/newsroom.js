@@ -102,6 +102,65 @@ function closeLogoutModal() {
     }
 }
 
+// Global AI Loading Modal Helpers (Matching PortalBerita/BackendCMS)
+function showAiLoading(message = 'Sedang memproses...') {
+    const modal = document.getElementById('aiLoadingModal');
+    const msgEl = document.getElementById('aiLoadingMessage');
+
+    if (msgEl) msgEl.textContent = message;
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+function hideAiLoading() {
+    const modal = document.getElementById('aiLoadingModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+// Global AI Error / Limit Alert Modal Helpers
+function showAiErrorAlert(errorMessage) {
+    const modal = document.getElementById('aiErrorModal');
+    const titleEl = document.getElementById('aiErrorModalTitle');
+    const msgEl = document.getElementById('aiErrorModalMessage');
+
+    const isRateLimit = /429|RESOURCE_EXHAUSTED|quota|rate limit|too many requests/i.test(errorMessage);
+
+    if (titleEl) {
+        titleEl.textContent = isRateLimit ? 'Batas Penggunaan AI Tercapai' : 'Pemberitahuan AI';
+    }
+
+    if (msgEl) {
+        if (isRateLimit) {
+            msgEl.innerHTML = `<strong>Layanan AI sedang sibuk atau batas kuota token telah tercapai.</strong><br><br>Sistem telah mencoba beberapa model fallback namun seluruh kuota request per menit saat ini sedang penuh.<br><br>Silakan tunggu 10–30 detik sebelum mencoba kembali, atau isi kolom editorial ini secara manual.`;
+        } else {
+            const cleanMsg = errorMessage.replace(/^Gagal (menghasilkan|merangkum|mengekstrak|melakukan):?\s*/i, '').trim();
+            msgEl.textContent = cleanMsg || errorMessage;
+        }
+    }
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+    if (window.lucide) {
+        window.lucide.createIcons({ root: modal });
+    }
+}
+
+function closeAiErrorModal() {
+    const modal = document.getElementById('aiErrorModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
 // Global Toast notification engine (Replica of Sonner)
 function showToast(message, type = 'info') {
     let container = document.getElementById('toast-container');

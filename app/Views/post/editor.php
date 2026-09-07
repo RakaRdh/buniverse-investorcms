@@ -44,57 +44,14 @@
         </div>
     </div>
 
-    <!-- 2-Column Canvas Layout (Featured Image on Top in Mobile, Sidebar on Desktop) -->
+    <!-- 2-Column Canvas Layout -->
     <div class="flex flex-col lg:grid lg:grid-cols-3 gap-6 items-start">
         
-        <!-- Top on Mobile / Right Column on Desktop: Featured Image & Publishing Settings -->
+        <!-- Right Column on Desktop (Order 2): Only Publish Setting & Primary Preview Button -->
         <div class="w-full space-y-5 lg:order-2 lg:col-span-1 lg:sticky lg:top-20">
             
-            <!-- 1. Featured Image & Cover Preview Card (with Primary Preview Button) -->
-            <div class="surface-card p-5 space-y-3 shadow-sm border border-border">
-                <div class="flex items-center justify-between border-b border-border pb-2.5">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">Featured Image / Cover</h3>
-                    <span class="text-[10px] text-muted-foreground font-mono">16:9 Ratio</span>
-                </div>
-
-                <!-- Cover Preview Box -->
-                <div class="relative h-44 w-full overflow-hidden rounded-lg border border-border bg-slate-900 shadow-inner group">
-                    <img id="imagePreview" src="<?= esc($article['thumbnail'] ?? '/img/article1.jpg') ?>" alt="Cover Preview" class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200">
-                    <div class="absolute bottom-2 left-2 right-2 flex items-center justify-between rounded bg-black/60 backdrop-blur-xs px-2.5 py-1 text-[10px] text-white">
-                        <span class="truncate">Preview Cover Utama</span>
-                        <i data-lucide="sparkles" class="size-3 text-amber-400"></i>
-                    </div>
-                </div>
-
-                <!-- Thumbnail Input & Action Buttons (Pilih dari Media & Upload Lokal) -->
-                <div class="space-y-2 pt-1">
-                    <input type="text" name="thumbnail" id="thumbnailInput" value="<?= esc($article['thumbnail'] ?? '/img/article1.jpg') ?>" class="flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="URL Foto Gambar...">
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" onclick="openMediaChooserModal('cover')" class="inline-flex items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-2xs">
-                            <i data-lucide="images" class="size-3.5"></i>
-                            <span>Pilih dari Media</span>
-                        </button>
-                        
-                        <label class="inline-flex items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors cursor-pointer">
-                            <i data-lucide="upload" class="size-3.5"></i>
-                            <span>Upload Lokal</span>
-                            <input type="file" id="localFileInput" accept="image/*" class="hidden" onchange="handleLocalImageUpload(this)">
-                        </label>
-                    </div>
-
-                    <!-- Single Standalone Preview Button inside Featured Image Section -->
-                    <div class="pt-2 border-t border-border">
-                        <button type="button" onclick="previewArticlePage()" class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary shadow-2xs hover:bg-primary hover:text-white transition-colors">
-                            <i data-lucide="eye" class="size-4"></i>
-                            <span>Preview Artikel</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2. Publish Setting & Scheduled Date/Time with Editable Manual Inputs -->
-            <div class="surface-card p-5 space-y-4">
+            <!-- 1. Publish Setting & Scheduled Date/Time with Editable Manual Inputs -->
+            <div class="surface-card p-5 space-y-4 shadow-sm border border-border">
                 <div class="flex items-center justify-between border-b border-border pb-2.5">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">Publish Setting</h3>
                     <i data-lucide="calendar-clock" class="size-4 text-primary"></i>
@@ -103,10 +60,13 @@
                 <!-- Status Workflow -->
                 <div>
                     <label class="block text-xs font-bold text-foreground mb-1.5">Status Penayangan</label>
+                    <?php $isAuthorRole = in_array(strtolower(session('user_role') ?? ''), ['author', 'contributor']); ?>
                     <select name="status" id="workflowStatusSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                        <option value="Published" <?= ($article['status'] ?? 'Published') === 'Published' ? 'selected' : '' ?>>Langsung Publish (Published)</option>
-                        <option value="Scheduled" <?= ($article['status'] ?? '') === 'Scheduled' ? 'selected' : '' ?>>Terjadwal (Scheduled)</option>
-                        <option value="Draft" <?= ($article['status'] ?? '') === 'Draft' ? 'selected' : '' ?>>Draft</option>
+                        <?php if (!$isAuthorRole): ?>
+                            <option value="Published" <?= ($article['status'] ?? 'Published') === 'Published' ? 'selected' : '' ?>>Langsung Publish (Published)</option>
+                            <option value="Scheduled" <?= ($article['status'] ?? '') === 'Scheduled' ? 'selected' : '' ?>>Terjadwal (Scheduled)</option>
+                        <?php endif; ?>
+                        <option value="Draft" <?= ($article['status'] ?? ($isAuthorRole ? 'Draft' : '')) === 'Draft' ? 'selected' : '' ?>>Draft</option>
                         <option value="Review" <?= ($article['status'] ?? '') === 'Review' ? 'selected' : '' ?>>Review Redaksi</option>
                     </select>
                 </div>
@@ -151,14 +111,64 @@
                     </div>
                 </div>
 
-                <!-- Hidden Input holding full Publish Date formatted -->
-                <input type="hidden" name="publish_date" id="publishDateHiddenInput" value="<?= esc($article['publish_date'] ?? date('d M Y H:i')) ?>">
+                <!-- Hidden Input holding full Publish Date formatted (standard MySQL Y-m-d H:i:s) -->
+                <input type="hidden" name="publish_date" id="publishDateHiddenInput" value="<?= esc(!empty($article['publish_date']) && strtotime($article['publish_date']) ? date('Y-m-d H:i:s', strtotime($article['publish_date'])) : date('Y-m-d H:i:s')) ?>">
+
+                <!-- Preview Article Button in Right Sidebar -->
+                <div class="pt-3 border-t border-border">
+                    <button type="button" onclick="previewArticlePage()" class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-primary shadow-2xs hover:bg-primary hover:text-white transition-colors">
+                        <i data-lucide="eye" class="size-4"></i>
+                        <span>Preview Artikel</span>
+                    </button>
+                </div>
             </div>
         </div>
         
-        <!-- Main Composition Canvas (Order 1 on Desktop, Below Featured Image on Mobile) -->
-        <div class="surface-card p-5 sm:p-6 w-full lg:order-1 lg:col-span-2 space-y-5">
+        <!-- Main Composition Canvas (Order 1 on Desktop, Left Column) -->
+        <div class="surface-card p-5 sm:p-6 w-full lg:order-1 lg:col-span-2 space-y-5 shadow-sm border border-border">
             
+            <!-- Featured Image / Cover Card in Main Left Column -->
+            <div class="p-4 rounded-xl border border-border bg-muted/30 space-y-3">
+                <div class="flex items-center justify-between border-b border-border/60 pb-2">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="image" class="size-4 text-primary"></i>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">Featured Image / Cover Utama</h3>
+                    </div>
+                    <span class="text-[10px] text-muted-foreground font-mono bg-background px-2 py-0.5 rounded border border-border">16:9 Ratio</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+                    <!-- Cover Preview Box -->
+                    <div class="relative aspect-video w-full overflow-hidden rounded-lg border border-border bg-slate-900 shadow-inner group shrink-0">
+                        <img id="imagePreview" src="<?= esc($article['thumbnail'] ?? '/img/article1.jpg') ?>" alt="Cover Preview" class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null;this.src='/img/article1.jpg';">
+                        <div class="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between rounded bg-black/60 backdrop-blur-xs px-2 py-0.5 text-[10px] text-white">
+                            <span class="truncate font-medium">Cover Utama (16:9)</span>
+                            <i data-lucide="sparkles" class="size-3 text-amber-400"></i>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons (Full width to the right, top-aligned with image preview) -->
+                    <div class="md:col-span-2 flex flex-col justify-start items-stretch space-y-2.5 w-full min-w-0">
+                        <input type="hidden" name="thumbnail" id="thumbnailInput" value="<?= esc($article['thumbnail'] ?? '/img/article1.jpg') ?>">
+                        
+                        <button type="button" onclick="openMediaChooserModal('cover')" class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-2xs">
+                            <i data-lucide="images" class="size-4"></i>
+                            <span>Pilih dari Media</span>
+                        </button>
+                        
+                        <label class="w-full inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors cursor-pointer shadow-2xs">
+                            <i data-lucide="upload" class="size-4 text-primary"></i>
+                            <span>Upload File Lokal</span>
+                            <input type="file" id="localFileInput" accept="image/*" class="hidden" onchange="handleLocalImageUpload(this)">
+                        </label>
+
+                        <p class="w-full text-[11px] text-muted-foreground leading-relaxed pt-0.5">
+                            Format gambar yang disarankan: <strong>JPG, PNG, atau WebP</strong> dengan rasio aspek <strong>16:9</strong> (resolusi minimal 1200&times;675 px).
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <!-- A. Scrape Artikel dari URL Eksternal (Placeholder Box) -->
             <div class="p-4 rounded-xl border border-primary/25 bg-primary/5 space-y-2">
                 <div class="flex items-center gap-2 text-primary">
@@ -168,7 +178,7 @@
                 <p class="text-[11px] text-muted-foreground">Tempel link artikel dari situs berita yang diizinkan (Antara News). AI akan mengekstrak isi berita dan gambar thumbnail secara otomatis.</p>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
                     <input type="url" id="scrapeUrlInput" placeholder="https://www.antaranews.com/berita/..." class="flex h-9 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
-                    <button type="button" onclick="handleScrapePlaceholder()" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
+                    <button type="button" onclick="executeScrapeArticle()" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
                         <i data-lucide="rotate-cw" class="size-3.5"></i>
                         <span>Scrape Artikel</span>
                     </button>
@@ -388,17 +398,34 @@
                 <input type="hidden" name="content" id="hiddenContentInput" value="<?= esc($article['content'] ?? '') ?>">
             </div>
 
-            <!-- I. Kata Kunci (Tags) Dipindahkan ke Bawah Body + AI Button -->
-            <div class="pt-2 border-t border-border">
-                <div class="flex items-center justify-between mb-1.5">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground">Kata Kunci (Tags)</label>
+            <!-- I. Kata Kunci (Tags) with Real-Time Autocomplete & Chips -->
+            <div class="pt-2 border-t border-border space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                        <i data-lucide="tag" class="size-3.5 text-primary"></i>
+                        <span>Kata Kunci (Tags)</span>
+                    </label>
                     <button type="button" onclick="handleAiAssistance('tags')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
                         <i data-lucide="sparkles" class="size-3 text-accent"></i>
                         <span>GENERATE TAGS VIA AI</span>
                     </button>
                 </div>
-                <input type="text" name="tags" id="tagsInput" value="<?= esc($article['tags'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="IHSG, Saham, Dividen, Bank Mandiri">
-                <span class="text-[10px] text-muted-foreground mt-0.5 block">Pisahkan setiap kata kunci dengan tanda koma (,).</span>
+                
+                <!-- Tag Input Container with Real-Time Dropdown Suggestions -->
+                <div class="relative">
+                    <input type="text" name="tags" id="articleTagsInput" value="<?= esc($article['tags'] ?? '') ?>" autocomplete="off" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary" placeholder="Ketik tag, pisahkan dengan koma (,) atau pilih saran...">
+                    
+                    <!-- Real-Time Autocomplete Dropdown List -->
+                    <div id="tagAutocompleteDropdown" class="absolute z-50 left-0 right-0 top-full mt-1 bg-background border border-border rounded-lg shadow-xl overflow-hidden hidden max-h-48 overflow-y-auto">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Active Tag Badges / Chips -->
+                <div id="tagChipsContainer" class="flex flex-wrap gap-1.5 pt-1">
+                    <!-- Populated via JS on load and update -->
+                </div>
+                <span class="text-[10px] text-muted-foreground block">Tekan koma (,) atau Enter untuk menambahkan tag. Rekomendasi dari database muncul saat mengetik.</span>
             </div>
 
             <!-- Bottom Action Footer -->
@@ -412,43 +439,59 @@
     </div>
 </form>
 
-<!-- Modal Media Library Chooser (2 Column Horizontal Cards Grid) -->
-<div id="mediaChooserModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); z-index: 999; align-items: center; justify-content: center; padding: 1rem;">
-    <div class="surface-card w-full max-w-5xl max-h-[88vh] flex flex-col p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+<!-- Modal Media Library Chooser (Standardized max-w-2xl with clean responsive grid) -->
+<div id="mediaChooserModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-2xl max-h-[82vh] flex flex-col p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-border">
+        <!-- Modal Header -->
         <div class="flex items-center justify-between border-b border-border pb-3">
             <div>
-                <h3 class="text-sm font-bold text-foreground">Media Library — Pilih Gambar Berita</h3>
-                <p class="text-xs text-muted-foreground">Pilih media untuk dijadikan featured cover atau sisipkan ke dalam body teks.</p>
+                <h3 class="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                    <i data-lucide="images" class="size-4 text-primary"></i>
+                    <span>Media Library — Pilih Gambar Berita</span>
+                </h3>
+                <p class="text-[11px] text-muted-foreground mt-0.5">Pilih media dari bank aset editorial untuk featured cover atau disisipkan ke naskah.</p>
             </div>
-            <button type="button" onclick="closeMediaChooserModal()" class="text-muted-foreground hover:text-foreground">
+            <button type="button" onclick="closeMediaChooserModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <i data-lucide="x" class="size-4"></i>
             </button>
         </div>
 
-        <!-- 2 Column Grid of Horizontal Media Cards -->
-        <div class="overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 p-1 custom-sidebar-scroll">
+        <!-- Search Bar -->
+        <div class="relative">
+            <i data-lucide="search" class="size-3.5 text-muted-foreground absolute left-3 top-2.5"></i>
+            <input type="text" id="mediaModalSearchInput" oninput="filterMediaModalCards(this.value)" placeholder="Cari judul gambar, topik, atau caption..." class="flex h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-xs shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+        </div>
+
+        <!-- Vertical Responsive Card Grid (2x2 layout, 2 columns) -->
+        <div id="mediaModalCardsGrid" class="overflow-y-auto flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 p-1 custom-sidebar-scroll max-h-[480px]">
             <?php foreach ($media as $m): ?>
-            <div class="flex rounded-lg border border-border overflow-hidden bg-background hover:border-primary transition-all shadow-xs">
-                <!-- Left: Media Photo -->
-                <div class="w-36 shrink-0 bg-slate-900 relative">
-                    <img src="<?= esc($m['image']) ?>" alt="" class="h-full w-full object-cover">
+            <div class="media-card-item flex flex-col rounded-xl border border-border overflow-hidden bg-card hover:border-primary/70 hover:shadow-lg transition-all group" data-search="<?= strtolower(esc($m['title'] . ' ' . ($m['caption'] ?? '') . ' ' . ($m['source'] ?? ''))) ?>" style="min-height: 270px;">
+                <!-- Bagian 1 (Atas): Gambar Media -->
+                <div class="relative w-full bg-slate-900 overflow-hidden border-b border-border" style="height: 150px;">
+                    <img src="<?= esc($m['image']) ?>" alt="<?= esc($m['title']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null;this.src='/img/article1.jpg';">
+                    <span class="absolute bottom-2 right-2 rounded bg-black/80 backdrop-blur-xs px-2 py-0.5 text-[9px] font-mono font-medium text-white z-10 shadow-xs">
+                        <?= esc($m['source'] ?? 'Investor.id') ?>
+                    </span>
                 </div>
                 
-                <!-- Right: Media Details & Actions -->
-                <div class="flex-1 p-3 flex flex-col justify-between min-w-0">
+                <!-- Bagian 2 (Bawah): Deskripsi Gambar & Aksi -->
+                <div class="p-3 bg-muted/20 flex flex-col flex-1 justify-between gap-2.5">
                     <div>
-                        <h4 class="text-xs font-bold text-foreground truncate" title="<?= esc($m['title']) ?>"><?= esc($m['title']) ?></h4>
-                        <p class="text-[11px] text-muted-foreground line-clamp-2 mt-0.5"><?= esc($m['caption'] ?? '') ?></p>
-                        <div class="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground font-mono">
-                            <span><i data-lucide="camera" class="size-3 inline mr-0.5"></i> <?= esc($m['source'] ?? 'Investor.id') ?></span>
-                            <span>&bull;</span>
-                            <span><?= esc($m['date'] ?? '') ?></span>
-                        </div>
+                        <h4 class="text-xs font-bold text-foreground line-clamp-1 leading-snug group-hover:text-primary transition-colors" title="<?= esc($m['title']) ?>">
+                            <?= esc($m['title']) ?>
+                        </h4>
+                        <p class="text-[11px] text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+                            <?= esc($m['caption'] ?? '-') ?>
+                        </p>
                     </div>
 
-                    <div class="flex items-center gap-2 mt-3 pt-2 border-t border-border">
-                        <button type="button" onclick="selectMediaImage('<?= esc($m['image']) ?>')" class="flex-1 rounded bg-[#2B6CB0] text-white px-2 py-1 text-[10px] font-bold shadow-xs hover:bg-[#2B6CB0]/90 transition-colors">
-                            Pilih Gambar
+                    <div class="pt-2 border-t border-border/70 flex items-center justify-between gap-2">
+                        <span class="text-[9px] text-muted-foreground font-mono truncate">
+                            <i data-lucide="calendar" class="size-2.5 inline-block mr-0.5"></i><?= esc($m['date'] ?? '') ?>
+                        </span>
+                        <button type="button" onclick="selectMediaImage('<?= esc($m['image']) ?>')" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] text-white px-3 py-1.5 text-xs font-bold shadow-2xs hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
+                            <i data-lucide="check" class="size-3"></i>
+                            <span>Pilih Gambar</span>
                         </button>
                     </div>
                 </div>
@@ -456,47 +499,52 @@
             <?php endforeach; ?>
         </div>
 
-        <div class="flex justify-end pt-3 border-t border-border">
-            <button type="button" onclick="closeMediaChooserModal()" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">Tutup</button>
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-between pt-2.5 border-t border-border">
+            <span class="text-[11px] text-muted-foreground"><span id="mediaModalCount"><?= count($media) ?></span> media tersedia</span>
+            <button type="button" onclick="closeMediaChooserModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors">Tutup</button>
         </div>
     </div>
 </div>
 
-<!-- Modal Add Article Link (with Tag Filters) -->
-<div id="articleLinkModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); z-index: 999; align-items: center; justify-content: center; padding: 1rem;">
-    <div class="surface-card w-full max-w-3xl max-h-[85vh] flex flex-col p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+<!-- Modal Add Article Link (Standardized max-w-2xl) -->
+<div id="articleLinkModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-2xl max-h-[82vh] flex flex-col p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-border">
         <div class="flex items-center justify-between border-b border-border pb-3">
             <div>
-                <h3 class="text-sm font-bold text-foreground">Sisipkan Link Artikel ("Baca Juga")</h3>
-                <p class="text-xs text-muted-foreground">Pilih artikel berita untuk disisipkan sebagai referensi bacaan di dalam naskah.</p>
+                <h3 class="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                    <i data-lucide="link-2" class="size-4 text-primary"></i>
+                    <span>Sisipkan Link Artikel ("Baca Juga")</span>
+                </h3>
+                <p class="text-[11px] text-muted-foreground mt-0.5">Pilih artikel berita untuk disisipkan sebagai referensi bacaan di dalam naskah.</p>
             </div>
-            <button type="button" onclick="closeArticleLinkModal()" class="text-muted-foreground hover:text-foreground">
+            <button type="button" onclick="closeArticleLinkModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <i data-lucide="x" class="size-4"></i>
             </button>
         </div>
 
         <!-- Tag Filter Chips Bar -->
-        <div class="flex items-center gap-1.5 flex-wrap text-xs pb-1">
+        <div class="flex items-center gap-1.5 flex-wrap text-xs pb-0.5">
             <span class="text-[11px] font-bold text-muted-foreground mr-1">Filter Tag:</span>
-            <button type="button" onclick="filterArticleModalByTag('all')" class="modal-tag-chip rounded-full bg-primary/10 text-primary border border-primary/30 px-2.5 py-0.5 text-[10px] font-semibold">Semua</button>
-            <button type="button" onclick="filterArticleModalByTag('IHSG')" class="modal-tag-chip rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-[10px] font-medium hover:text-foreground">IHSG</button>
-            <button type="button" onclick="filterArticleModalByTag('Saham')" class="modal-tag-chip rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-[10px] font-medium hover:text-foreground">Saham</button>
-            <button type="button" onclick="filterArticleModalByTag('Perbankan')" class="modal-tag-chip rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-[10px] font-medium hover:text-foreground">Perbankan</button>
-            <button type="button" onclick="filterArticleModalByTag('Komoditas')" class="modal-tag-chip rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-[10px] font-medium hover:text-foreground">Komoditas</button>
+            <button type="button" onclick="filterArticleModalByTag('all')" class="modal-tag-chip rounded-full bg-primary/10 text-primary border border-primary/30 px-2 py-0.5 text-[10px] font-semibold">Semua</button>
+            <button type="button" onclick="filterArticleModalByTag('IHSG')" class="modal-tag-chip rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium hover:text-foreground">IHSG</button>
+            <button type="button" onclick="filterArticleModalByTag('Saham')" class="modal-tag-chip rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium hover:text-foreground">Saham</button>
+            <button type="button" onclick="filterArticleModalByTag('Perbankan')" class="modal-tag-chip rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium hover:text-foreground">Perbankan</button>
+            <button type="button" onclick="filterArticleModalByTag('Komoditas')" class="modal-tag-chip rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium hover:text-foreground">Komoditas</button>
         </div>
 
         <!-- Search input in modal -->
         <div class="relative">
-            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground"></i>
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-3 text-muted-foreground"></i>
             <input type="text" id="articleModalSearch" onkeyup="filterArticleModalList()" placeholder="Cari judul artikel..." class="flex h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
         </div>
 
         <!-- Article Rows List -->
-        <div id="articleModalList" class="overflow-y-auto flex-1 space-y-2 p-1 max-h-[350px] custom-sidebar-scroll">
+        <div id="articleModalList" class="overflow-y-auto flex-1 space-y-2 p-1 max-h-[300px] custom-sidebar-scroll">
             <?php foreach (($allPosts ?? []) as $ap): ?>
             <div class="article-modal-row flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border hover:border-primary hover:bg-muted/40 transition-colors" data-title="<?= esc(strtolower($ap['title'])) ?>" data-tags="<?= esc(strtolower($ap['tags'] ?? '')) ?>" data-kanal="<?= esc(strtolower($ap['kanal'] ?? '')) ?>">
                 <div class="flex items-center gap-3 min-w-0">
-                    <img src="<?= esc($ap['thumbnail']) ?>" alt="" class="size-10 rounded object-cover border border-border shrink-0">
+                    <img src="<?= esc($ap['thumbnail']) ?>" alt="" class="size-9 rounded object-cover border border-border shrink-0">
                     <div class="min-w-0">
                         <h4 class="text-xs font-bold text-foreground truncate"><?= esc($ap['title']) ?></h4>
                         <span class="text-[10px] text-muted-foreground block"><?= esc($ap['kanal'] ?? 'Market') ?> &bull; <?= esc($ap['publish_date']) ?></span>
@@ -509,8 +557,175 @@
             <?php endforeach; ?>
         </div>
 
-        <div class="flex justify-end pt-3 border-t border-border">
-            <button type="button" onclick="closeArticleLinkModal()" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">Tutup</button>
+        <div class="flex justify-end pt-2.5 border-t border-border">
+            <button type="button" onclick="closeArticleLinkModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 1: Embed Chart from Database (Standardized max-w-lg) -->
+<div id="embedChartModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-lg max-h-[82vh] flex flex-col p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-border">
+        <div class="flex items-center justify-between border-b border-border pb-3">
+            <div>
+                <h3 class="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                    <i data-lucide="line-chart" class="size-4 text-accent"></i>
+                    <span>Pilih Financial Chart dari Database</span>
+                </h3>
+                <p class="text-[11px] text-muted-foreground mt-0.5">Pilih chart yang sudah dibuat di menu Embed Chart.</p>
+            </div>
+            <button type="button" onclick="closeEmbedChartModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <i data-lucide="x" class="size-4"></i>
+            </button>
+        </div>
+
+        <div class="relative">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-3 text-muted-foreground"></i>
+            <input type="text" id="chartSearchInput" oninput="filterChartModalList(this.value)" placeholder="Cari judul chart atau simbol saham..." class="flex h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+        </div>
+
+        <div id="chartModalList" class="overflow-y-auto flex-1 space-y-2 p-1 max-h-[280px] custom-sidebar-scroll">
+            <?php if (empty($charts)): ?>
+                <div class="p-6 text-center text-xs text-muted-foreground">
+                    Belum ada chart konfigurasi di database. Silakan buat di menu <a href="/embed-chart" target="_blank" class="text-primary underline">Embed Chart</a>.
+                </div>
+            <?php else: ?>
+                <?php foreach ($charts as $ch): ?>
+                <div class="chart-modal-row flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border hover:border-primary hover:bg-muted/40 transition-colors" data-search="<?= strtolower(esc(($ch['title'] ?? '') . ' ' . ($ch['symbol'] ?? '') . ' ' . ($ch['source'] ?? ''))) ?>">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="rounded bg-accent/15 px-1.5 py-0.2 text-[9px] font-bold text-accent"><?= esc($ch['type'] ?? 'Area') ?></span>
+                            <h4 class="text-xs font-bold text-foreground truncate"><?= esc($ch['title']) ?></h4>
+                        </div>
+                        <span class="text-[10px] text-muted-foreground block mt-0.5">Simbol: <strong><?= esc($ch['symbol'] ?? 'IDX') ?></strong> &bull; Sumber: <?= esc($ch['source'] ?? 'Investor.id') ?></span>
+                    </div>
+                    <button type="button" onclick="insertSelectedChart('<?= esc(addslashes($ch['title'])) ?>', '<?= esc(addslashes($ch['symbol'] ?? 'IDX')) ?>', '<?= esc(addslashes($ch['type'] ?? 'Area')) ?>', '<?= esc(addslashes($ch['source'] ?? 'Investor.id')) ?>')" class="inline-flex shrink-0 items-center gap-1 rounded bg-[#2B6CB0] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 shadow-2xs">
+                        <span>Sisipkan</span>
+                    </button>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+        <div class="flex items-center justify-between pt-2.5 border-t border-border">
+            <a href="/embed-chart" target="_blank" class="text-xs text-primary hover:underline flex items-center gap-1">
+                <i data-lucide="plus" class="size-3"></i>
+                <span>Kelola Chart Baru</span>
+            </a>
+            <button type="button" onclick="closeEmbedChartModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Embed Socmed / External Document (Standardized max-w-lg) -->
+<div id="embedSocmedModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-lg max-h-[85vh] flex flex-col p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-border">
+        <div class="flex items-center justify-between border-b border-border pb-3">
+            <div>
+                <h3 class="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                    <i data-lucide="code-2" class="size-4 text-amber-600"></i>
+                    <span>Sisipkan Embed Media Sosial / Dokumen</span>
+                </h3>
+                <p class="text-[11px] text-muted-foreground mt-0.5">Pilih platform dan masukkan link konten eksternal.</p>
+            </div>
+            <button type="button" onclick="closeEmbedSocmedModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <i data-lucide="x" class="size-4"></i>
+            </button>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1">Pilih Platform</label>
+                <select id="socmedPlatformSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                    <option value="Instagram">Instagram Post / Reel</option>
+                    <option value="Twitter / X">X (Twitter) Post</option>
+                    <option value="YouTube">YouTube Video</option>
+                    <option value="TikTok">TikTok Video</option>
+                    <option value="Google Drive / PDF">Google Drive / PDF Document</option>
+                    <option value="Scribd">Scribd Financial Report</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1">URL / Link Konten</label>
+                <input type="url" id="socmedUrlInput" placeholder="https://www.instagram.com/p/... atau https://youtu.be/..." class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1">Keterangan / Caption (Opsional)</label>
+                <input type="text" id="socmedCaptionInput" placeholder="Keterangan singkat unggahan..." class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-border">
+            <button type="button" onclick="closeEmbedSocmedModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
+            <button type="button" onclick="submitSocmedEmbed()" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90">
+                <i data-lucide="plus" class="size-3.5"></i>
+                <span>Sisipkan Embed</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 3: Stock Chart with Real-Time Ticker Autocomplete (Standardized max-w-lg) -->
+<div id="embedStockModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-lg max-h-[85vh] flex flex-col p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-border">
+        <div class="flex items-center justify-between border-b border-border pb-3">
+            <div>
+                <h3 class="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                    <i data-lucide="trending-up" class="size-4 text-indigo-600"></i>
+                    <span>Sisipkan Live Stock Chart Widget</span>
+                </h3>
+                <p class="text-[11px] text-muted-foreground mt-0.5">Widget grafik real-time bursa IDX terintegrasi TradingView.</p>
+            </div>
+            <button type="button" onclick="closeEmbedStockModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <i data-lucide="x" class="size-4"></i>
+            </button>
+        </div>
+
+        <div class="space-y-3">
+            <!-- Stock Ticker Input with Real-Time Autocomplete Dropdown -->
+            <div class="relative">
+                <label class="block text-xs font-bold text-foreground mb-1">Cari Kode Emiten atau Nama Perusahaan (IDX)</label>
+                <div class="relative">
+                    <input type="text" id="stockTickerInput" value="" autocomplete="off" placeholder="Ketik kode (misal: BBCA, TLKM) atau nama perusahaan..." class="flex h-9 w-full rounded-md border border-input bg-background font-mono font-bold px-3 py-1 text-sm shadow-sm placeholder:normal-case placeholder:font-sans focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary uppercase">
+                </div>
+                <!-- Real-Time Stock Dropdown List -->
+                <div id="stockAutocompleteDropdown" class="absolute z-50 left-0 right-0 top-full mt-1 bg-background border border-border rounded-lg shadow-xl overflow-hidden hidden max-h-52 overflow-y-auto">
+                    <!-- Populated dynamically via JS -->
+                </div>
+                <span class="text-[10px] text-muted-foreground mt-1 block">Ketik 1 atau 2 huruf untuk memunculkan saran instan dari Bursa Efek Indonesia (IDX).</span>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1">Pilihan Cepat Emiten Populer:</label>
+                <div class="flex flex-wrap gap-1.5">
+                    <?php 
+                    $popularStocks = ['BBCA', 'BBRI', 'BMRI', 'TLKM', 'ASII', 'AADI', 'BREN', 'AMMN', 'GOTO', 'ESSA'];
+                    foreach ($popularStocks as $stk):
+                    ?>
+                    <button type="button" onclick="setQuickStockTicker('<?= $stk ?>')" class="rounded border border-border bg-background px-2.5 py-1 text-xs font-mono font-bold hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors">
+                        <?= $stk ?>
+                    </button>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1">Tipe Tampilan Chart</label>
+                <select id="stockChartTypeSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                    <option value="tradingview_full" selected>TradingView Full Interactive Live Chart (Rekomendasi)</option>
+                    <option value="widget_card">Mini Ticker Card Live IDX</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-border">
+            <button type="button" onclick="closeEmbedStockModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
+            <button type="button" onclick="submitStockEmbed()" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90">
+                <i data-lucide="plus" class="size-3.5"></i>
+                <span>Sisipkan Stock Chart</span>
+            </button>
         </div>
     </div>
 </div>

@@ -155,15 +155,24 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
             </div>
             <div class="px-5 pb-5 space-y-3 text-xs">
                 <?php 
-                    $latestStream = array_slice($posts, 0, 3);
+                    $latestStream = array_slice($posts, 0, 4);
                     foreach ($latestStream as $st): 
-                        $timeOnly = substr($st['create_date'], -5);
+                        $rawTime = !empty($st['create_date']) ? $st['create_date'] : ($st['publish_date'] ?? '');
+                        $timestamp = !empty($rawTime) ? strtotime($rawTime) : time();
+                        $timeOnly = $timestamp ? date('H:i', $timestamp) : 'Baru';
                         $authorFirst = explode(' ', $st['author'])[0];
+                        $statusLower = strtolower($st['status'] ?? 'published');
+                        $actionVerb = match($statusLower) {
+                            'draft' => 'drafted',
+                            'review' => 'submitted review for',
+                            'scheduled' => 'scheduled',
+                            default => 'published',
+                        };
                 ?>
                 <div class="flex items-start gap-2.5">
-                    <span class="font-semibold text-muted-foreground whitespace-nowrap"><?= esc($timeOnly) ?></span>
+                    <span class="font-semibold text-muted-foreground whitespace-nowrap font-mono text-[11px]"><?= esc($timeOnly) ?></span>
                     <p class="text-foreground truncate">
-                        <strong><?= esc($authorFirst) ?></strong> published 
+                        <strong><?= esc($authorFirst) ?></strong> <?= esc($actionVerb) ?> 
                         <a href="<?= base_url('post/edit/' . $st['id']) ?>" class="hover:text-primary transition-colors italic truncate" title="<?= esc($st['title']) ?>">
                             "<?= esc(mb_strimwidth($st['title'], 0, 32, '...')) ?>"
                         </a>

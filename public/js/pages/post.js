@@ -54,27 +54,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Flatpickr on More Filter date range
     if (window.flatpickr) {
-        flatpickr('#postFilterDateFrom', {
-            dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "d M Y"
-        });
-        flatpickr('#postFilterDateTo', {
-            dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "d M Y"
+        ['#filterDateFrom', '#filterDateTo', '#postFilterDateFrom', '#postFilterDateTo'].forEach(sel => {
+            if (document.querySelector(sel)) {
+                flatpickr(sel, {
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d M Y",
+                    allowInput: true
+                });
+            }
         });
     }
 });
 
-function toggleMoreFilter() {
-    const panel = document.getElementById('moreFilterPanel');
-    const icon = document.getElementById('moreFilterIcon');
+function toggleMoreFilters() {
+    const panel = document.getElementById('moreFilterSection') || document.getElementById('moreFilterPanel');
+    const arrow = document.getElementById('moreFilterArrow') || document.getElementById('moreFilterIcon');
+    const text = document.getElementById('moreFilterText');
     if (!panel) return;
 
-    panel.classList.toggle('hidden');
-    if (icon) {
-        icon.classList.toggle('rotate-180');
+    const isHidden = panel.classList.contains('hidden');
+    if (isHidden) {
+        panel.classList.remove('hidden');
+        if (arrow) arrow.classList.add('rotate-180');
+        if (text) text.textContent = 'Less Filter';
+    } else {
+        panel.classList.add('hidden');
+        if (arrow) arrow.classList.remove('rotate-180');
+        if (text) text.textContent = 'More Filter';
     }
 }
+
+// Global aliases to ensure both function signatures work seamlessly
+window.toggleMoreFilters = toggleMoreFilters;
+window.toggleMoreFilter = toggleMoreFilters;
 

@@ -13,6 +13,7 @@
     <!-- Static Compiled Tailwind CSS & Design System -->
     <link rel="stylesheet" href="/css/tailwind.min.css">
     <link rel="stylesheet" href="/css/newsroom.css">
+    <link rel="stylesheet" href="/css/pages/editor.css">
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
@@ -52,6 +53,25 @@
             border-radius: 0.5rem;
             margin: 1.5rem auto;
             max-width: 100%;
+        }
+        .preview-article-body .article-embed-tradingview {
+            background: #0b1329 !important;
+            border: 1px solid #1e293b !important;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 20px 0;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+        .preview-article-body .article-embed-stock-card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-left: 4px solid #4f46e5;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin: 16px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            font-family: 'Inter', sans-serif;
         }
         .device-frame-desktop { width: 100%; max-width: 860px; }
         .device-frame-tablet { width: 100%; max-width: 640px; }
@@ -311,6 +331,18 @@
                 document.getElementById('btnMobile').classList.remove('text-slate-400');
             }
         }
+
+        // Auto-render live TradingView widget for any embedded stock boxes
+        document.querySelectorAll('.article-embed-tradingview').forEach(box => {
+            const symbol = box.getAttribute('data-stock-symbol') || 'BBCA';
+            const inner = box.querySelector('div[style*="height:"]') || box.querySelector('.tradingview-placeholder');
+            if (inner && !inner.querySelector('iframe')) {
+                inner.style.height = '320px';
+                inner.style.border = 'none';
+                inner.style.background = 'transparent';
+                inner.innerHTML = `<iframe src="https://s.tradingview.com/widgetembed/?symbol=IDX%3A${encodeURIComponent(symbol)}&interval=D&theme=dark&style=1&timezone=Asia%2FJakarta&locale=id" style="width:100%; height:100%; border:none; border-radius:8px;" frameborder="0" allowtransparency="true" scrolling="no"></iframe>`;
+            }
+        });
     </script>
 </body>
 </html>

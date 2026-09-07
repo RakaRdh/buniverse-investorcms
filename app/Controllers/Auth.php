@@ -2,10 +2,17 @@
 
 namespace App\Controllers;
 
-use App\Models\DataRepository;
+use App\Models\AdminModel;
 
 class Auth extends BaseController
 {
+    protected AdminModel $adminModel;
+
+    public function __construct()
+    {
+        $this->adminModel = new AdminModel();
+    }
+
     public function logout()
     {
         $session = session();
@@ -22,7 +29,7 @@ class Auth extends BaseController
             return redirect()->to('/dashboard');
         }
 
-        if ($this->request->getMethod() === 'POST') {
+        if (strtolower($this->request->getMethod()) === 'post') {
             $email = trim($this->request->getPost('email') ?? '');
             $password = trim($this->request->getPost('password') ?? '');
 
@@ -30,29 +37,38 @@ class Auth extends BaseController
                 return redirect()->to('/login')->with('error', 'Silakan masukkan email kantor dan kata sandi.');
             }
 
-            $user = DataRepository::authenticate($email, $password);
+            $user = $this->adminModel->authenticate($email, $password);
 
             if ($user) {
                 // Compute user initials
-                $nameParts = explode(' ', $user['name']);
+                $nameParts = explode(' ', $user['attr_display_name']);
                 $initials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : ''));
 
                 $session->set([
-                    'user_id' => $user['id'],
-                    'user_name' => $user['name'],
-                    'user_email' => $user['email'],
-                    'user_role' => $user['role'],
-                    'user_username' => $user['username'],
+                    'user_id'       => $user['ref_entity_principal_id'],
+                    'user_name'     => $user['attr_display_name'],
+                    'user_email'    => $user['attr_contact_val'],
+                    'user_role'     => $user['attr_role_code'],
+                    'user_username' => $user['attr_identifier'],
                     'user_initials' => $initials,
                 ]);
 
-                return redirect()->to('/dashboard')->with('success', 'Selamat datang kembali, ' . esc($user['name']) . '!');
+                return redirect()->to('/dashboard')->with('success', 'Selamat datang kembali, ' . esc($user['attr_display_name']) . '!');
             }
 
             return redirect()->to('/login')->with('error', 'Kredensial tidak valid. Silakan periksa email atau kata sandi Anda.');
         }
 
-        $users = DataRepository::get('users');
-        return view('auth/login', ['demoUsers' => $users]);
+        // Demo users for quick selection in development login screen
+        $demoUsers = $this->adminModel->select('
+                ref_entity_principal_id AS id,
+                attr_display_name AS name,
+                attr_identifier AS username,
+                attr_contact_val AS email,
+                attr_role_code AS role
+            ')
+            ->findAll();
+
+        return view('auth/login', ['demoUsers' => $demoUsers]);
     }
 }

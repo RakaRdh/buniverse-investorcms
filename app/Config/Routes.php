@@ -30,11 +30,11 @@ $routes->get('/post/export', 'Post::export');
 $routes->get('/post/preview/(:num)', 'PostPreview::show/$1');
 $routes->post('/post/preview', 'PostPreview::fromForm');
 
-// Headline Management
-$routes->get('/headline', 'Headline::index');
-$routes->post('/headline/add', 'Headline::add');
-$routes->get('/headline/remove/(:num)', 'Headline::remove/$1');
-$routes->post('/headline/save', 'Headline::save');
+// Headline Management (Master, Admin, Editor)
+$routes->get('/headline', 'Headline::index', ['filter' => 'role:master,admin,editor']);
+$routes->post('/headline/add', 'Headline::add', ['filter' => 'role:master,admin,editor']);
+$routes->get('/headline/remove/(:num)', 'Headline::remove/$1', ['filter' => 'role:master,admin,editor']);
+$routes->post('/headline/save', 'Headline::save', ['filter' => 'role:master,admin,editor']);
 
 // Media Library
 $routes->get('/media', 'Media::index');
@@ -50,38 +50,69 @@ $routes->post('/files/upload', 'Files::upload');
 $routes->get('/files/delete/(:num)', 'Files::delete/$1');
 
 // Financial Embed Chart
-$routes->get('/embed-chart', 'EmbedChart::index');
-$routes->post('/embed-chart/save', 'EmbedChart::save');
-$routes->get('/embed-chart/delete/(:num)', 'EmbedChart::delete/$1');
+$routes->get('/embed-chart', 'EmbedChart::index', ['filter' => 'role:master,admin,editor']);
+$routes->post('/embed-chart/save', 'EmbedChart::save', ['filter' => 'role:master,admin,editor']);
+$routes->get('/embed-chart/delete/(:num)', 'EmbedChart::delete/$1', ['filter' => 'role:master,admin,editor']);
 
 // Editorial Statistics & Reporting
 $routes->get('/statistic', 'Statistic::index');
 $routes->get('/statistic/report', 'StatisticReport::index');
 
-// Kanal & Sub-Kanal Taxonomy & Performance
-$routes->get('/kanal', 'Kanal::master');
-$routes->get('/kanal/master', 'Kanal::master');
-$routes->post('/kanal/master/save', 'Kanal::saveMaster');
-$routes->get('/kanal/sub', 'Kanal::subKanal');
-$routes->post('/kanal/sub/save', 'Kanal::saveSub');
-$routes->get('/kanal/stats', 'Kanal::stats');
+// Kanal & Sub-Kanal Taxonomy & Performance (Master, Admin)
+$routes->get('/kanal', 'Kanal::master', ['filter' => 'role:master,admin']);
+$routes->get('/kanal/master', 'Kanal::master', ['filter' => 'role:master,admin']);
+$routes->post('/kanal/master/save', 'Kanal::saveMaster', ['filter' => 'role:master,admin']);
+$routes->get('/kanal/sub', 'Kanal::subKanal', ['filter' => 'role:master,admin']);
+$routes->post('/kanal/sub/save', 'Kanal::saveSub', ['filter' => 'role:master,admin']);
+$routes->get('/kanal/stats', 'Kanal::stats', ['filter' => 'role:master,admin']);
 
-// Mobile Apps Ecosystem
-$routes->get('/apps-version', 'Apps::version');
-$routes->post('/apps-version/save', 'Apps::saveVersion');
+// Mobile Apps Ecosystem (Master, Admin)
+$routes->get('/apps-version', 'Apps::version', ['filter' => 'role:master,admin']);
+$routes->post('/apps-version/save', 'Apps::saveVersion', ['filter' => 'role:master,admin']);
 
-$routes->get('/apps-push-notif', 'Apps::pushNotif');
-$routes->post('/apps-push-notif/create', 'Apps::createPushNotif');
+$routes->get('/apps-push-notif', 'Apps::pushNotif', ['filter' => 'role:master,admin']);
+$routes->post('/apps-push-notif/create', 'Apps::createPushNotif', ['filter' => 'role:master,admin']);
 
-$routes->get('/apps-feature-content', 'Apps::featureContent');
-$routes->post('/apps-feature-content/save', 'Apps::saveFeatureContent');
+$routes->get('/apps-feature-content', 'Apps::featureContent', ['filter' => 'role:master,admin']);
+$routes->post('/apps-feature-content/save', 'Apps::saveFeatureContent', ['filter' => 'role:master,admin']);
 
 // Category Taxonomy (Legacy Redirect)
-$routes->get('/categories', 'Kanal::master');
-$routes->post('/categories/save', 'Categories::save');
-$routes->get('/categories/delete/(:num)', 'Categories::delete/$1');
+$routes->get('/categories', 'Kanal::master', ['filter' => 'role:master,admin']);
+$routes->post('/categories/save', 'Categories::save', ['filter' => 'role:master,admin']);
+$routes->get('/categories/delete/(:num)', 'Categories::delete/$1', ['filter' => 'role:master,admin']);
 
-// User & Role Management
-$routes->get('/user', 'User::index');
-$routes->post('/user/save', 'User::save');
-$routes->get('/user/delete/(:num)', 'User::delete/$1');
+// Member / Client Management (Master, Admin) - Table: client_account_entity
+$routes->get('/member', 'Member::index', ['filter' => 'role:master,admin']);
+$routes->post('/member/save', 'Member::save', ['filter' => 'role:master,admin']);
+$routes->get('/member/delete/(:num)', 'Member::delete/$1', ['filter' => 'role:master,admin']);
+
+// User & Role Management (Master, Admin)
+$routes->get('/user', 'User::index', ['filter' => 'role:master,admin']);
+$routes->post('/user/save', 'User::save', ['filter' => 'role:master,admin']);
+$routes->get('/user/delete/(:num)', 'User::delete/$1', ['filter' => 'role:master,admin']);
+
+// AI Editorial Assistant (Gemini)
+$routes->post('/api/ai/title', 'AiAssistant::generateTitle');
+$routes->post('/api/ai/summary', 'AiAssistant::generateSummary');
+$routes->post('/api/ai/tags', 'AiAssistant::generateTags');
+$routes->post('/api/ai/points', 'AiAssistant::generatePoints');
+$routes->post('/api/ai/scrape', 'AiAssistant::scrape');
+
+// Tag Real-Time Autocomplete
+$routes->get('/api/tags/search', 'Post::searchTags');
+
+// Stock Ticker Real-Time Autocomplete (IDX)
+$routes->get('/api/stocks/search', 'Post::searchStocks');
+
+// Public Reader API Endpoints (Frontend Integration)
+$routes->get('/api/articles', 'Api\ArticleApi::index');
+$routes->get('/api/articles/(:any)/related', 'Api\ArticleApi::related/$1');
+$routes->get('/api/articles/(:any)', 'Api\ArticleApi::show/$1');
+$routes->get('/api/categories', 'Api\ArticleApi::categories');
+$routes->get('/api/search', 'Api\ArticleApi::search');
+
+$routes->get('/api/market/ticker', 'Api\MarketApi::ticker');
+$routes->get('/api/market/movers', 'Api\MarketApi::movers');
+
+$routes->post('/api/auth/client-login', 'Api\AuthApi::clientLogin');
+$routes->post('/api/auth/client-register', 'Api\AuthApi::clientRegister');

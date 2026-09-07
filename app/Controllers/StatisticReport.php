@@ -2,26 +2,31 @@
 
 namespace App\Controllers;
 
-use App\Models\DataRepository;
+use App\Models\ArticleModel;
+use App\Models\AdminModel;
 
 class StatisticReport extends BaseController
 {
+    protected ArticleModel $articleModel;
+    protected AdminModel $adminModel;
+
+    public function __construct()
+    {
+        $this->articleModel = new ArticleModel();
+        $this->adminModel = new AdminModel();
+    }
+
     public function index()
     {
-        $posts = DataRepository::get('posts') ?? [];
-        $users = DataRepository::get('users') ?? [];
-
-        // Tab selection: 'author' (default) or 'editor' or 'contributor' or 'daily'
         $tab = $this->request->getGet('tab') ?: 'author';
 
-        // Date range filtering (Default: 30 days ago until today)
+        // Date range filtering
         $todayStr = date('Y-m-d');
         $defaultFromStr = date('Y-m-d', strtotime('-30 days'));
 
         $fromDate = $this->request->getGet('from') ?: $defaultFromStr;
         $toDate = $this->request->getGet('to') ?: $todayStr;
 
-        // Enforce max 30 days logic safely
         $fromTimestamp = strtotime($fromDate);
         $toTimestamp = strtotime($toDate);
 
@@ -39,134 +44,112 @@ class StatisticReport extends BaseController
             $fromDate = date('Y-m-d', $fromTimestamp);
         }
 
-        // Build list of dates in the range for column headers (format: '3/9', '4/9', etc.)
+        // Date columns list
         $dateColumns = [];
         $curr = $fromTimestamp;
         while ($curr <= $toTimestamp) {
             $dateColumns[] = [
-                'full_date' => date('Y-m-d', $curr),
-                'short_label' => date('j/n', $curr), // e.g. 3/9
-                'day_name' => date('D', $curr),
+                'full_date'   => date('Y-m-d', $curr),
+                'short_label' => date('j/n', $curr),
+                'day_name'    => date('D', $curr),
             ];
             $curr = strtotime('+1 day', $curr);
         }
 
-        // Filter posts within range
-        $filteredPosts = array_filter($posts, function($p) use ($fromTimestamp, $toTimestamp) {
-            $pubDateStr = $p['publish_date'] ?? $p['create_date'] ?? '';
-            $ts = strtotime($pubDateStr);
-            if (!$ts) return false;
-            $pDate = strtotime(date('Y-m-d', $ts));
-            return ($pDate >= strtotime(date('Y-m-d', $fromTimestamp)) && $pDate <= strtotime(date('Y-m-d', $toTimestamp)));
-        });
+        // Get users list
+        $allUsers = $this->adminModel->select('
+                ref_entity_principal_id AS id,
+                attr_display_name AS name,
+                attr_identifier AS username,
+                attr_contact_val AS email,
+                attr_role_code AS role
+            ')->findAll();
 
-        // 1. Author Matrix Report (Users with role 'Author')
-        $authorUsers = array_filter($users, fn($u) => ($u['role'] ?? '') === 'Author');
-        $authorMatrix = [];
-        foreach ($authorUsers as $u) {
-            $uPosts = array_filter($filteredPosts, fn($p) => ($p['post_by'] ?? '') === $u['username'] || stripos($p['author'] ?? '', $u['name']) !== false);
-            $published = array_filter($uPosts, fn($p) => ($p['status'] ?? '') === 'Published');
-            $totalViews = array_sum(array_column($uPosts, 'views'));
+        $authorUsers = array_filter($allUsers, fn($u) => ($u['role'] ?? '') === 'Author');
+        $editorUsers = array_filter($allUsers, fn($u) => in_array($u['role'] ?? '', ['Editor', 'Admin']));
+        $contribUsers = array_filter($allUsers, fn($u) => ($u['role'] ?? '') === 'Contributor');
 
-            // Count per date column
-            $dailyCounts = [];
-            foreach ($dateColumns as $col) {
-                $colDate = $col['full_date'];
-                $countOnDate = 0;
-                foreach ($published as $p) {
-                    $pTs = strtotime($p['publish_date'] ?? $p['create_date'] ?? '');
-                    if ($pTs && date('Y-m-d', $pTs) === $colDate) {
-                        $countOnDate++;
-                    }
-                }
-                $dailyCounts[$colDate] = $countOnDate;
-            }
+        // Build matrices
+        $authorMatrix = $this->buildMatrix($authorUsers, $dateColumns, $fromDate, $toDate, true);
+        $editorMatrix = $this->buildMatrix($editorUsers, $dateColumns, $fromDate, $toDate, false);
+        $contribMatrix = $this->buildMatrix($contribUsers, $dateColumns, $fromDate, $toDate, true);
 
-            $authorMatrix[] = [
-                'user' => $u,
-                'name' => $u['name'],
-                'role' => $u['role'],
-                'daily_counts' => $dailyCounts,
-                'published_count' => count($published),
-                'total_views' => $totalViews,
-            ];
-        }
-        usort($authorMatrix, fn($a, $b) => $b['published_count'] <=> $a['published_count']);
-
-        // 2. Editor Matrix Report (Users with role 'Editor' or 'Admin')
-        $editorUsers = array_filter($users, fn($u) => in_array($u['role'] ?? '', ['Editor', 'Admin']));
-        $editorMatrix = [];
-        foreach ($editorUsers as $u) {
-            $uPosts = array_filter($filteredPosts, fn($p) => ($p['post_by'] ?? '') === $u['username']);
-            $published = array_filter($uPosts, fn($p) => ($p['status'] ?? '') === 'Published');
-            $totalViews = array_sum(array_column($uPosts, 'views'));
-
-            $dailyCounts = [];
-            foreach ($dateColumns as $col) {
-                $colDate = $col['full_date'];
-                $countOnDate = 0;
-                foreach ($published as $p) {
-                    $pTs = strtotime($p['publish_date'] ?? $p['create_date'] ?? '');
-                    if ($pTs && date('Y-m-d', $pTs) === $colDate) {
-                        $countOnDate++;
-                    }
-                }
-                $dailyCounts[$colDate] = $countOnDate;
-            }
-
-            $editorMatrix[] = [
-                'user' => $u,
-                'name' => $u['name'],
-                'role' => $u['role'],
-                'daily_counts' => $dailyCounts,
-                'published_count' => count($published),
-                'total_views' => $totalViews,
-            ];
-        }
-        usort($editorMatrix, fn($a, $b) => $b['published_count'] <=> $a['published_count']);
-
-        // 3. Contributor Matrix Report
-        $contribUsers = array_filter($users, fn($u) => ($u['role'] ?? '') === 'Contributor');
-        $contribMatrix = [];
-        foreach ($contribUsers as $u) {
-            $uPosts = array_filter($filteredPosts, fn($p) => ($p['post_by'] ?? '') === $u['username'] || stripos($p['author'] ?? '', $u['name']) !== false);
-            $published = array_filter($uPosts, fn($p) => ($p['status'] ?? '') === 'Published');
-            $totalViews = array_sum(array_column($uPosts, 'views'));
-
-            $dailyCounts = [];
-            foreach ($dateColumns as $col) {
-                $colDate = $col['full_date'];
-                $countOnDate = 0;
-                foreach ($published as $p) {
-                    $pTs = strtotime($p['publish_date'] ?? $p['create_date'] ?? '');
-                    if ($pTs && date('Y-m-d', $pTs) === $colDate) {
-                        $countOnDate++;
-                    }
-                }
-                $dailyCounts[$colDate] = $countOnDate;
-            }
-
-            $contribMatrix[] = [
-                'user' => $u,
-                'name' => $u['name'],
-                'role' => $u['role'],
-                'daily_counts' => $dailyCounts,
-                'published_count' => count($published),
-                'total_views' => $totalViews,
-            ];
-        }
+        $totalFilteredArticles = $this->articleModel->db->table('entity_nano')
+            ->where('entity_date >=', date('Y-m-d 00:00:00', $fromTimestamp))
+            ->where('entity_date <=', date('Y-m-d 23:59:59', $toTimestamp))
+            ->countAllResults();
 
         return view('statistic/report', [
-            'title' => 'Editorial Performance Matrix Report',
-            'breadcrumb' => 'Insights / Editorial Performance',
-            'tab' => $tab,
-            'fromDate' => $fromDate,
-            'toDate' => $toDate,
-            'dateColumns' => $dateColumns,
-            'authorMatrix' => $authorMatrix,
-            'editorMatrix' => $editorMatrix,
-            'contribMatrix' => $contribMatrix,
-            'totalFilteredArticles' => count($filteredPosts),
+            'title'                 => 'Editorial Performance Matrix Report',
+            'breadcrumb'            => 'Insights / Editorial Performance',
+            'tab'                   => $tab,
+            'fromDate'              => $fromDate,
+            'toDate'                => $toDate,
+            'dateColumns'           => $dateColumns,
+            'authorMatrix'          => $authorMatrix,
+            'editorMatrix'          => $editorMatrix,
+            'contribMatrix'         => $contribMatrix,
+            'totalFilteredArticles' => $totalFilteredArticles,
         ]);
+    }
+
+    protected function buildMatrix(array $users, array $dateColumns, string $fromDate, string $toDate, bool $isAuthor): array
+    {
+        $matrix = [];
+        $db = $this->articleModel->db;
+
+        foreach ($users as $u) {
+            $dailyCounts = [];
+            foreach ($dateColumns as $col) {
+                $dailyCounts[$col['full_date']] = 0;
+            }
+
+            if ($isAuthor) {
+                // Author query matching author link or byline
+                $res = $db->table('entity_nano n')
+                    ->select('DATE(n.entity_date) AS pdate, COUNT(DISTINCT n.ref_entity_nano_id) AS cnt, SUM(n.view_count) AS vsum')
+                    ->join('entity_nano_aubert_link nal', 'nal.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
+                    ->join('entity_aubert a', 'a.ref_entity_aubert_id = nal.ref_entity_aubert_id', 'left')
+                    ->where('n.entity_date >=', $fromDate . ' 00:00:00')
+                    ->where('n.entity_date <=', $toDate . ' 23:59:59')
+                    ->groupStart()
+                        ->like('a.aubert_name_a', $u['name'])
+                        ->orWhere('n.ref_entity_acc_id', $u['id'])
+                    ->groupEnd()
+                    ->groupBy('DATE(n.entity_date)')
+                    ->get()->getResultArray();
+            } else {
+                // Editor query matching ref_entity_acc_id
+                $res = $db->table('entity_nano n')
+                    ->select('DATE(n.entity_date) AS pdate, COUNT(DISTINCT n.ref_entity_nano_id) AS cnt, SUM(n.view_count) AS vsum')
+                    ->where('n.ref_entity_acc_id', $u['id'])
+                    ->where('n.entity_date >=', $fromDate . ' 00:00:00')
+                    ->where('n.entity_date <=', $toDate . ' 23:59:59')
+                    ->groupBy('DATE(n.entity_date)')
+                    ->get()->getResultArray();
+            }
+
+            $publishedCount = 0;
+            $totalViews = 0;
+            foreach ($res as $r) {
+                if (isset($dailyCounts[$r['pdate']])) {
+                    $dailyCounts[$r['pdate']] = (int)$r['cnt'];
+                }
+                $publishedCount += (int)$r['cnt'];
+                $totalViews += (int)($r['vsum'] ?? 0);
+            }
+
+            $matrix[] = [
+                'user'            => $u,
+                'name'            => $u['name'],
+                'role'            => $u['role'],
+                'daily_counts'    => $dailyCounts,
+                'published_count' => $publishedCount,
+                'total_views'     => $totalViews,
+            ];
+        }
+
+        usort($matrix, fn($a, $b) => $b['published_count'] <=> $a['published_count']);
+        return $matrix;
     }
 }

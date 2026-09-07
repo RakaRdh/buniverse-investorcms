@@ -50,11 +50,21 @@
                         <?php
                             $role = $user['role'];
                             $roleClass = match($role) {
+                                'Master' => 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold',
                                 'Admin' => 'bg-primary/10 text-primary border-primary/20',
                                 'Editor' => 'bg-accent/12 text-accent border-accent/25',
                                 'Author' => 'bg-success/12 text-success border-success/25',
                                 default => 'bg-muted text-muted-foreground border-border'
                             };
+
+                            $sessionUserId = (int)(session()->get('user_id') ?: 9);
+                            $sessionUserRole = session()->get('user_role') ?? 'Admin';
+                            $canDelete = true;
+                            if ((int)$user['id'] === $sessionUserId) {
+                                $canDelete = false; // Cannot delete self
+                            } elseif (strcasecmp($sessionUserRole, 'Master') !== 0 && in_array(strtolower($user['role']), ['master', 'admin'])) {
+                                $canDelete = false; // Only Master can delete Admin or Master
+                            }
                         ?>
                         <span class="inline-flex rounded-md border px-2 py-0.5 text-xs font-medium <?= $roleClass ?>"><?= esc($role) ?></span>
                     </td>
@@ -70,9 +80,15 @@
                             <button class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted" title="Permissions">
                                 <i data-lucide="shield" class="size-3.5"></i>
                             </button>
-                            <a href="<?= base_url('user/delete/' . $user['id']) ?>" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-destructive hover:bg-destructive/10" title="Delete User" onclick="return confirm('Remove user account?')">
+                            <?php if ($canDelete): ?>
+                            <a href="<?= base_url('user/delete/' . $user['id']) ?>" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-destructive hover:bg-destructive/10" title="Delete User" onclick="return confirm('Remove user account: <?= esc(addslashes($user['name'])) ?>?')">
                                 <i data-lucide="trash-2" class="size-3.5"></i>
                             </a>
+                            <?php else: ?>
+                            <span class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-muted/40 text-muted-foreground/40 cursor-not-allowed" title="Protected Account">
+                                <i data-lucide="lock" class="size-3.5"></i>
+                            </span>
+                            <?php endif; ?>
                         </div>
                     </td>
                 </tr>
@@ -83,8 +99,8 @@
 </div>
 
 <!-- Modal -->
-<div id="newUserModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.6); z-index: 99; align-items: center; justify-content: center; padding: 1rem;">
-    <div class="surface-card w-full max-w-md p-6 shadow-2xl space-y-4">
+<div id="newUserModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-lg p-5 shadow-2xl space-y-3.5 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-150">
         <div class="flex items-center justify-between border-b border-border pb-3">
             <h3 class="text-sm font-bold text-foreground">Register Editorial Staff</h3>
             <button type="button" onclick="document.getElementById('newUserModal').style.display='none'" class="text-muted-foreground hover:text-foreground">
@@ -103,10 +119,13 @@
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Assigned Role</label>
                 <select name="role" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                    <option value="Author">Author / Journalist</option>
-                    <option value="Editor">Editor</option>
-                    <option value="Contributor">Contributor</option>
+                    <?php if (strcasecmp(session()->get('user_role') ?? '', 'Master') === 0): ?>
+                    <option value="Master">Master / Super Administrator</option>
+                    <?php endif; ?>
                     <option value="Admin">Administrator</option>
+                    <option value="Editor">Editor</option>
+                    <option value="Author">Author / Journalist</option>
+                    <option value="Contributor">Contributor</option>
                 </select>
             </div>
             <div class="flex justify-end gap-2 pt-2 border-t border-border">

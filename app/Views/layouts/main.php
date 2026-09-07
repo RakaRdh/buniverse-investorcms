@@ -26,16 +26,18 @@
     <!-- Page Specific CSS -->
     <?= $this->renderSection('styles') ?>
 
-    <!-- Anti-Flicker Zero-FOUC Dark Mode Pre-renderer -->
+    <!-- Anti-Flicker Zero-FOUC Dark Mode Pre-renderer: Default Light Theme Across All Browsers -->
     <script>
         (function() {
             try {
                 const storedTheme = localStorage.getItem('investor_theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+                if (storedTheme === 'dark') {
                     document.documentElement.classList.add('dark');
                 } else {
                     document.documentElement.classList.remove('dark');
+                    if (!storedTheme) {
+                        localStorage.setItem('investor_theme', 'light');
+                    }
                 }
             } catch (e) {}
         })();
@@ -85,6 +87,28 @@
         <div class="mt-6 flex justify-end gap-2.5">
             <button type="button" onclick="closeLogoutModal()" class="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors">Cancel</button>
             <a href="<?= base_url('logout') ?>" class="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors">Logout</a>
+        </div>
+    </div>
+</div>
+
+<!-- AI Loading Custom Modal (Matching PortalBerita/BackendCMS) -->
+<div id="aiLoadingModal" class="fixed inset-0 z-[100] bg-black/40 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-card text-card-foreground rounded-xl p-6 max-w-xs w-full border border-border shadow-xl flex flex-col items-center justify-center space-y-4">
+        <div class="animate-spin rounded-full size-10 border-4 border-muted border-t-primary"></div>
+        <p id="aiLoadingMessage" class="text-xs font-semibold text-foreground text-center leading-relaxed">Sedang memproses...</p>
+    </div>
+</div>
+
+<!-- AI Service Failure / Limit Alert Custom Modal (Matching PortalBerita/BackendCMS) -->
+<div id="aiErrorModal" class="fixed inset-0 z-[100] bg-black/40 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-card text-card-foreground rounded-xl p-6 max-w-md w-full border border-border shadow-xl space-y-4">
+        <div class="flex items-center gap-2.5 border-b border-border pb-3 text-destructive">
+            <i data-lucide="alert-triangle" class="size-5 shrink-0"></i>
+            <h4 class="font-bold text-sm uppercase tracking-wider text-foreground" id="aiErrorModalTitle">Pemberitahuan AI</h4>
+        </div>
+        <p id="aiErrorModalMessage" class="text-xs text-muted-foreground leading-relaxed"></p>
+        <div class="flex justify-end pt-2">
+            <button type="button" onclick="closeAiErrorModal()" class="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors">Tutup</button>
         </div>
     </div>
 </div>

@@ -2,47 +2,43 @@
 
 namespace App\Controllers;
 
-use App\Models\DataRepository;
+use App\Models\CategoryModel;
 
 class Categories extends BaseController
 {
+    protected CategoryModel $categoryModel;
+
+    public function __construct()
+    {
+        $this->categoryModel = new CategoryModel();
+    }
+
     public function index()
     {
-        $categories = DataRepository::get('categories');
-        return view('categories/index', [
-            'title' => 'Category Management',
-            'breadcrumb' => 'Management / Categories',
-            'categories' => $categories
-        ]);
+        $categories = $this->categoryModel->getKanalTree();
+        return redirect()->to('/kanal/master');
     }
 
     public function save()
     {
-        $categories = DataRepository::get('categories');
-        $name = $this->request->getPost('name');
-        
-        $newId = count($categories) > 0 ? max(array_column($categories, 'id')) + 1 : 1;
-        $newItem = [
-            'id' => $newId,
-            'name' => $name,
-            'slug' => url_title($name, '-', true),
-            'count' => 0,
-            'status' => 'Active',
-            'updated' => date('d M Y H:i')
-        ];
+        $name = trim($this->request->getPost('name') ?? '');
+        if (!empty($name)) {
+            $this->categoryModel->insert([
+                'charlie_name_a' => $name,
+                'field_label_a'  => url_title($name, '-', true),
+                'status_code'    => 1,
+                'numeric_val'    => 1,
+            ]);
+            $newId = $this->categoryModel->insertID();
+            $this->categoryModel->syncBackup($newId);
+        }
 
-        $categories[] = $newItem;
-        DataRepository::save('categories', $categories);
-
-        return redirect()->to('/categories')->with('success', 'Category created successfully!');
+        return redirect()->to('/kanal/master')->with('success', 'Category created successfully!');
     }
 
     public function delete($id)
     {
-        $categories = DataRepository::get('categories');
-        $categories = array_filter($categories, fn($c) => $c['id'] != $id);
-        DataRepository::save('categories', array_values($categories));
-
-        return redirect()->to('/categories')->with('success', 'Category removed.');
+        $this->categoryModel->delete((int)$id);
+        return redirect()->to('/kanal/master')->with('success', 'Category removed.');
     }
 }

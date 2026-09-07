@@ -49,10 +49,87 @@ $navGroups = [
                     ['label' => 'Performa Kanal', 'to' => 'kanal/stats'],
                 ]
             ],
+            ['label' => 'Member', 'to' => 'member', 'icon' => 'contact-round'],
             ['label' => 'User', 'to' => 'user', 'icon' => 'users'],
         ]
     ]
 ];
+
+$userRole = strtolower(session('user_role') ?? 'admin');
+
+// Dynamic RBAC Menu Visibility
+if (in_array($userRole, ['author', 'contributor'])) {
+    // Author & Contributor: Focused writing workspace, hide Headline, Apps, and Management
+    $navGroups = [
+        [
+            'label' => 'Content',
+            'items' => [
+                ['label' => 'Dashboard', 'to' => 'dashboard', 'icon' => 'layout-dashboard'],
+                ['label' => 'Post', 'to' => 'post', 'icon' => 'file-text'],
+                ['label' => 'Media', 'to' => 'media', 'icon' => 'image'],
+                ['label' => 'Files', 'to' => 'files', 'icon' => 'folder-open'],
+            ]
+        ],
+        [
+            'label' => 'Insights',
+            'items' => [
+                [
+                    'label' => 'Statistic',
+                    'type' => 'dropdown',
+                    'icon' => 'bar-chart-3',
+                    'children' => [
+                        ['label' => 'Trafik & Audiens', 'to' => 'statistic'],
+                        ['label' => 'Performa Tim Editorial', 'to' => 'statistic/report'],
+                    ]
+                ],
+            ]
+        ]
+    ];
+} elseif ($userRole === 'editor') {
+    // Editor: Content curation, headline, charts, kanal, but no Apps or User management
+    $navGroups = [
+        [
+            'label' => 'Content',
+            'items' => [
+                ['label' => 'Dashboard', 'to' => 'dashboard', 'icon' => 'layout-dashboard'],
+                ['label' => 'Post', 'to' => 'post', 'icon' => 'file-text'],
+                ['label' => 'Headline', 'to' => 'headline', 'icon' => 'newspaper'],
+                ['label' => 'Media', 'to' => 'media', 'icon' => 'image'],
+                ['label' => 'Files', 'to' => 'files', 'icon' => 'folder-open'],
+            ]
+        ],
+        [
+            'label' => 'Insights',
+            'items' => [
+                ['label' => 'Embed Chart', 'to' => 'embed-chart', 'icon' => 'line-chart'],
+                [
+                    'label' => 'Statistic',
+                    'type' => 'dropdown',
+                    'icon' => 'bar-chart-3',
+                    'children' => [
+                        ['label' => 'Trafik & Audiens', 'to' => 'statistic'],
+                        ['label' => 'Performa Tim Editorial', 'to' => 'statistic/report'],
+                    ]
+                ],
+            ]
+        ],
+        [
+            'label' => 'Management',
+            'items' => [
+                [
+                    'label' => 'Kanal',
+                    'type' => 'dropdown',
+                    'icon' => 'layers',
+                    'children' => [
+                        ['label' => 'Master Kanal', 'to' => 'kanal/master'],
+                        ['label' => 'Sub Kanal', 'to' => 'kanal/sub'],
+                        ['label' => 'Performa Kanal', 'to' => 'kanal/stats'],
+                    ]
+                ],
+            ]
+        ]
+    ];
+}
 ?>
 
 <div class="flex h-screen flex-col justify-between bg-sidebar text-sidebar-foreground select-none overflow-hidden">

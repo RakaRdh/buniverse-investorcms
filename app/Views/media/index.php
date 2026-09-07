@@ -44,8 +44,8 @@
         <div class="surface-card p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-150 hover:shadow-raised hover:border-primary/40">
             <!-- Left Side: Image Preview + Information -->
             <div class="flex items-start gap-4 min-w-0 flex-1">
-                <div class="size-24 rounded-lg overflow-hidden border border-border shrink-0 bg-muted">
-                    <img src="<?= esc($item['image']) ?>" alt="" class="h-full w-full object-cover">
+                <div class="size-24 rounded-lg overflow-hidden border border-border shrink-0 bg-slate-900">
+                    <img src="<?= esc($item['image']) ?>" alt="" class="h-full w-full object-cover" onerror="this.onerror=null;this.src='/img/article1.jpg';">
                 </div>
                 <div class="space-y-1.5 min-w-0 flex-1">
                     <a href="<?= base_url('media/edit/' . $item['id']) ?>" class="font-bold text-sm text-[#2B6CB0] hover:underline block leading-snug">

@@ -2,48 +2,48 @@
 
 namespace App\Controllers;
 
-use App\Models\DataRepository;
+use App\Models\HeadlineModel;
+use App\Models\ArticleModel;
+use App\Models\CategoryModel;
 
 class Headline extends BaseController
 {
+    protected HeadlineModel $headlineModel;
+    protected ArticleModel $articleModel;
+    protected CategoryModel $categoryModel;
+
+    public function __construct()
+    {
+        $this->headlineModel = new HeadlineModel();
+        $this->articleModel = new ArticleModel();
+        $this->categoryModel = new CategoryModel();
+    }
+
     public function index()
     {
-        $posts = DataRepository::get('posts');
-        $categories = DataRepository::get('categories');
-        $headlines = DataRepository::get('active_headlines') ?? [];
-
-        if (empty($headlines)) {
-            // Default 3 headlines from published articles
-            $published = array_values(array_filter($posts, fn($p) => $p['status'] === 'Published'));
-            $headlines = array_slice($published, 0, 3);
-            DataRepository::save('active_headlines', $headlines);
-        }
+        $categories = $this->categoryModel->getKanalTree();
+        $headlines = $this->headlineModel->getActiveHeadlines();
 
         // Filtering parameters
         $keyword = $this->request->getGet('q');
         $categoryFilter = $this->request->getGet('category');
 
-        $availablePosts = array_values(array_filter($posts, fn($p) => $p['status'] === 'Published'));
+        $filters = [
+            'status' => 'Published',
+            'q'      => $keyword,
+            'kanal'  => $categoryFilter,
+        ];
 
-        if ($keyword) {
-            $availablePosts = array_filter($availablePosts, fn($p) => 
-                stripos($p['title'], $keyword) !== false || 
-                stripos($p['author'], $keyword) !== false
-            );
-        }
-
-        if ($categoryFilter && $categoryFilter !== 'all') {
-            $availablePosts = array_filter($availablePosts, fn($p) => $p['category'] === $categoryFilter);
-        }
+        $availableResult = $this->articleModel->getArticlesWithRelations($filters, 1, 30);
 
         return view('headline/index', [
-            'title' => 'Headline Management',
-            'breadcrumb' => 'Headline / Placements',
-            'availablePosts' => array_values($availablePosts),
-            'headlines' => $headlines,
-            'categories' => $categories,
-            'filters' => [
-                'q' => $keyword ?? '',
+            'title'          => 'Headline Management',
+            'breadcrumb'     => 'Headline / Placements',
+            'availablePosts' => $availableResult['data'],
+            'headlines'      => $headlines,
+            'categories'     => $categories,
+            'filters'        => [
+                'q'        => $keyword ?? '',
                 'category' => $categoryFilter ?? 'all'
             ]
         ]);
@@ -51,27 +51,19 @@ class Headline extends BaseController
 
     public function add()
     {
-        $articleId = $this->request->getPost('article_id');
-        $posts = DataRepository::get('posts');
-        $headlines = DataRepository::get('active_headlines') ?? [];
+        $articleId = (int)$this->request->getPost('article_id');
 
-        // Check if already in headlines
-        $exists = false;
-        foreach ($headlines as $h) {
-            if ($h['id'] == $articleId) {
-                $exists = true;
-                break;
-            }
-        }
+        $exists = $this->headlineModel->where('ref_entity_nano_id', $articleId)->first();
 
         if (!$exists) {
-            foreach ($posts as $p) {
-                if ($p['id'] == $articleId) {
-                    $headlines[] = $p;
-                    break;
-                }
-            }
-            DataRepository::save('active_headlines', $headlines);
+            $maxPos = $this->headlineModel->selectMax('numeric_val')->first()['numeric_val'] ?? 0;
+            $this->headlineModel->insert([
+                'charlie_label'      => 'Headline',
+                'ref_entity_nano_id' => $articleId,
+                'numeric_val'        => $maxPos + 1,
+                'event_timestamp'    => date('Y-m-d H:i:s'),
+                'status_code'        => 1,
+            ]);
             return redirect()->to('/headline')->with('success', 'Article added to headline queue.');
         }
 
@@ -80,16 +72,13 @@ class Headline extends BaseController
 
     public function remove($id)
     {
-        $headlines = DataRepository::get('active_headlines') ?? [];
-        $headlines = array_values(array_filter($headlines, fn($h) => $h['id'] != $id));
-        DataRepository::save('active_headlines', $headlines);
-
+        $this->headlineModel->where('ref_entity_nano_id', (int)$id)->delete();
         return redirect()->to('/headline')->with('success', 'Article removed from headline list.');
     }
 
     public function save()
     {
         $targetCategory = $this->request->getPost('target_category') ?: 'Headline';
-        return redirect()->to('/headline')->with('success', "Headline list for '{$targetCategory}' published to user page successfully!");
+        return redirect()->to('/headline')->with('success', "Headline list for '{$targetCategory}' published to database successfully!");
     }
 }

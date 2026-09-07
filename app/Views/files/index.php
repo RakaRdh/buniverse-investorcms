@@ -96,8 +96,8 @@
 </div>
 
 <!-- Upload File Modal -->
-<div id="uploadFileModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.6); z-index: 99; align-items: center; justify-content: center; padding: 1rem;">
-    <div class="surface-card w-full max-w-md p-6 shadow-2xl space-y-4">
+<div id="uploadFileModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-lg p-5 shadow-2xl space-y-3.5 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-150">
         <div class="flex items-center justify-between border-b border-border pb-3">
             <h3 class="text-sm font-bold text-foreground">Upload & Register Document</h3>
             <button type="button" onclick="document.getElementById('uploadFileModal').style.display='none'" class="text-muted-foreground hover:text-foreground">
