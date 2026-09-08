@@ -98,6 +98,10 @@ $routes->post('/api/ai/tags', 'AiAssistant::generateTags');
 $routes->post('/api/ai/points', 'AiAssistant::generatePoints');
 $routes->post('/api/ai/scrape', 'AiAssistant::scrape');
 
+// Editorial Auto-Save & Standardized Image Upload
+$routes->post('/api/autosave', 'Api\PostApi::autosave');
+$routes->post('/api/upload-image', 'Api\PostApi::uploadImage');
+
 // Tag Real-Time Autocomplete
 $routes->get('/api/tags/search', 'Post::searchTags');
 

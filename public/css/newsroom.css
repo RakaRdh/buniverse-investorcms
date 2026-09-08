@@ -263,3 +263,23 @@ main .surface-card table {
 .modal-dialog-selector {
   max-width: 44rem !important;
 }
+
+/* Lightweight CSS Spinner Animation (Native, zero dependencies) */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 0.8s linear infinite !important;
+}
+
+.custom-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid rgba(43, 108, 176, 0.2);
+  border-top-color: #2B6CB0;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+

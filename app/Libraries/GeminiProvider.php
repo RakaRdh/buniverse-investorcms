@@ -278,7 +278,7 @@ class GeminiProvider
                 $savedImage = $this->saveLocalImage($thumbnailUrl);
             } catch (\Throwable $e) {
                 log_message('error', 'Thumbnail download failed: ' . $e->getMessage());
-                $savedImage = $thumbnailUrl; // fallback to original URL
+                $savedImage = null;
             }
         }
 
@@ -305,7 +305,7 @@ class GeminiProvider
 
         return [
             'body'          => $body,
-            'thumbnail_url' => $savedImage ?: '/img/article1.jpg',
+            'thumbnail_url' => $savedImage ?: '/img/investor_placeholder.jpg',
             'source_url'    => $url,
             'model'         => $this->getLastModelUsed(),
         ];
@@ -366,7 +366,7 @@ class GeminiProvider
         return $response;
     }
 
-    protected function saveLocalImage(string $imageUrl): string
+    protected function saveLocalImage(string $imageUrl): ?string
     {
         $ch = curl_init($imageUrl);
         curl_setopt_array($ch, [
@@ -374,7 +374,7 @@ class GeminiProvider
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT        => 15,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; InvestorCMSBot/1.0)',
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
         ]);
 
         $imgData = curl_exec($ch);
@@ -382,16 +382,13 @@ class GeminiProvider
         curl_close($ch);
 
         if ($httpCode === 200 && !empty($imgData)) {
-            $uploadDir = FCPATH . 'uploads/media';
-            if (!is_dir($uploadDir)) {
-                @mkdir($uploadDir, 0755, true);
+            $processor = new ImageProcessor();
+            $savedPath = $processor->processFromString($imgData, 'scrape');
+            if ($savedPath) {
+                return $savedPath;
             }
-            $fileName = 'scrape_' . time() . '_' . substr(md5($imageUrl), 0, 8) . '.jpg';
-            $filePath = $uploadDir . '/' . $fileName;
-            file_put_contents($filePath, $imgData);
-            return '/uploads/media/' . $fileName;
         }
 
-        return $imageUrl;
+        return null;
     }
 }

@@ -94,7 +94,7 @@ class Media extends BaseController
         }
 
         if (empty($imagePath)) {
-            $imagePath = '/img/article1.jpg';
+            $imagePath = '/img/investor_placeholder.jpg';
         }
 
         $this->mediaModel->insert([

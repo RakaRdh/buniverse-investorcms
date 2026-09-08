@@ -35,11 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
             quill.root.innerHTML = hiddenContent.value;
         }
 
-        // On text change, update hidden input
+        // On text change, update hidden input & mark dirty
         quill.on('text-change', () => {
             if (hiddenContent) {
                 hiddenContent.value = quill.root.innerHTML;
             }
+            markEditorDirty();
         });
     }
 
@@ -51,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultDate: dateInput.value || new Date(),
             onChange: function(selectedDates, dateStr) {
                 updateFullPublishDate();
+                markEditorDirty();
             }
         });
     }
@@ -60,14 +62,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (statusSelect) {
         statusSelect.addEventListener('change', (e) => {
             toggleScheduledSection(e.target.value === 'Scheduled');
+            markEditorDirty();
         });
         toggleScheduledSection(statusSelect.value === 'Scheduled');
     }
 
-    // 4. Form Submit sync guard
+    // 4. Form Submit sync guard & dirty state
     const form = document.getElementById('postEditorForm');
     if (form) {
+        form.addEventListener('input', () => {
+            markEditorDirty();
+        });
         form.addEventListener('submit', () => {
+            isFormSubmitting = true;
             if (quill) {
                 const hiddenContent = document.getElementById('hiddenContentInput');
                 if (hiddenContent) {
@@ -85,6 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 6. Initialize Realtime Character Counters (Judul & Summary)
     initCharCounters();
+
+    // 7. Initialize Cover Image Drag-and-Drop & Auto-Save
+    initCoverDropzone();
+    initAutoSave();
 });
 
 function initCharCounters() {
@@ -335,11 +346,16 @@ function insertEmbedTool(type) {
     if (type === 'page_break') {
         const range = quill.getSelection(true);
         const index = range ? range.index : quill.getLength();
-        const embedHtml = `<hr class="my-4"><p class="text-center text-xs text-muted-foreground tracking-widest font-mono">--- HALAMAN BERIKUTNYA (PAGE BREAK) ---</p><hr class="my-4"><p></p>`;
+        const embedHtml = `
+            <div class="article-page-break my-6 py-2.5 px-4 rounded-lg bg-amber-500/10 border border-dashed border-amber-500/40 text-center text-xs font-mono font-bold text-amber-700 dark:text-amber-300" data-page-break="true">
+                ✂ --- HALAMAN BERIKUTNYA (PAGE BREAK) --- ✂
+            </div>
+            <p><br></p>
+        `;
         quill.clipboard.dangerouslyPasteHTML(index, embedHtml);
         quill.setSelection(index + 1);
         if (typeof showToast === 'function') {
-            showToast('Page break berhasil disisipkan.', 'success');
+            showToast('Page break (halaman berikutnya) berhasil disisipkan.', 'success');
         }
     }
 }
@@ -377,30 +393,21 @@ function insertSelectedChart(title, symbol, type, source) {
     const index = range ? range.index : quill.getLength();
     
     const embedHtml = `
-        <div class="article-embed-chart p-4 my-4 rounded-xl border border-primary/30 bg-primary/5 shadow-xs font-sans">
-            <div class="flex items-center justify-between border-b border-primary/20 pb-2 mb-2.5">
-                <div class="flex items-center gap-2">
-                    <span class="rounded bg-primary text-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">${escapeHtml(type)} CHART</span>
-                    <strong class="text-xs text-foreground">${escapeHtml(title)}</strong>
-                </div>
-                <span class="text-[10px] font-mono text-primary font-bold">IDX:${escapeHtml(symbol)}</span>
+        <div class="cms-embed-placeholder my-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-xs text-primary font-sans flex items-center justify-between" data-embed-type="financial_chart" data-symbol="${escapeHtml(symbol)}" data-title="${escapeHtml(title)}" data-type="${escapeHtml(type)}" data-source="${escapeHtml(source)}">
+            <div class="flex items-center gap-2">
+                <span class="rounded bg-primary text-white px-2 py-0.5 text-[10px] font-bold uppercase">${escapeHtml(type)}</span>
+                <span class="font-semibold">${escapeHtml(title)} (IDX:${escapeHtml(symbol)})</span>
             </div>
-            <div class="h-32 rounded-lg bg-background border border-border flex items-center justify-center text-center p-4">
-                <div>
-                    <div class="text-xs font-bold text-foreground mb-0.5">Interactive Chart: ${escapeHtml(symbol)}</div>
-                    <div class="text-[11px] text-muted-foreground">Sumber data: ${escapeHtml(source)} &bull; Realtime Feed</div>
-                </div>
-            </div>
-            <div class="text-[10px] text-muted-foreground text-right mt-1.5 font-mono">Powered by Investor.id Chart Engine</div>
+            <span class="text-[10px] font-mono text-primary/80">::Embed Chart: ${escapeHtml(symbol)}::</span>
         </div>
-        <p></p>
+        <p><br></p>
     `;
 
     quill.clipboard.dangerouslyPasteHTML(index, embedHtml);
     quill.setSelection(index + 1);
     closeEmbedChartModal();
     if (typeof showToast === 'function') {
-        showToast(`Chart "${title}" berhasil disisipkan dari database.`, 'success');
+        showToast(`Chart "${title}" berhasil disisipkan.`, 'success');
     }
 }
 
@@ -436,21 +443,14 @@ function submitSocmedEmbed() {
     const index = range ? range.index : quill.getLength();
 
     const embedHtml = `
-        <div class="article-embed-socmed p-4 my-4 rounded-xl border border-amber-500/30 bg-amber-500/5 shadow-xs font-sans">
-            <div class="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-2">
-                <span class="rounded bg-amber-500 text-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">${escapeHtml(platform)}</span>
-                <a href="${escapeHtml(url)}" target="_blank" class="text-[11px] text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1 font-medium">
-                    <span>Buka Tautan Asli</span>
-                    &nearr;
-                </a>
+        <div class="cms-embed-placeholder my-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 text-xs text-amber-700 dark:text-amber-300 font-sans flex items-center justify-between" data-embed-type="socmed" data-platform="${escapeHtml(platform)}" data-url="${escapeHtml(url)}" data-caption="${escapeHtml(caption)}">
+            <div class="flex items-center gap-2 min-w-0 pr-2">
+                <span class="rounded bg-amber-500 text-white px-2 py-0.5 text-[10px] font-bold uppercase shrink-0">${escapeHtml(platform)}</span>
+                <span class="truncate font-medium">${escapeHtml(caption || url)}</span>
             </div>
-            ${caption ? `<p class="text-xs text-foreground font-medium mb-2">${escapeHtml(caption)}</p>` : ''}
-            <div class="p-3 rounded bg-background border border-border text-xs text-muted-foreground break-all font-mono">
-                ${escapeHtml(url)}
-            </div>
-            <div class="text-[10px] text-muted-foreground text-right mt-1.5 font-mono">Embedded Content &bull; Investor.id</div>
+            <span class="text-[10px] font-mono text-amber-600/80 shrink-0">::Embed Socmed: ${escapeHtml(platform)}::</span>
         </div>
-        <p></p>
+        <p><br></p>
     `;
 
     quill.clipboard.dangerouslyPasteHTML(index, embedHtml);
@@ -465,19 +465,25 @@ function submitSocmedEmbed() {
 let stockSearchDebounceTimer = null;
 
 async function fetchStockSearch(query) {
-    const input = document.getElementById('stockTickerInput');
     const dropdown = document.getElementById('stockAutocompleteDropdown');
     if (!dropdown) return;
 
+    const q = (query || '').trim().toUpperCase();
+    if (q.length < 1) {
+        dropdown.innerHTML = '';
+        dropdown.classList.add('hidden');
+        return;
+    }
+
     try {
-        const res = await fetch('/api/stocks/search?q=' + encodeURIComponent(query || ''));
+        const res = await fetch('/api/stocks/search?q=' + encodeURIComponent(q));
         if (!res.ok) return;
         const data = await res.json();
         if (data && data.length > 0) {
             let html = '';
             data.forEach(item => {
                 html += `
-                    <div class="px-3 py-2.5 text-xs hover:bg-indigo-500/10 hover:text-indigo-600 cursor-pointer flex items-center justify-between border-b border-border/40 last:border-0 transition-colors" onclick="selectStockTicker('${escapeHtml(item.ticker)}')">
+                    <div class="px-3 py-2 text-xs hover:bg-indigo-500/10 hover:text-indigo-600 cursor-pointer flex items-center justify-between border-b border-border/40 last:border-0 transition-colors" onclick="selectStockTicker('${escapeHtml(item.ticker)}')">
                         <div class="min-w-0 pr-2">
                             <div class="flex items-center gap-1.5">
                                 <span class="font-mono font-bold text-foreground text-xs">${escapeHtml(item.ticker)}</span>
@@ -494,7 +500,7 @@ async function fetchStockSearch(query) {
             dropdown.innerHTML = html;
             dropdown.classList.remove('hidden');
         } else {
-            dropdown.innerHTML = `<div class="p-3 text-xs text-muted-foreground italic">Kode emiten "${escapeHtml(query)}" tidak ditemukan di direktori IDX.</div>`;
+            dropdown.innerHTML = `<div class="p-3 text-xs text-muted-foreground italic">Kode emiten "${escapeHtml(q)}" tidak ditemukan di direktori IDX.</div>`;
             dropdown.classList.remove('hidden');
         }
     } catch (err) {
@@ -507,16 +513,17 @@ function initStockAutocomplete() {
     const dropdown = document.getElementById('stockAutocompleteDropdown');
     if (!input || !dropdown) return;
 
-    input.addEventListener('focus', () => {
-        fetchStockSearch(input.value.trim());
-    });
-
     input.addEventListener('input', (e) => {
         clearTimeout(stockSearchDebounceTimer);
         const val = input.value.trim().toUpperCase();
+        if (val.length < 1) {
+            dropdown.classList.add('hidden');
+            dropdown.innerHTML = '';
+            return;
+        }
         stockSearchDebounceTimer = setTimeout(() => {
             fetchStockSearch(val);
-        }, 100);
+        }, 150);
     });
 
     document.addEventListener('click', (e) => {
@@ -548,7 +555,6 @@ function setQuickStockTicker(ticker) {
     const dropdown = document.getElementById('stockAutocompleteDropdown');
     if (input) {
         input.value = ticker.toUpperCase();
-        input.focus();
     }
     if (dropdown) dropdown.classList.add('hidden');
 }
@@ -558,9 +564,13 @@ function openEmbedStockModal() {
     if (modal) {
         modal.style.display = 'flex';
         const input = document.getElementById('stockTickerInput');
+        const dropdown = document.getElementById('stockAutocompleteDropdown');
+        if (dropdown) {
+            dropdown.classList.add('hidden');
+            dropdown.innerHTML = '';
+        }
         if (input) {
             input.focus();
-            fetchStockSearch(input.value.trim());
         }
     }
 }
@@ -574,7 +584,7 @@ function closeEmbedStockModal() {
 
 function submitStockEmbed() {
     if (!quill) return;
-    const ticker = (document.getElementById('stockTickerInput')?.value || 'BBCA').toUpperCase().trim();
+    const ticker = (document.getElementById('stockTickerInput')?.value || '').toUpperCase().trim();
     const styleType = document.getElementById('stockChartTypeSelect')?.value || 'tradingview_full';
 
     if (!ticker) {
@@ -585,53 +595,22 @@ function submitStockEmbed() {
     const range = quill.getSelection(true);
     const index = range ? range.index : quill.getLength();
 
-    let embedHtml = '';
-    if (styleType === 'tradingview_full') {
-        embedHtml = `
-            <div class="article-embed-tradingview" style="background:#0b1329; border:1px solid #1e293b; border-radius:12px; padding:16px; margin:18px 0; color:#f8fafc; font-family:sans-serif;">
-                <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:12px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="background:#4f46e5; color:#ffffff; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:bold; letter-spacing:0.05em; text-transform:uppercase;">TRADINGVIEW LIVE</span>
-                        <strong style="font-size:13px; color:#ffffff;">Grafik Saham IDX:${escapeHtml(ticker)}</strong>
-                    </div>
-                    <span style="font-size:11px; font-family:monospace; color:#818cf8; font-weight:bold;">Bursa Efek Indonesia</span>
-                </div>
-                <div style="height:260px; background:#020617; border:1px solid #1e293b; border-radius:8px; position:relative; overflow:hidden;">
-                    <iframe src="https://s.tradingview.com/widgetembed/?symbol=IDX%3A${encodeURIComponent(ticker)}&interval=D&theme=dark&style=1&timezone=Asia%2FJakarta&locale=id" style="width:100%; height:100%; border:none;" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:10px; color:#94a3b8; font-family:monospace;">
-                    <span>Simbol: IDX:${escapeHtml(ticker)}</span>
-                    <span>Data disediakan oleh TradingView IDX Feed</span>
-                </div>
+    const embedHtml = `
+        <div class="cms-embed-placeholder my-3 p-3 rounded-lg border border-indigo-500/30 bg-indigo-500/5 text-xs text-indigo-700 dark:text-indigo-300 font-sans flex items-center justify-between" data-embed-type="stock_chart" data-symbol="${escapeHtml(ticker)}" data-style="${escapeHtml(styleType)}">
+            <div class="flex items-center gap-2">
+                <span class="rounded bg-indigo-600 text-white px-2 py-0.5 text-[10px] font-bold font-mono">IDX:${escapeHtml(ticker)}</span>
+                <span class="font-semibold">Live Stock Chart Widget</span>
             </div>
-            <p></p>
-        `;
-    } else {
-        embedHtml = `
-            <div class="article-embed-stock-card" style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid #4f46e5; border-radius:8px; padding:14px 18px; margin:16px 0; box-shadow:0 1px 3px rgba(0,0,0,0.06); font-family:sans-serif; max-width:440px;">
-                <div style="display:flex; align-items:center; justify-content:space-between;">
-                    <div>
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="font-size:13px; font-weight:bold; font-family:monospace; background:rgba(79,70,229,0.12); color:#4f46e5; padding:2px 6px; border-radius:4px;">${escapeHtml(ticker)}</span>
-                            <span style="font-size:11px; color:#64748b; font-family:monospace;">IDX &bull; Saham Indonesia</span>
-                        </div>
-                        <div style="font-size:15px; font-weight:bold; color:#0f172a; margin-top:6px; font-family:monospace;">Live Price Tracker</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <span style="font-size:11px; font-weight:bold; color:#10b981; font-family:monospace; background:#ecfdf5; padding:3px 8px; border-radius:4px;">▲ IDX LIVE FEED</span>
-                        <div style="font-size:10px; color:#94a3b8; margin-top:4px;">Investor.id Ticker</div>
-                    </div>
-                </div>
-            </div>
-            <p></p>
-        `;
-    }
+            <span class="text-[10px] font-mono text-indigo-500/80">::Stock Chart: ${escapeHtml(ticker)}::</span>
+        </div>
+        <p><br></p>
+    `;
 
     quill.clipboard.dangerouslyPasteHTML(index, embedHtml);
     quill.setSelection(index + 1);
     closeEmbedStockModal();
     if (typeof showToast === 'function') {
-        showToast(`Stock widget untuk "${ticker}" berhasil disisipkan.`, 'success');
+        showToast(`Placeholder Stock Chart "${ticker}" berhasil disisipkan.`, 'success');
     }
 }
 
@@ -677,8 +656,9 @@ function selectMediaImage(url) {
         if (quill) {
             const range = quill.getSelection(true);
             const index = range ? range.index : quill.getLength();
-            const html = `<figure class="my-4"><img src="${url}" class="rounded-md max-w-full" onerror="this.onerror=null;this.src='/img/article1.jpg';"><figcaption class="text-xs text-gray-500 mt-1">Dokumentasi Investor.id</figcaption></figure><p></p>`;
+            const html = `<figure class="my-4"><img src="${url}" class="rounded-lg max-w-full h-auto mx-auto shadow-sm" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';"><figcaption class="text-xs italic text-slate-500 mt-2 text-center border-b border-border/50 pb-1.5 font-sans">Dokumentasi Investor.id / Riset</figcaption></figure><p><br></p>`;
             quill.clipboard.dangerouslyPasteHTML(index, html);
+            quill.setSelection(index + 1);
         }
     } else {
         const input = document.getElementById('thumbnailInput');
@@ -768,13 +748,74 @@ function insertSelectedArticleLink(title, url, summary) {
     if (quill) {
         const range = quill.getSelection(true);
         const index = range ? range.index : quill.getLength();
-        const html = `<p class="my-2 p-2.5 rounded bg-muted/40 border-l-4 border-[#2B6CB0]"><strong>Baca Juga: </strong><a href="${url}" target="_blank" class="text-[#2B6CB0] font-bold underline">${title}</a><br><em class="text-xs text-muted-foreground">${summary}</em></p><p></p>`;
+        const html = `<blockquote><p><strong>Baca Juga: </strong><a href="${url}" target="_blank">${title}</a></p></blockquote><p><br></p>`;
         quill.clipboard.dangerouslyPasteHTML(index, html);
+        quill.setSelection(index + 1);
     }
     closeArticleLinkModal();
     if (typeof showToast === 'function') {
         showToast('Link artikel "Baca Juga" berhasil disisipkan.', 'success');
     }
+}
+
+// 10B. Sumber Berita & Poin Utama Handlers
+function handleSourceChange(val) {
+    const customInput = document.getElementById('customSourceInput');
+    if (!customInput) return;
+    if (val === 'Lainnya') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+    } else {
+        customInput.classList.add('hidden');
+        customInput.value = val;
+    }
+}
+
+function addPointRow(val = '') {
+    const container = document.getElementById('pointsListContainer');
+    if (!container) return;
+    const count = container.querySelectorAll('.point-row').length + 1;
+    const row = document.createElement('div');
+    row.className = 'point-row flex items-center gap-2';
+    row.innerHTML = `
+        <span class="point-number grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">${count}</span>
+        <input type="text" name="points[]" value="${escapeHtml(val)}" class="point-input flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting artikel...">
+        <button type="button" onclick="removePointRow(this)" class="point-remove-btn grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Hapus poin ini">
+            <i data-lucide="trash-2" class="size-3.5"></i>
+        </button>
+    `;
+    container.appendChild(row);
+    if (window.lucide) lucide.createIcons();
+    reindexPoints();
+}
+
+function removePointRow(btn) {
+    const container = document.getElementById('pointsListContainer');
+    if (!container) return;
+    const rows = container.querySelectorAll('.point-row');
+    if (rows.length <= 1) {
+        if (typeof showToast === 'function') {
+            showToast('Minimal harus ada 1 poin utama artikel.', 'warning');
+        }
+        return;
+    }
+    const row = btn.closest('.point-row');
+    if (row) {
+        row.remove();
+        reindexPoints();
+    }
+}
+
+function reindexPoints() {
+    const container = document.getElementById('pointsListContainer');
+    if (!container) return;
+    const rows = container.querySelectorAll('.point-row');
+    rows.forEach((r, idx) => {
+        const num = r.querySelector('.point-number');
+        if (num) num.textContent = (idx + 1);
+        const input = r.querySelector('.point-input');
+        if (input) input.placeholder = `Poin penting ke-${idx + 1} artikel...`;
+    });
 }
 
 // 11. Live AI Assistance via Gemini API Backend
@@ -794,6 +835,15 @@ async function handleAiAssistance(field) {
         }
         return;
     }
+
+    // Capture triggering buttons for inline loading indicator
+    const btnList = document.querySelectorAll(`button[onclick*="handleAiAssistance('${field}')"]`);
+    const originalBtnStates = [];
+    btnList.forEach(b => {
+        originalBtnStates.push({ btn: b, html: b.innerHTML, disabled: b.disabled });
+        b.disabled = true;
+        b.innerHTML = `<span class="inline-block animate-spin mr-1"><svg class="size-3 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg></span><span>MEMPROSES...</span>`;
+    });
 
     const aiMessages = {
         'judul': 'Sedang menghasilkan judul berita via Gemini AI...',
@@ -881,14 +931,16 @@ async function handleAiAssistance(field) {
             });
             const json = await res.json();
             if (json.status === 'success') {
-                const lines = json.data.points.split('\n').filter(l => l.trim().length > 0);
-                lines.slice(0, 3).forEach((line, idx) => {
-                    const cleanLine = line.replace(/^[•\-\*\d\.\s]+/, '').trim();
-                    const ptInput = document.querySelector(`input[name="point_${idx + 1}"]`);
-                    if (ptInput) ptInput.value = cleanLine;
-                });
+                const lines = (json.data.points || '').split('\n')
+                    .map(l => l.replace(/^[•\-\*\d\.\s]+/, '').trim())
+                    .filter(l => l.length > 0);
+                const container = document.getElementById('pointsListContainer');
+                if (container && lines.length > 0) {
+                    container.innerHTML = '';
+                    lines.forEach(line => addPointRow(line));
+                }
                 if (typeof showToast === 'function') {
-                    showToast('Poin-poin penting berhasil dirangkum!', 'success');
+                    showToast(`${lines.length} Poin penting berhasil dirangkum!`, 'success');
                 }
             } else {
                 throw new Error(json.data || 'Gagal generate points');
@@ -901,6 +953,11 @@ async function handleAiAssistance(field) {
             showToast('AI Error: ' + err.message, 'error');
         }
     } finally {
+        originalBtnStates.forEach(s => {
+            s.btn.disabled = s.disabled;
+            s.btn.innerHTML = s.html;
+        });
+        if (window.lucide) lucide.createIcons();
         if (typeof hideAiLoading === 'function') {
             hideAiLoading();
         }
@@ -1157,4 +1214,205 @@ document.addEventListener('DOMContentLoaded', () => {
     initTagAutocomplete();
     initStockAutocomplete();
 });
+
+// =========================================================================
+// 9. Auto-Save Engine (AJAX draft persistence & unsaved changes guard)
+// =========================================================================
+let isEditorDirty = false;
+let isFormSubmitting = false;
+let autoSaveTimer = null;
+let lastAutoSavedContent = '';
+
+function markEditorDirty() {
+    isEditorDirty = true;
+    const dot = document.getElementById('autosaveStatusDot');
+    const text = document.getElementById('autosaveStatusText');
+    if (dot) dot.className = 'size-2 rounded-full bg-amber-400';
+    if (text) text.textContent = 'Perubahan belum disimpan';
+}
+
+function initAutoSave() {
+    // Check auto-save every 30 seconds
+    autoSaveTimer = setInterval(() => {
+        performAutoSave();
+    }, 30000);
+
+    // Unsaved changes beforeunload protection
+    window.addEventListener('beforeunload', (e) => {
+        if (isEditorDirty && !isFormSubmitting) {
+            e.preventDefault();
+            e.returnValue = 'Perubahan artikel belum disimpan. Yakin ingin menutup halaman?';
+            return e.returnValue;
+        }
+    });
+}
+
+async function performAutoSave() {
+    if (!isEditorDirty || isFormSubmitting) return;
+
+    const titleInput = document.getElementById('articleTitleInput') || document.querySelector('input[name="title"]');
+    const title = titleInput ? titleInput.value.trim() : '';
+    const content = quill ? quill.root.innerHTML.trim() : '';
+    const plainText = quill ? quill.getText().trim() : '';
+
+    // Only auto-save if author has written meaningful content
+    if (!title && (!plainText || plainText.length < 5)) return;
+
+    // Check if anything actually changed since last autosave
+    const currentFingerprint = title + '||' + content;
+    if (currentFingerprint === lastAutoSavedContent) {
+        isEditorDirty = false;
+        return;
+    }
+
+    const idInput = document.getElementById('articleIdInput');
+    const summaryInput = document.getElementById('articleSummaryInput');
+    const kanalSelect = document.getElementById('kanalSelect');
+    const thumbInput = document.getElementById('thumbnailInput');
+    const tagsInput = document.getElementById('articleTagsInput');
+    const authorInput = document.getElementById('authorSelect');
+
+    const dot = document.getElementById('autosaveStatusDot');
+    const text = document.getElementById('autosaveStatusText');
+
+    if (dot) dot.className = 'size-2 rounded-full bg-blue-500 animate-pulse';
+    if (text) text.textContent = 'Menyimpan draft...';
+
+    const payload = {
+        id: idInput ? idInput.value : '',
+        title: title,
+        summary: summaryInput ? summaryInput.value : '',
+        content: content,
+        thumbnail: thumbInput ? thumbInput.value : '',
+        kanal: kanalSelect ? kanalSelect.value : 'Market',
+        author: authorInput ? authorInput.value : '',
+        tags: tagsInput ? tagsInput.value : ''
+    };
+
+    try {
+        const response = await fetch('/api/autosave', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            isEditorDirty = false;
+            lastAutoSavedContent = currentFingerprint;
+            if (idInput && result.id) {
+                idInput.value = result.id;
+            }
+            if (dot) dot.className = 'size-2 rounded-full bg-emerald-500';
+            if (text) text.textContent = `Tersimpan otomatis ${result.saved_at}`;
+        } else {
+            if (dot) dot.className = 'size-2 rounded-full bg-red-500';
+            if (text) text.textContent = 'Gagal menyimpan draft';
+        }
+    } catch (err) {
+        console.error('AutoSave error:', err);
+        if (dot) dot.className = 'size-2 rounded-full bg-red-500';
+        if (text) text.textContent = 'Auto-save offline';
+    }
+}
+
+// =========================================================================
+// 10. Cover Image Drag & Drop & Device Upload Engine (ImageProcessor)
+// =========================================================================
+function initCoverDropzone() {
+    const dropzone = document.getElementById('coverDropzone');
+    const overlay = document.getElementById('coverDropOverlay');
+    if (!dropzone) return;
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+            }
+            dropzone.classList.add('border-primary');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (overlay) {
+                overlay.classList.remove('flex');
+                overlay.classList.add('hidden');
+            }
+            dropzone.classList.remove('border-primary');
+        }, false);
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt ? dt.files : null;
+        if (files && files.length > 0) {
+            uploadCoverFile(files[0]);
+        }
+    });
+}
+
+function handleLocalImageUpload(input) {
+    if (input.files && input.files[0]) {
+        uploadCoverFile(input.files[0]);
+        input.value = ''; // Reset file input so same file can be re-selected if needed
+    }
+}
+
+async function uploadCoverFile(file) {
+    if (!file.type.startsWith('image/')) {
+        alert('File harus berupa gambar (JPG, PNG, atau WebP).');
+        return;
+    }
+
+    const spinner = document.getElementById('coverUploadSpinner');
+    if (spinner) {
+        spinner.classList.remove('hidden');
+        spinner.classList.add('flex');
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+        const res = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const data = await res.json();
+        if (data.success && data.url) {
+            const preview = document.getElementById('imagePreview');
+            const input = document.getElementById('thumbnailInput');
+            if (preview) preview.src = data.url;
+            if (input) input.value = data.url;
+            markEditorDirty();
+            if (typeof showToast === 'function') {
+                showToast('Gambar cover berhasil distandarisasi dan diunggah!', 'success');
+            }
+        } else {
+            alert(data.error || 'Gagal memproses gambar.');
+        }
+    } catch (err) {
+        console.error('Upload cover error:', err);
+        alert('Terjadi kesalahan jaringan saat mengunggah gambar cover.');
+    } finally {
+        if (spinner) {
+            spinner.classList.remove('flex');
+            spinner.classList.add('hidden');
+        }
+    }
+}
+
 

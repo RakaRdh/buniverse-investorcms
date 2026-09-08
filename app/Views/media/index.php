@@ -45,7 +45,7 @@
             <!-- Left Side: Image Preview + Information -->
             <div class="flex items-start gap-4 min-w-0 flex-1">
                 <div class="size-24 rounded-lg overflow-hidden border border-border shrink-0 bg-slate-900">
-                    <img src="<?= esc($item['image']) ?>" alt="" class="h-full w-full object-cover" onerror="this.onerror=null;this.src='/img/article1.jpg';">
+                    <img src="<?= esc($item['image']) ?>" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
                 </div>
                 <div class="space-y-1.5 min-w-0 flex-1">
                     <a href="<?= base_url('media/edit/' . $item['id']) ?>" class="font-bold text-sm text-[#2B6CB0] hover:underline block leading-snug">

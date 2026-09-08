@@ -12,13 +12,14 @@
     <!-- Modern Typography: Inter (Streamlined Weights) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Static Compiled Tailwind CSS (Optimized & Prebuilt) -->
     <link rel="stylesheet" href="/css/tailwind.min.css">
 
-    <!-- Icons: Lucide -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Icons: Lucide (Pinned & Minified) -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
 
     <!-- Design System CSS Tokens -->
     <link rel="stylesheet" href="/css/newsroom.css">
@@ -92,9 +93,12 @@
 </div>
 
 <!-- AI Loading Custom Modal (Matching PortalBerita/BackendCMS) -->
-<div id="aiLoadingModal" class="fixed inset-0 z-[100] bg-black/40 backdrop-blur-xs hidden items-center justify-center p-4">
-    <div class="bg-card text-card-foreground rounded-xl p-6 max-w-xs w-full border border-border shadow-xl flex flex-col items-center justify-center space-y-4">
-        <div class="animate-spin rounded-full size-10 border-4 border-muted border-t-primary"></div>
+<div id="aiLoadingModal" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-card text-card-foreground rounded-xl p-6 max-w-xs w-full border border-border shadow-2xl flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <svg class="animate-spin size-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
         <p id="aiLoadingMessage" class="text-xs font-semibold text-foreground text-center leading-relaxed">Sedang memproses...</p>
     </div>
 </div>

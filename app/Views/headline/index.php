@@ -58,11 +58,13 @@
             </button>
         </div>
 
-        <select name="target_category" class="flex h-8.5 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold shadow-sm focus-visible:outline-none">
-            <option value="Headline" selected>Kanal: Headline</option>
-            <option value="Trending">Kanal: Trending</option>
-            <option value="Special Report">Kanal: Special Report</option>
-            <option value="Market Flash">Kanal: Market Flash</option>
+        <select name="target_category" onchange="onTargetCategoryChange(this.value)" class="flex h-8.5 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold shadow-sm focus-visible:outline-none">
+            <option value="Headline" <?= ($targetCategory === 'Headline') ? 'selected' : '' ?>>Kanal: Headline (Cover)</option>
+            <?php foreach ($categories as $cat): ?>
+                <option value="<?= esc($cat['name']) ?>" <?= ($targetCategory === $cat['name']) ? 'selected' : '' ?>>
+                    Kanal: <?= esc($cat['name']) ?>
+                </option>
+            <?php endforeach; ?>
         </select>
 
         <div class="space-y-2">
@@ -173,12 +175,28 @@
     <div class="space-y-4 hidden sm:block">
         <form method="post" action="<?= base_url('headline/save') ?>" class="surface-card p-5 space-y-4">
             <div>
-                <label class="block text-xs font-bold text-foreground mb-1.5">Select Category</label>
-                <select name="target_category" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                    <option value="Headline" selected>Headline</option>
-                    <option value="Trending">Trending</option>
-                    <option value="Special Report">Special Report</option>
-                    <option value="Market Flash">Market Flash</option>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label for="targetCategorySelect" class="block text-xs font-bold text-foreground">Select Category / Kanal</label>
+                    <span class="text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                        <?= count($headlines) ?> Artikel
+                    </span>
+                </div>
+                <select name="target_category" id="targetCategorySelect" onchange="onTargetCategoryChange(this.value)" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm font-semibold shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                    <option value="Headline" <?= ($targetCategory === 'Headline') ? 'selected' : '' ?>>★ Headline Utama (Cover / Carousel)</option>
+                    <optgroup label="── Kanal Kategori ──">
+                        <?php foreach ($categories as $cat): ?>
+                            <option value="<?= esc($cat['name']) ?>" <?= ($targetCategory === $cat['name']) ? 'selected' : '' ?>>
+                                Kanal: <?= esc($cat['name']) ?>
+                            </option>
+                            <?php if (!empty($cat['sub_kanals'])): ?>
+                                <?php foreach ($cat['sub_kanals'] as $sub): ?>
+                                    <option value="<?= esc($sub['name']) ?>" <?= ($targetCategory === $sub['name']) ? 'selected' : '' ?>>
+                                        &nbsp;&nbsp;↳ <?= esc($sub['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </optgroup>
                 </select>
             </div>
 
@@ -186,30 +204,41 @@
                 <table class="w-full text-xs">
                     <thead class="bg-muted/50 border-b border-border">
                         <tr class="text-left font-bold text-foreground">
-                            <th class="h-8 px-3 w-20">ArticleID</th>
-                            <th class="h-8 px-3">Title</th>
+                            <th class="h-8 px-3 w-14">Pos</th>
+                            <th class="h-8 px-3">Title &amp; Meta</th>
                             <th class="h-8 px-2 text-center w-10"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-border">
                         <?php if (empty($headlines)): ?>
                             <tr>
-                                <td colspan="3" class="p-6 text-center text-muted-foreground">No data available in table</td>
+                                <td colspan="3" class="p-8 text-center text-muted-foreground text-xs">
+                                    <div class="flex flex-col items-center justify-center gap-1.5 py-4">
+                                        <i data-lucide="inbox" class="size-6 text-muted-foreground/40"></i>
+                                        <span class="font-bold text-foreground">Belum ada artikel headline untuk "<?= esc($targetCategory) ?>"</span>
+                                        <span class="text-[11px] text-muted-foreground">Pilih artikel dari daftar sebelah kiri dan klik tombol panah untuk menambahkan.</span>
+                                    </div>
+                                </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($headlines as $hl): ?>
-                            <tr class="hover:bg-muted/40">
-                                <td class="px-3 py-2 font-mono font-bold text-primary">#<?= esc($hl['id']) ?></td>
-                                <td class="px-3 py-2">
-                                    <span class="block truncate max-w-[180px] font-medium text-foreground" title="<?= esc($hl['title']) ?>">
+                            <?php $pos = 1; foreach ($headlines as $hl): ?>
+                            <tr class="hover:bg-muted/40 transition-colors">
+                                <td class="px-3 py-2.5 font-mono font-bold text-primary text-center">#<?= $pos++ ?></td>
+                                <td class="px-3 py-2.5">
+                                    <span class="block font-medium text-foreground line-clamp-2 leading-snug" title="<?= esc($hl['title']) ?>">
                                         <?= esc($hl['title']) ?>
                                     </span>
+                                    <div class="flex items-center gap-2 text-[10px] text-muted-foreground mt-1">
+                                        <span class="font-bold text-primary bg-primary/10 px-1.5 py-0.2 rounded"><?= esc($hl['category'] ?? $targetCategory) ?></span>
+                                        <span>&bull;</span>
+                                        <span><?= esc($hl['publish_date'] ?? date('d M Y')) ?></span>
+                                    </div>
                                 </td>
-                                <td class="px-2 py-2 text-center">
+                                <td class="px-2 py-2.5 text-center">
                                     <button type="button" 
-                                            onclick="confirmRemoveHeadline(<?= $hl['id'] ?>, '<?= esc(addslashes($hl['title'])) ?>')"
-                                            class="text-destructive hover:opacity-75 transition-opacity" 
-                                            title="Disable / Hapus dari headline">
+                                            onclick="confirmRemoveHeadline(<?= $hl['id'] ?>, '<?= esc(addslashes($hl['title'])) ?>', '<?= esc(addslashes($targetCategory)) ?>')"
+                                            class="text-destructive hover:opacity-75 transition-opacity p-1 rounded hover:bg-destructive/10" 
+                                            title="Hapus dari headline <?= esc($targetCategory) ?>">
                                         <i data-lucide="x" class="size-3.5"></i>
                                     </button>
                                 </td>
@@ -222,7 +251,7 @@
 
             <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
                 <i data-lucide="save" class="size-4"></i>
-                <span>SAVE HEADLINE</span>
+                <span>SIMPAN URUTAN HEADLINE</span>
             </button>
         </form>
     </div>
@@ -236,8 +265,8 @@
                 <i data-lucide="newspaper" class="size-5"></i>
             </div>
             <div>
-                <h3 class="text-sm font-bold text-foreground">Jadikan Sebagai Headline?</h3>
-                <p class="text-xs text-muted-foreground">Artikel ini akan dimasukkan ke antrean kurasi headline utama.</p>
+                <h3 class="text-sm font-bold text-foreground">Jadikan Headline <span class="text-primary font-black"><?= esc($targetCategory) ?></span>?</h3>
+                <p class="text-xs text-muted-foreground">Artikel ini akan dimasukkan ke urutan headline kanal <?= esc($targetCategory) ?>.</p>
             </div>
         </div>
         <div class="p-3 rounded-lg bg-muted/60 border border-border">
@@ -245,6 +274,7 @@
         </div>
         <form method="post" action="<?= base_url('headline/add') ?>" id="confirmAddForm">
             <input type="hidden" name="article_id" id="addArticleIdInput" value="">
+            <input type="hidden" name="target_category" value="<?= esc($targetCategory) ?>">
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="closeConfirmModals()" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors">
                     Batal

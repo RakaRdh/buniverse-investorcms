@@ -265,7 +265,7 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
                     </td>
                     <td class="p-4">
                         <div class="flex items-center gap-3 max-w-md">
-                            <img src="<?= esc($art['thumbnail']) ?>" alt="" class="size-10 rounded-md object-cover shrink-0 border border-border">
+                            <img src="<?= esc($art['thumbnail']) ?>" alt="" loading="lazy" decoding="async" class="size-10 rounded-md object-cover shrink-0 border border-border">
                             <div class="min-w-0">
                                 <a href="<?= base_url('post/edit/' . $art['id']) ?>" class="block font-medium text-foreground truncate hover:text-primary transition-colors">
                                     <?= esc($art['title']) ?>

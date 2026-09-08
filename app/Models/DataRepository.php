@@ -104,7 +104,7 @@ class DataRepository
         // 3. Users (No avatars, plain text passwords for auth simulation)
         if (!file_exists(self::getFilePath('users'))) {
             $users = [
-                ['id' => 1, 'name' => 'Raka Herdika', 'username' => 'raka_h', 'email' => 'raka.herdika@investor.id', 'password' => 'admin123', 'role' => 'Admin', 'status' => 'Active', 'last_active' => 'Just now'],
+                ['id' => 1, 'name' => 'Raka Herdika', 'username' => 'raka_h', 'email' => 'raka.herdika@investor.id', 'password' => 'password123', 'role' => 'Admin', 'status' => 'Active', 'last_active' => 'Just now'],
                 ['id' => 2, 'name' => 'Natasha Khairunisa', 'username' => 'natasha_k', 'email' => 'natasha.k@investor.id', 'password' => 'editor123', 'role' => 'Editor', 'status' => 'Active', 'last_active' => '12 mins ago'],
                 ['id' => 3, 'name' => 'Eva Fitriani', 'username' => 'eva_id', 'email' => 'eva.fitriani@investor.id', 'password' => 'author123', 'role' => 'Author', 'status' => 'Active', 'last_active' => '35 mins ago'],
                 ['id' => 4, 'name' => 'M. Ghafur Fadillah', 'username' => 'ghafur_f', 'email' => 'ghafur.f@investor.id', 'password' => 'author123', 'role' => 'Author', 'status' => 'Active', 'last_active' => '1 hour ago'],
@@ -173,7 +173,7 @@ class DataRepository
         // 9. Feature Content
         if (!file_exists(self::getFilePath('feature_content'))) {
             $featureContent = [
-                ['id' => 1, 'title' => 'Kupas Tuntas Valuasi Bank Jumbo Pasca Penurunan Suku Bunga', 'type' => 'Editorial Deep Dive', 'badge' => 'Special Report', 'order' => 1, 'status' => 'Active', 'image' => '/img/article1.jpg', 'target_url' => '/post/2'],
+                ['id' => 1, 'title' => 'Kupas Tuntas Valuasi Bank Jumbo Pasca Penurunan Suku Bunga', 'type' => 'Editorial Deep Dive', 'badge' => 'Special Report', 'order' => 1, 'status' => 'Active', 'image' => '/img/investor_placeholder.jpg', 'target_url' => '/post/2'],
                 ['id' => 2, 'title' => 'Investasi Hijau: Panduan Lengkap Obligasi ESG untuk Pemula', 'type' => 'Academy Series', 'badge' => 'Investor Academy', 'order' => 2, 'status' => 'Active', 'image' => '/img/article4.jpg', 'target_url' => '/post/9'],
                 ['id' => 3, 'title' => 'Prospek Pasar IPO Kuartal IV 2026', 'type' => 'Market Outlook', 'badge' => 'Analysis', 'order' => 3, 'status' => 'Active', 'image' => '/img/article3.jpg', 'target_url' => '/post/6'],
             ];
@@ -276,7 +276,7 @@ class DataRepository
         ];
 
         $media = [];
-        $images = ['/img/article1.jpg', '/img/article2.jpg', '/img/article3.jpg', '/img/article4.jpg', '/img/article5.jpg', '/img/article6.jpg'];
+        $images = ['/img/investor_placeholder.jpg', '/img/article2.jpg', '/img/article3.jpg', '/img/article4.jpg', '/img/article5.jpg', '/img/article6.jpg'];
 
         foreach ($titles as $idx => $item) {
             $media[] = [
@@ -356,7 +356,7 @@ class DataRepository
             ['title' => 'Pemerintah Pastikan Pasokan BBM dan Gas Elpiji Aman Hadapi Akhir Tahun', 'cat' => 'Macroeconomy', 'cat_slug' => 'macroeconomy', 'author' => 'M. Ghafur Fadillah', 'post_by' => 'ghafur_f', 'status' => 'Scheduled', 'premium' => 0, 'views' => 230, 'headline' => 'none', 'breaking' => 0],
         ];
 
-        $images = ['/img/article1.jpg', '/img/article2.jpg', '/img/article3.jpg', '/img/article4.jpg', '/img/article5.jpg', '/img/article6.jpg'];
+        $images = ['/img/investor_placeholder.jpg', '/img/article2.jpg', '/img/article3.jpg', '/img/article4.jpg', '/img/article5.jpg', '/img/article6.jpg'];
         $posts = [];
 
         foreach ($rawArticles as $i => $item) {

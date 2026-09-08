@@ -32,6 +32,7 @@ class User extends BaseController
         $sessionRole = session()->get('user_role') ?? 'Admin';
         $name = trim($this->request->getPost('name') ?? '');
         $email = trim($this->request->getPost('email') ?? '');
+        $usernameInput = trim($this->request->getPost('username') ?? '');
         $role = $this->request->getPost('role') ?? 'Author';
 
         // Only Master can assign Master role
@@ -40,7 +41,18 @@ class User extends BaseController
         }
 
         if (!empty($name) && !empty($email)) {
-            $username = strtolower(explode(' ', $name)[0]) . '_' . rand(10, 99);
+            if (!empty($usernameInput)) {
+                // Sanitize input username (lowercase, alphanumeric, underscores, dashes, dots)
+                $username = strtolower(preg_replace('/[^a-zA-Z0-9_.-]/', '', $usernameInput));
+            } else {
+                $username = strtolower(explode(' ', $name)[0]) . '_' . rand(10, 99);
+            }
+
+            // Ensure username uniqueness in sys_principal_entity (attr_identifier)
+            $existing = $this->adminModel->where('attr_identifier', $username)->first();
+            if ($existing) {
+                $username .= '_' . rand(10, 99);
+            }
 
             $salt = AdminModel::generateSalt(16);
             $hash = AdminModel::encodePassword('password123', $salt);

@@ -30,14 +30,14 @@ class Auth extends BaseController
         }
 
         if (strtolower($this->request->getMethod()) === 'post') {
-            $email = trim($this->request->getPost('email') ?? '');
+            $username = trim($this->request->getPost('username') ?? $this->request->getPost('email') ?? '');
             $password = trim($this->request->getPost('password') ?? '');
 
-            if (empty($email) || empty($password)) {
-                return redirect()->to('/login')->with('error', 'Silakan masukkan email kantor dan kata sandi.');
+            if (empty($username) || empty($password)) {
+                return redirect()->to('/login')->with('error', 'Silakan masukkan username dan kata sandi.');
             }
 
-            $user = $this->adminModel->authenticate($email, $password);
+            $user = $this->adminModel->authenticate($username, $password);
 
             if ($user) {
                 // Compute user initials
@@ -56,7 +56,7 @@ class Auth extends BaseController
                 return redirect()->to('/dashboard')->with('success', 'Selamat datang kembali, ' . esc($user['attr_display_name']) . '!');
             }
 
-            return redirect()->to('/login')->with('error', 'Kredensial tidak valid. Silakan periksa email atau kata sandi Anda.');
+            return redirect()->to('/login')->with('error', 'Kredensial tidak valid. Silakan periksa username atau kata sandi Anda.');
         }
 
         // Demo users for quick selection in development login screen

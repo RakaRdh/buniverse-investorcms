@@ -7,6 +7,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function onTargetCategoryChange(selectedCategory) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('target_category', selectedCategory);
+    window.location.href = url.toString();
+}
+
 function confirmAddHeadline(articleId, articleTitle) {
     const modal = document.getElementById('confirmAddModal');
     const titleEl = document.getElementById('addArticleTitle');
@@ -17,13 +23,14 @@ function confirmAddHeadline(articleId, articleTitle) {
     if (modal) modal.style.display = 'flex';
 }
 
-function confirmRemoveHeadline(articleId, articleTitle) {
+function confirmRemoveHeadline(articleId, articleTitle, category) {
     const modal = document.getElementById('confirmRemoveModal');
     const titleEl = document.getElementById('removeArticleTitle');
     const linkEl = document.getElementById('confirmRemoveLink');
     
     if (titleEl) titleEl.textContent = articleTitle;
-    if (linkEl) linkEl.href = '/headline/remove/' + articleId;
+    const catParam = category ? ('?target_category=' + encodeURIComponent(category)) : '';
+    if (linkEl) linkEl.href = '/headline/remove/' + articleId + catParam;
     if (modal) modal.style.display = 'flex';
 }
 

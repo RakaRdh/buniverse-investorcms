@@ -82,7 +82,7 @@ class Apps extends BaseController
             'push_slug'        => url_title($title, '-', true),
             'push_title'       => $title,
             'push_body'        => $title,
-            'push_image'       => '/img/article1.jpg',
+            'push_image'       => '/img/investor_placeholder.jpg',
             'push_message_ref' => 'REF-' . rand(1000, 9999),
             'status_code'      => 'state_1',
         ]);
@@ -114,7 +114,7 @@ class Apps extends BaseController
             'content_tag'   => $badge,
             'set_by'        => $username,
             'set_date'      => date('Y-m-d H:i:s'),
-            'image_url'     => $image ?: '/img/article1.jpg',
+            'image_url'     => $image ?: '/img/investor_placeholder.jpg',
             'link_url'      => '/post/1',
             'position_val'  => 'top',
             'numeric_val'   => $this->featureModel->countAllResults() + 1,

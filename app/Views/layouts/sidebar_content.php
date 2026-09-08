@@ -145,7 +145,7 @@ if (in_array($userRole, ['author', 'contributor'])) {
     </div>
 
     <!-- Navigation List with Visual Groups (Internal Scroll styled with custom scrollbar) -->
-    <nav aria-label="Main navigation" class="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-4 overscroll-contain custom-sidebar-scroll">
+    <nav id="sidebarMainNavigation" aria-label="Main navigation" class="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 space-y-4 overscroll-contain custom-sidebar-scroll">
         <?php foreach ($navGroups as $group): ?>
             <div>
                 <p class="group-label mb-1.5 px-3 text-[10px] font-semibold tracking-[0.14em] text-sidebar-foreground/45 uppercase">

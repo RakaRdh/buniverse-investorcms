@@ -51,7 +51,7 @@ class ArticleApi extends BaseController
                 ANY_VALUE(c.field_label_a) AS category_slug,
                 ANY_VALUE(c.ref_entity_charlie_id) AS category_id,
                 GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author_name,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/article1.jpg") AS featured_image,
+                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS featured_image,
                 COALESCE(ANY_VALUE(nm_deck.meta_value), "") AS upper_deck,
                 COALESCE(ANY_VALUE(nm_prem.meta_value), "0") AS is_premium
             ')
@@ -109,7 +109,7 @@ class ArticleApi extends BaseController
             $item['author_name'] = $item['author_name'] ?: 'Redaksi Investor.id';
             $item['category_name'] = $item['category_name'] ?: 'Market';
             $item['category_slug'] = $item['category_slug'] ?: 'market';
-            $item['featured_image'] = $item['featured_image'] ?: '/img/article1.jpg';
+            $item['featured_image'] = $item['featured_image'] ?: '/img/investor_placeholder.jpg';
         }
 
         return $this->response->setJSON([
@@ -152,7 +152,7 @@ class ArticleApi extends BaseController
                 ANY_VALUE(c.field_label_a) AS category_slug,
                 ANY_VALUE(c.ref_entity_charlie_id) AS category_id,
                 GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author_name,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/article1.jpg") AS featured_image,
+                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS featured_image,
                 COALESCE(ANY_VALUE(nm_deck.meta_value), "") AS upper_deck,
                 COALESCE(ANY_VALUE(nm_prem.meta_value), "0") AS is_premium,
                 COALESCE(ANY_VALUE(nm_source.meta_value), "Investor.id / Riset") AS source
@@ -193,7 +193,7 @@ class ArticleApi extends BaseController
         $article['author_name'] = $article['author_name'] ?: 'Redaksi Investor.id';
         $article['category_name'] = $article['category_name'] ?: 'Market';
         $article['category_slug'] = $article['category_slug'] ?: 'market';
-        $article['featured_image'] = $article['featured_image'] ?: '/img/article1.jpg';
+        $article['featured_image'] = $article['featured_image'] ?: '/img/investor_placeholder.jpg';
 
         // Fetch Points (Singkatnya)
         $pointsList = $db->table('article_points')
@@ -263,7 +263,7 @@ class ArticleApi extends BaseController
                 n.summary_text AS summary,
                 n.entity_date AS published_at,
                 n.view_count AS views_count,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/article1.jpg") AS featured_image,
+                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS featured_image,
                 ANY_VALUE(c.charlie_name_a) AS category_name,
                 ANY_VALUE(c.field_label_a) AS category_slug
             ')
@@ -344,7 +344,7 @@ class ArticleApi extends BaseController
                 n.entity_date AS published_at,
                 ANY_VALUE(c.charlie_name_a) AS category_name,
                 ANY_VALUE(c.field_label_a) AS category_slug,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/article1.jpg") AS featured_image
+                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS featured_image
             ')
             ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
             ->join('entity_charlie c', 'c.ref_entity_charlie_id = ncl.ref_entity_charlie_id', 'left')

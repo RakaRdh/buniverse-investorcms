@@ -13,7 +13,38 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isCollapsed && window.innerWidth >= 1024) {
         applySidebarState(true);
     }
+
+    // 3. Sidebar Scroll Position Preservation
+    initSidebarScrollPreservation();
 });
+
+function initSidebarScrollPreservation() {
+    const sidebarNav = document.getElementById('sidebarMainNavigation') || document.querySelector('nav[aria-label="Main navigation"]');
+    if (!sidebarNav) return;
+
+    // Restore saved scroll position or scroll active link into view
+    const savedScroll = sessionStorage.getItem('investor_sidebar_scroll');
+    if (savedScroll !== null) {
+        sidebarNav.scrollTop = parseInt(savedScroll, 10);
+    } else {
+        const activeNav = sidebarNav.querySelector('.bg-sidebar-accent, .font-bold.text-sidebar-primary');
+        if (activeNav) {
+            activeNav.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+        }
+    }
+
+    // Save scroll position on scroll (passive)
+    sidebarNav.addEventListener('scroll', () => {
+        sessionStorage.setItem('investor_sidebar_scroll', sidebarNav.scrollTop);
+    }, { passive: true });
+
+    // Ensure scroll is preserved before clicking any sidebar link
+    sidebarNav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            sessionStorage.setItem('investor_sidebar_scroll', sidebarNav.scrollTop);
+        });
+    });
+}
 
 function toggleDesktopSidebar() {
     const sidebar = document.getElementById('desktopSidebar');

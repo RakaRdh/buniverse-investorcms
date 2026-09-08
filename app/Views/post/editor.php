@@ -11,6 +11,7 @@
 <?= $this->section('content') ?>
 
 <form id="postEditorForm" method="post" action="<?= $isEdit ? base_url('post/update/' . $article['id']) : base_url('post/save') ?>">
+    <input type="hidden" name="id" id="articleIdInput" value="<?= $isEdit ? (int)$article['id'] : '' ?>">
     <!-- Top Action Bar & Header Responsive -->
     <div class="mb-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -28,7 +29,13 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-2 self-stretch sm:self-auto">
+            <div class="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
+                <!-- Auto-Save Status Indicator Badge -->
+                <div id="autosaveStatusBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium text-muted-foreground bg-muted/60 border border-border/80">
+                    <span id="autosaveStatusDot" class="size-2 rounded-full bg-slate-400"></span>
+                    <span id="autosaveStatusText">Auto-save aktif</span>
+                </div>
+
                 <!-- Save Draft Button -->
                 <button type="submit" name="status" value="Draft" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors shadow-xs">
                     <i data-lucide="file-down" class="size-4 text-muted-foreground"></i>
@@ -137,33 +144,59 @@
                     <span class="text-[10px] text-muted-foreground font-mono bg-background px-2 py-0.5 rounded border border-border">16:9 Ratio</span>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
-                    <!-- Cover Preview Box -->
-                    <div class="relative aspect-video w-full overflow-hidden rounded-lg border border-border bg-slate-900 shadow-inner group shrink-0">
-                        <img id="imagePreview" src="<?= esc($article['thumbnail'] ?? '/img/article1.jpg') ?>" alt="Cover Preview" class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null;this.src='/img/article1.jpg';">
-                        <div class="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between rounded bg-black/60 backdrop-blur-xs px-2 py-0.5 text-[10px] text-white">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                    <!-- Cover Preview Box & Drag-and-Drop Zone -->
+                    <div id="coverDropzone" class="relative aspect-video w-full overflow-hidden rounded-lg border-2 border-dashed border-border hover:border-primary bg-slate-900 shadow-inner group shrink-0 transition-all cursor-pointer" onclick="document.getElementById('localFileInput').click()">
+                        <img id="imagePreview" src="<?= esc($article['thumbnail'] ?? '/img/investor_placeholder.jpg') ?>" alt="Cover Preview" class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
+                        
+                        <!-- Drag-over overlay -->
+                        <div id="coverDropOverlay" class="absolute inset-0 bg-[#2B6CB0]/85 backdrop-blur-xs flex flex-col items-center justify-center text-white hidden z-20 transition-all">
+                            <i data-lucide="upload-cloud" class="size-8 animate-bounce mb-1"></i>
+                            <span class="text-xs font-bold">Lepaskan gambar di sini</span>
+                        </div>
+
+                        <!-- Uploading spinner overlay -->
+                        <div id="coverUploadSpinner" class="absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center text-white hidden z-20">
+                            <svg class="animate-spin size-6 text-white mb-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-[11px] font-medium">Standarisasi & Upload...</span>
+                        </div>
+
+                        <div class="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between rounded bg-black/60 backdrop-blur-xs px-2 py-0.5 text-[10px] text-white pointer-events-none">
                             <span class="truncate font-medium">Cover Utama (16:9)</span>
                             <i data-lucide="sparkles" class="size-3 text-amber-400"></i>
                         </div>
                     </div>
 
-                    <!-- Action Buttons (Full width to the right, top-aligned with image preview) -->
-                    <div class="md:col-span-2 flex flex-col justify-start items-stretch space-y-2.5 w-full min-w-0">
-                        <input type="hidden" name="thumbnail" id="thumbnailInput" value="<?= esc($article['thumbnail'] ?? '/img/article1.jpg') ?>">
+                    <!-- Action Buttons: 3 Options for Cover Image -->
+                    <div class="md:col-span-2 flex flex-col justify-start items-stretch space-y-2.5 w-full min-w-0 md:pl-2">
+                        <input type="hidden" name="thumbnail" id="thumbnailInput" value="<?= esc($article['thumbnail'] ?? '/img/investor_placeholder.jpg') ?>">
                         
-                        <button type="button" onclick="openMediaChooserModal('cover')" class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-2xs">
-                            <i data-lucide="images" class="size-4"></i>
-                            <span>Pilih dari Media</span>
-                        </button>
-                        
-                        <label class="w-full inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors cursor-pointer shadow-2xs">
-                            <i data-lucide="upload" class="size-4 text-primary"></i>
-                            <span>Upload File Lokal</span>
-                            <input type="file" id="localFileInput" accept="image/*" class="hidden" onchange="handleLocalImageUpload(this)">
-                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <!-- Option 1: Media Library Modal -->
+                            <button type="button" onclick="openMediaChooserModal('cover')" class="inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-2xs">
+                                <i data-lucide="images" class="size-4"></i>
+                                <span>Pilih dari Media</span>
+                            </button>
+                            
+                            <!-- Option 2: Upload from Device -->
+                            <label class="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors cursor-pointer shadow-2xs">
+                                <i data-lucide="upload" class="size-4 text-primary"></i>
+                                <span>Upload Perangkat</span>
+                                <input type="file" id="localFileInput" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleLocalImageUpload(this)">
+                            </label>
+                        </div>
+
+                        <!-- Option 3: Drag & Drop Hint -->
+                        <div class="flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-border bg-background/50 text-[11px] text-muted-foreground">
+                            <i data-lucide="mouse-pointer-click" class="size-3.5 text-primary shrink-0"></i>
+                            <span>Atau <strong>drag & drop</strong> file gambar langsung ke kotak preview cover di kiri.</span>
+                        </div>
 
                         <p class="w-full text-[11px] text-muted-foreground leading-relaxed pt-0.5">
-                            Format gambar yang disarankan: <strong>JPG, PNG, atau WebP</strong> dengan rasio aspek <strong>16:9</strong> (resolusi minimal 1200&times;675 px).
+                            Format disarankan: <strong>JPG, PNG, atau WebP</strong>. Gambar otomatis dioptimasi ke max 1200px JPEG 85%.
                         </p>
                     </div>
                 </div>
@@ -226,24 +259,35 @@
                 </div>
             </div>
 
-            <!-- D. Editor & Penulis (Author Byline) Inline -->
+            <!-- D. Editor & Penulis (Author Byline) Inline with Autocomplete -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Editor</label>
                     <input type="text" readonly value="<?= esc(session('user_name') ?? 'Raka Herdika') ?>" class="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm cursor-not-allowed">
                 </div>
-                <div>
+                <div class="relative">
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">
                         Penulis (Author By Line) <span class="text-destructive">*</span>
                     </label>
-                    <select name="author" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" required>
+                    <input type="text" 
+                           name="author" 
+                           id="authorInput"
+                           required
+                           list="authorSuggestions"
+                           autocomplete="off"
+                           value="<?= esc($article['author'] ?? session('user_name') ?? 'Raka Herdika') ?>" 
+                           placeholder="Ketik nama wartawan / penulis..."
+                           class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                    <datalist id="authorSuggestions">
                         <?php foreach ($users as $u): ?>
-                            <option value="<?= esc($u['name']) ?>" <?= ($article['author'] ?? session('user_name') ?? 'Raka Herdika') === $u['name'] ? 'selected' : '' ?>>
-                                <?= esc($u['name']) ?> (<?= esc($u['role']) ?>)
-                            </option>
+                            <option value="<?= esc($u['name']) ?>"><?= esc($u['name']) ?> (<?= esc($u['role']) ?>)</option>
                         <?php endforeach; ?>
-                    </select>
-                    <span class="text-[10px] text-muted-foreground mt-0.5 block">*) Penulis tercantum di byline artikel</span>
+                        <option value="Tim Redaksi Investor">Tim Redaksi Investor</option>
+                        <option value="B-Universe Research">B-Universe Research</option>
+                        <option value="Antara News">Antara News</option>
+                        <option value="Bloomberg Technoz">Bloomberg Technoz</option>
+                    </datalist>
+                    <span class="text-[10px] text-muted-foreground mt-0.5 block">*) Ketik bebas atau pilih dari saran nama penulis</span>
                 </div>
             </div>
 
@@ -315,43 +359,71 @@
                     </div>
                 </div>
 
-                <!-- Sumber Berita -->
+                <!-- Sumber Berita (Dropdown) -->
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Sumber Berita</label>
-                    <input type="text" name="source" value="<?= esc($article['source'] ?? $article['sumber_berita'] ?? 'Investor.id / Riset') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Contoh: IDX, BI, Reuters">
+                    <?php
+                        $currentSource = $article['source'] ?? $article['sumber_berita'] ?? 'Investor.id / Riset';
+                        $standardSources = [
+                            'Investor.id / Riset',
+                            'Antara News',
+                            'Bursa Efek Indonesia (IDX)',
+                            'Bank Indonesia',
+                            'Bloomberg',
+                            'Reuters',
+                            'Kementerian Keuangan',
+                            'Siaran Pers Emiten'
+                        ];
+                        $isCustom = !in_array($currentSource, $standardSources);
+                    ?>
+                    <select id="sourceSelect" onchange="handleSourceChange(this.value)" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                        <?php foreach ($standardSources as $sSource): ?>
+                            <option value="<?= esc($sSource) ?>" <?= ($currentSource === $sSource) ? 'selected' : '' ?>><?= esc($sSource) ?></option>
+                        <?php endforeach; ?>
+                        <option value="Lainnya" <?= $isCustom ? 'selected' : '' ?>>Lainnya (Ketik Manual)...</option>
+                    </select>
+                    <input type="text" 
+                           id="customSourceInput" 
+                           name="source" 
+                           value="<?= esc($currentSource) ?>" 
+                           placeholder="Ketik nama sumber berita..." 
+                           class="<?= $isCustom ? '' : 'hidden' ?> mt-1.5 flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                 </div>
             </div>
 
-            <!-- G. 3 Poin Utama Artikel (Points + AI Button) -->
+            <!-- G. Poin Utama Artikel (Dynamic Points Repeater + AI Button) -->
             <div class="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-3">
                 <div class="flex items-center justify-between">
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                         <i data-lucide="list-ordered" class="size-4 text-primary"></i>
-                        <span>3 Poin Utama Artikel (Points)</span>
+                        <span>Poin Utama Artikel (Points)</span>
                     </label>
-                    <button type="button" onclick="handleAiAssistance('points')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
-                        <i data-lucide="sparkles" class="size-3 text-accent"></i>
-                        <span>GENERATE 3 POINTS VIA AI</span>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="addPointRow()" class="inline-flex items-center gap-1 rounded bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary hover:bg-primary/20 transition-colors">
+                            <i data-lucide="plus" class="size-3"></i>
+                            <span>Tambah Poin</span>
+                        </button>
+                        <button type="button" onclick="handleAiAssistance('points')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
+                            <i data-lucide="sparkles" class="size-3 text-accent"></i>
+                            <span>GENERATE VIA AI</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <?php
                     $pts = $article['points'] ?? ['', '', ''];
-                    if (!is_array($pts)) $pts = ['', '', ''];
+                    if (!is_array($pts) || empty($pts)) $pts = ['', '', ''];
                 ?>
-                <div class="space-y-2">
-                    <div class="flex items-center gap-2">
-                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">1</span>
-                        <input type="text" name="point_1" id="pointInput1" value="<?= esc($pts[0] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting pertama artikel...">
+                <div id="pointsListContainer" class="space-y-2">
+                    <?php foreach ($pts as $pIdx => $pVal): ?>
+                    <div class="point-row flex items-center gap-2">
+                        <span class="point-number grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold"><?= $pIdx + 1 ?></span>
+                        <input type="text" name="points[]" value="<?= esc($pVal) ?>" class="point-input flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting artikel...">
+                        <button type="button" onclick="removePointRow(this)" class="point-remove-btn grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Hapus poin ini">
+                            <i data-lucide="trash-2" class="size-3.5"></i>
+                        </button>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">2</span>
-                        <input type="text" name="point_2" id="pointInput2" value="<?= esc($pts[1] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting kedua artikel...">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[10px] font-bold">3</span>
-                        <input type="text" name="point_3" id="pointInput3" value="<?= esc($pts[2] ?? '') ?>" class="flex h-8 flex-1 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Poin penting ketiga artikel...">
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
 
@@ -468,7 +540,7 @@
             <div class="media-card-item flex flex-col rounded-xl border border-border overflow-hidden bg-card hover:border-primary/70 hover:shadow-lg transition-all group" data-search="<?= strtolower(esc($m['title'] . ' ' . ($m['caption'] ?? '') . ' ' . ($m['source'] ?? ''))) ?>" style="min-height: 270px;">
                 <!-- Bagian 1 (Atas): Gambar Media -->
                 <div class="relative w-full bg-slate-900 overflow-hidden border-b border-border" style="height: 150px;">
-                    <img src="<?= esc($m['image']) ?>" alt="<?= esc($m['title']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null;this.src='/img/article1.jpg';">
+                    <img src="<?= esc($m['image']) ?>" alt="<?= esc($m['title']) ?>" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
                     <span class="absolute bottom-2 right-2 rounded bg-black/80 backdrop-blur-xs px-2 py-0.5 text-[9px] font-mono font-medium text-white z-10 shadow-xs">
                         <?= esc($m['source'] ?? 'Investor.id') ?>
                     </span>
@@ -544,7 +616,7 @@
             <?php foreach (($allPosts ?? []) as $ap): ?>
             <div class="article-modal-row flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border hover:border-primary hover:bg-muted/40 transition-colors" data-title="<?= esc(strtolower($ap['title'])) ?>" data-tags="<?= esc(strtolower($ap['tags'] ?? '')) ?>" data-kanal="<?= esc(strtolower($ap['kanal'] ?? '')) ?>">
                 <div class="flex items-center gap-3 min-w-0">
-                    <img src="<?= esc($ap['thumbnail']) ?>" alt="" class="size-9 rounded object-cover border border-border shrink-0">
+                    <img src="<?= esc($ap['thumbnail']) ?>" alt="" loading="lazy" decoding="async" class="size-9 rounded object-cover border border-border shrink-0">
                     <div class="min-w-0">
                         <h4 class="text-xs font-bold text-foreground truncate"><?= esc($ap['title']) ?></h4>
                         <span class="text-[10px] text-muted-foreground block"><?= esc($ap['kanal'] ?? 'Market') ?> &bull; <?= esc($ap['publish_date']) ?></span>
@@ -740,7 +812,7 @@ window.__ARTICLE_CURRENT_SUBKANAL__ = <?= json_encode($article['sub_kanal'] ?? '
 
 <?= $this->section('scripts') ?>
 <!-- Quill.js CDN & Flatpickr CDN -->
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="/js/pages/editor.js"></script>
 <?= $this->endSection() ?>

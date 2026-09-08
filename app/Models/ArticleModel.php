@@ -48,7 +48,7 @@ class ArticleModel extends Model
                 ANY_VALUE(c.parent_id) AS category_parent_id,
                 GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author,
                 COALESCE(ANY_VALUE(nm_prem.meta_value), "0") AS is_premium,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/article1.jpg") AS thumbnail,
+                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS thumbnail,
                 COALESCE(ANY_VALUE(nm_head.meta_value), "none") AS headline_type,
                 COALESCE(ANY_VALUE(nm_deck.meta_value), "") AS upper_deck
             ')
@@ -108,8 +108,9 @@ class ArticleModel extends Model
             $builder->where('n.entity_date <=', date('Y-m-d 23:59:59', strtotime($filters['date_to'])));
         }
 
-        $countQuery = clone $builder;
-        $totalItems = count($countQuery->get()->getResultArray());
+        $compiledSql = $builder->getCompiledSelect(false);
+        $countRow = $this->db->query("SELECT COUNT(*) AS total FROM ({$compiledSql}) AS count_tbl")->getRowArray();
+        $totalItems = (int)($countRow['total'] ?? 0);
 
         $offset = ($page - 1) * $perPage;
         $data = $builder->orderBy('n.entity_date', 'DESC')
@@ -124,13 +125,39 @@ class ArticleModel extends Model
             $row['author'] = $row['author'] ?: 'Redaksi Investor';
             $row['category'] = $row['category'] ?: 'Market';
             $row['category_slug'] = $row['category_slug'] ?: 'market';
-            $row['thumbnail'] = $row['thumbnail'] ?: '/img/article1.jpg';
+            $row['thumbnail'] = $row['thumbnail'] ?: '/img/investor_placeholder.jpg';
         }
 
         return [
             'data'  => $data,
             'total' => $totalItems,
         ];
+    }
+
+    /**
+     * Fast, lightweight article query for dropdowns and inserter modals.
+     * Selects only required columns with minimal JOINs instead of full relations.
+     */
+    public function getLightweightArticles(int $limit = 50): array
+    {
+        $builder = $this->db->table('tb_entity_nano n')
+            ->select('
+                n.ref_entity_nano_id AS id,
+                n.attr_title AS title,
+                n.attr_intro_text AS summary,
+                DATE_FORMAT(n.entity_date, "%d %b %Y") AS publish_date,
+                COALESCE(cat.attr_title, "Market") AS kanal,
+                COALESCE(thumb.meta_value, "/img/investor_placeholder.jpg") AS thumbnail
+            ')
+            ->join('tb_nano_category nc', 'nc.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
+            ->join('tb_category_nano cat', 'cat.ref_category_nano_id = nc.ref_category_nano_id', 'left')
+            ->join('tb_nano_meta thumb', 'thumb.ref_entity_nano_id = n.ref_entity_nano_id AND thumb.meta_key = "thumbnail"', 'left')
+            ->where('n.entity_status', 1)
+            ->groupBy('n.ref_entity_nano_id')
+            ->orderBy('n.entity_date', 'DESC')
+            ->limit($limit);
+
+        return $builder->get()->getResultArray();
     }
 
     /**
@@ -157,7 +184,7 @@ class ArticleModel extends Model
                 ANY_VALUE(c.ref_entity_charlie_id) AS category_id,
                 GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author,
                 COALESCE(ANY_VALUE(nm_prem.meta_value), "0") AS is_premium,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/article1.jpg") AS thumbnail,
+                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS thumbnail,
                 COALESCE(ANY_VALUE(nm_head.meta_value), "none") AS headline_type,
                 COALESCE(ANY_VALUE(nm_deck.meta_value), "") AS upper_deck,
                 COALESCE(ANY_VALUE(nm_source.meta_value), "Investor.id / Riset") AS source,
@@ -258,7 +285,7 @@ class ArticleModel extends Model
 
         // Meta entries
         $metaEntries = [
-            'thumbnail'     => $data['thumbnail'] ?? '/img/article1.jpg',
+            'thumbnail'     => $data['thumbnail'] ?? '/img/investor_placeholder.jpg',
             'is_premium'    => (string)($data['is_premium'] ?? 0),
             'headline_type' => $data['headline_type'] ?? 'none',
             'upper_deck'    => $data['upper_deck'] ?? '',
@@ -367,7 +394,7 @@ class ArticleModel extends Model
             ->delete();
 
         $metaEntries = [
-            'thumbnail'     => $data['thumbnail'] ?? '/img/article1.jpg',
+            'thumbnail'     => $data['thumbnail'] ?? '/img/investor_placeholder.jpg',
             'is_premium'    => (string)($data['is_premium'] ?? 0),
             'headline_type' => $data['headline_type'] ?? 'none',
             'upper_deck'    => $data['upper_deck'] ?? '',
@@ -472,7 +499,7 @@ class ArticleModel extends Model
                 GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author,
                 ANY_VALUE(c.charlie_name_a) AS category,
                 COALESCE(ANY_VALUE(nm_prem.meta_value), "0") AS is_premium,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/article1.jpg") AS thumbnail
+                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS thumbnail
             ')
             ->join('entity_nano_aubert_link nal', 'nal.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
             ->join('entity_aubert a', 'a.ref_entity_aubert_id = nal.ref_entity_aubert_id', 'left')

@@ -114,13 +114,13 @@
                     <form method="post" action="<?= base_url('login') ?>" class="space-y-5">
                         <?= csrf_field() ?>
 
-                        <!-- Email Input -->
+                        <!-- Username Input -->
                         <div>
-                            <label class="block text-xs font-semibold text-[#334155] mb-1.5">Email kantor</label>
+                            <label class="block text-xs font-semibold text-[#334155] mb-1.5">Username</label>
                             <div class="relative">
-                                <input type="email" name="email" id="loginEmailInput" required placeholder="nama@investor.id" value="" class="flex h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3.5 pr-10 text-sm text-[#0F172A] shadow-xs placeholder:text-[#94A3B8] focus:border-[#0077CC] focus:outline-none focus:ring-2 focus:ring-[#0077CC]/20 transition-all">
-                                <div class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none">
-                                    <span class="font-bold text-sm">@</span>
+                                <input type="text" name="username" id="loginUsernameInput" required placeholder="e.g. raka_h" value="" autocomplete="username" class="flex h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3.5 pr-10 text-sm text-[#0F172A] shadow-xs placeholder:text-[#94A3B8] focus:border-[#0077CC] focus:outline-none focus:ring-2 focus:ring-[#0077CC]/20 transition-all">
+                                <div class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none flex items-center">
+                                    <i data-lucide="user" class="size-4"></i>
                                 </div>
                             </div>
                         </div>
@@ -148,13 +148,21 @@
                             Akun Demo Cepat (Klik untuk Isi):
                         </p>
                         <div class="grid grid-cols-2 gap-2 text-xs">
-                            <button type="button" onclick="fillDemo('raka.herdika@investor.id', 'password123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
-                                <span class="font-bold text-[#0F172A]">Raka (Admin)</span>
-                                <span class="text-[10px] text-slate-500 font-mono">password123</span>
+                            <button type="button" onclick="fillDemo('raka_h', 'password123')" class="flex flex-col text-left p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-[#0F172A]">Raka</span>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Admin</span>
+                                </div>
+                                <span class="text-[11px] text-blue-600 font-medium mt-0.5">@raka_h</span>
+                                <span class="text-[10px] text-slate-500 font-mono mt-0.5">password123</span>
                             </button>
-                            <button type="button" onclick="fillDemo('natasha.k@investor.id', 'password123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
-                                <span class="font-bold text-[#0F172A]">Natasha (Editor)</span>
-                                <span class="text-[10px] text-slate-500 font-mono">password123</span>
+                            <button type="button" onclick="fillDemo('natasha_k', 'editor123')" class="flex flex-col text-left p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-[#0F172A]">Natasha</span>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Editor</span>
+                                </div>
+                                <span class="text-[11px] text-blue-600 font-medium mt-0.5">@natasha_k</span>
+                                <span class="text-[10px] text-slate-500 font-mono mt-0.5">editor123</span>
                             </button>
                         </div>
                     </div>

@@ -21,7 +21,7 @@
     <div class="surface-card overflow-hidden flex flex-col justify-between">
         <div>
             <div class="relative h-44 w-full">
-                <img src="<?= esc($f['image']) ?>" alt="" class="h-full w-full object-cover">
+                <img src="<?= esc($f['image']) ?>" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover">
                 <span class="absolute top-3 left-3 inline-flex items-center rounded-sm bg-sidebar text-sidebar-foreground px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                     <?= esc($f['badge']) ?>
                 </span>

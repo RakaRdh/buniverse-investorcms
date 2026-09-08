@@ -22,9 +22,12 @@ class Headline extends BaseController
     public function index()
     {
         $categories = $this->categoryModel->getKanalTree();
-        $headlines = $this->headlineModel->getActiveHeadlines();
 
-        // Filtering parameters
+        // Selected target category (defaults to 'Headline')
+        $targetCategory = $this->request->getGet('target_category') ?: 'Headline';
+        $headlines = $this->headlineModel->getActiveHeadlines($targetCategory);
+
+        // Filtering parameters for available posts
         $keyword = $this->request->getGet('q');
         $categoryFilter = $this->request->getGet('category');
 
@@ -41,6 +44,7 @@ class Headline extends BaseController
             'breadcrumb'     => 'Headline / Placements',
             'availablePosts' => $availableResult['data'],
             'headlines'      => $headlines,
+            'targetCategory' => $targetCategory,
             'categories'     => $categories,
             'filters'        => [
                 'q'        => $keyword ?? '',
@@ -52,33 +56,45 @@ class Headline extends BaseController
     public function add()
     {
         $articleId = (int)$this->request->getPost('article_id');
+        $targetCategory = $this->request->getPost('target_category') ?: 'Headline';
 
-        $exists = $this->headlineModel->where('ref_entity_nano_id', $articleId)->first();
+        $exists = $this->headlineModel
+            ->where('ref_entity_nano_id', $articleId)
+            ->where('charlie_label', $targetCategory)
+            ->first();
 
         if (!$exists) {
-            $maxPos = $this->headlineModel->selectMax('numeric_val')->first()['numeric_val'] ?? 0;
+            $maxPos = $this->headlineModel
+                ->where('charlie_label', $targetCategory)
+                ->selectMax('numeric_val')
+                ->first()['numeric_val'] ?? 0;
+
             $this->headlineModel->insert([
-                'charlie_label'      => 'Headline',
+                'charlie_label'      => $targetCategory,
                 'ref_entity_nano_id' => $articleId,
                 'numeric_val'        => $maxPos + 1,
                 'event_timestamp'    => date('Y-m-d H:i:s'),
                 'status_code'        => 1,
             ]);
-            return redirect()->to('/headline')->with('success', 'Article added to headline queue.');
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil ditambahkan ke antrean headline {$targetCategory}.");
         }
 
-        return redirect()->to('/headline')->with('info', 'Article is already in headline queue.');
+        return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('info', "Artikel sudah terdaftar di antrean headline {$targetCategory}.");
     }
 
     public function remove($id)
     {
-        $this->headlineModel->where('ref_entity_nano_id', (int)$id)->delete();
-        return redirect()->to('/headline')->with('success', 'Article removed from headline list.');
+        $targetCategory = $this->request->getGet('target_category') ?: 'Headline';
+        $this->headlineModel
+            ->where('ref_entity_nano_id', (int)$id)
+            ->where('charlie_label', $targetCategory)
+            ->delete();
+        return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel dihapus dari antrean headline {$targetCategory}.");
     }
 
     public function save()
     {
         $targetCategory = $this->request->getPost('target_category') ?: 'Headline';
-        return redirect()->to('/headline')->with('success', "Headline list for '{$targetCategory}' published to database successfully!");
+        return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Daftar headline kanal '{$targetCategory}' berhasil disimpan.");
     }
 }

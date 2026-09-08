@@ -118,7 +118,7 @@ class Post extends BaseController
                 attr_role_code AS role
             ')->findAll();
         $media = $this->mediaModel->getMediaWithRelations(1, 30)['data'];
-        $allPosts = $this->articleModel->getArticlesWithRelations([], 1, 50)['data'];
+        $allPosts = $this->articleModel->getLightweightArticles(50);
         $charts = $this->chartModel->getChartsList();
 
         return view('post/editor', [
@@ -162,7 +162,7 @@ class Post extends BaseController
                 attr_role_code AS role
             ')->findAll();
         $media = $this->mediaModel->getMediaWithRelations(1, 30)['data'];
-        $allPosts = $this->articleModel->getArticlesWithRelations([], 1, 50)['data'];
+        $allPosts = $this->articleModel->getLightweightArticles(50);
         $charts = $this->chartModel->getChartsList();
 
         return view('post/editor', [
@@ -207,12 +207,17 @@ class Post extends BaseController
         }
         $categoryId = $category ? (int)$category['ref_entity_charlie_id'] : 1;
 
-        $points = [
-            $this->request->getPost('point_1') ?: '',
-            $this->request->getPost('point_2') ?: '',
-            $this->request->getPost('point_3') ?: ''
-        ];
-        $points = array_values(array_filter($points, fn($pt) => trim($pt) !== ''));
+        $pointsInput = $this->request->getPost('points');
+        if (is_array($pointsInput)) {
+            $points = array_values(array_filter(array_map('trim', $pointsInput), fn($pt) => $pt !== ''));
+        } else {
+            $points = [
+                $this->request->getPost('point_1') ?: '',
+                $this->request->getPost('point_2') ?: '',
+                $this->request->getPost('point_3') ?: ''
+            ];
+            $points = array_values(array_filter($points, fn($pt) => trim($pt) !== ''));
+        }
 
         $rawTags = $this->request->getPost('tags') ?? '';
         $tags = array_values(array_filter(array_map('trim', explode(',', $rawTags))));
@@ -242,7 +247,7 @@ class Post extends BaseController
             'content'           => $this->request->getPost('content') ?? '',
             'status'            => $status,
             'publish_date'      => $publishDate,
-            'thumbnail'         => $this->request->getPost('thumbnail') ?: '/img/article1.jpg',
+            'thumbnail'         => $this->request->getPost('thumbnail') ?: '/img/investor_placeholder.jpg',
             'upper_deck'        => $this->request->getPost('upper_deck') ?? '',
             'source'            => $sumberBerita,
             'kanal'             => $kanalName,
@@ -297,12 +302,17 @@ class Post extends BaseController
         }
         $categoryId = $category ? (int)$category['ref_entity_charlie_id'] : 1;
 
-        $points = [
-            $this->request->getPost('point_1') ?: '',
-            $this->request->getPost('point_2') ?: '',
-            $this->request->getPost('point_3') ?: ''
-        ];
-        $points = array_values(array_filter($points, fn($pt) => trim($pt) !== ''));
+        $pointsInput = $this->request->getPost('points');
+        if (is_array($pointsInput)) {
+            $points = array_values(array_filter(array_map('trim', $pointsInput), fn($pt) => $pt !== ''));
+        } else {
+            $points = [
+                $this->request->getPost('point_1') ?: '',
+                $this->request->getPost('point_2') ?: '',
+                $this->request->getPost('point_3') ?: ''
+            ];
+            $points = array_values(array_filter($points, fn($pt) => trim($pt) !== ''));
+        }
 
         $rawTags = $this->request->getPost('tags') ?? '';
         $tags = array_values(array_filter(array_map('trim', explode(',', $rawTags))));
@@ -333,7 +343,7 @@ class Post extends BaseController
             'content'       => $this->request->getPost('content') ?? '',
             'status'        => $status,
             'publish_date'  => $publishDate,
-            'thumbnail'     => $this->request->getPost('thumbnail') ?: '/img/article1.jpg',
+            'thumbnail'     => $this->request->getPost('thumbnail') ?: '/img/investor_placeholder.jpg',
             'upper_deck'    => $this->request->getPost('upper_deck') ?? '',
             'source'        => $sumberBerita,
             'kanal'         => $kanalName,

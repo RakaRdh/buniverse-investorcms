@@ -24,12 +24,12 @@ function togglePasswordVisibility() {
     if (window.lucide) window.lucide.createIcons();
 }
 
-function fillDemo(email, password) {
-    const emailInput = document.getElementById('loginEmailInput');
+function fillDemo(username, password) {
+    const usernameInput = document.getElementById('loginUsernameInput') || document.getElementById('loginEmailInput');
     const passwordInput = document.getElementById('passwordInput');
-    if (emailInput && passwordInput) {
-        emailInput.value = email;
+    if (usernameInput && passwordInput) {
+        usernameInput.value = username;
         passwordInput.value = password;
-        emailInput.focus();
+        usernameInput.focus();
     }
 }

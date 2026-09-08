@@ -113,6 +113,13 @@
                 <input type="text" name="name" required placeholder="e.g. Raditya Pramana" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             </div>
             <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Username</label>
+                    <span class="text-[10px] text-muted-foreground/70 font-normal italic">Opsional — Otomatis jika kosong</span>
+                </div>
+                <input type="text" name="username" placeholder="e.g. raditya_p" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+            </div>
+            <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Email Address</label>
                 <input type="email" name="email" required placeholder="raditya@investor.id" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             </div>
