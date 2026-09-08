@@ -1,0 +1,29 @@
+{
+  "name": "investorcms",
+  "version": "1.0.0",
+  "description": "## What is CodeIgniter?",
+  "main": "tailwind.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RakaRdh/buniverse-investorcms.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RakaRdh/buniverse-investorcms/issues"
+  },
+  "homepage": "https://github.com/RakaRdh/buniverse-investorcms#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

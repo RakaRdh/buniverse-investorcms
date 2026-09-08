@@ -124,5 +124,13 @@ _modules/*
 # Postman CLI local config
 .postman/
 
+# Node.js & Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/.auth/
+
 /results/
 /phpunit.xml
+
