@@ -6,8 +6,20 @@
   align-items: start;
 }
 
+.headline-sticky-sidebar {
+  position: sticky;
+  top: 5.5rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+}
+
 @media (max-width: 1200px) {
   .headline-grid-layout {
     grid-template-columns: 1fr;
   }
+  .headline-sticky-sidebar {
+    position: static;
+    max-height: none;
+  }
 }
+

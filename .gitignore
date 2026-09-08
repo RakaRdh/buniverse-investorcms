@@ -121,5 +121,8 @@ _modules/*
 # Visual Studio Code
 .vscode/
 
+# Postman CLI local config
+.postman/
+
 /results/
 /phpunit.xml

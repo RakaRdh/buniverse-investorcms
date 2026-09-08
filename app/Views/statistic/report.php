@@ -54,6 +54,13 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
+            <!-- Search Name Filter -->
+            <div class="relative flex-1 sm:flex-initial">
+                <i data-lucide="search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground"></i>
+                <input type="text" id="reportSearchName" placeholder="Cari nama personil..." class="h-8 w-full sm:w-44 rounded-md border border-input bg-background pl-8 pr-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+            </div>
+
+            <!-- Date Inputs -->
             <div class="flex items-center gap-1 rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-xs flex-1 sm:flex-initial">
                 <i data-lucide="calendar" class="size-3.5 text-primary shrink-0"></i>
                 <input type="text" name="from" id="reportDateFrom" value="<?= esc($fromDate) ?>" class="h-6 w-24 bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer" placeholder="YYYY-MM-DD">
@@ -64,6 +71,12 @@
             <button type="submit" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-3.5 text-xs font-bold text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
                 <i data-lucide="filter" class="size-3"></i>
                 <span>Terapkan Rentang</span>
+            </button>
+
+            <!-- Export CSV Button Inline -->
+            <button type="button" id="exportReportCsvBtn" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-xs hover:bg-muted transition-colors">
+                <i data-lucide="download" class="size-3 text-primary"></i>
+                <span>Export CSV</span>
             </button>
         </div>
     </form>
@@ -90,7 +103,7 @@ $roleLabel = match($tab) {
             <i data-lucide="table-2" class="size-4 text-primary"></i>
             <h2 class="text-sm font-bold text-foreground">Matriks Performa: <?= esc($roleLabel) ?></h2>
         </div>
-        <span class="text-xs font-medium text-muted-foreground"><?= count($activeMatrix) ?> Personil Terdaftar</span>
+        <span id="reportPersonnelCount" class="text-xs font-medium text-muted-foreground"><?= count($activeMatrix) ?> Personil Terdaftar</span>
     </div>
 
     <div class="relative w-full overflow-x-auto custom-sidebar-scroll">
@@ -171,6 +184,7 @@ $roleLabel = match($tab) {
 
 <?= $this->section('scripts') ?>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="/js/pages/report.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     if (window.flatpickr) {

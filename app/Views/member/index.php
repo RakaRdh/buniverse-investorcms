@@ -164,22 +164,7 @@
     </div>
 
     <!-- Pagination -->
-    <div class="flex items-center justify-between p-4 border-t border-border bg-muted/20">
-        <span class="text-xs text-muted-foreground">
-            Menampilkan <?= $pagination['from'] ?> &ndash; <?= $pagination['to'] ?> dari <?= $pagination['totalItems'] ?> member
-        </span>
-        <div class="flex items-center gap-1">
-            <?php if ($pagination['page'] > 1): ?>
-                <a href="?page=<?= $pagination['page'] - 1 ?>&q=<?= esc($filters['q'] ?? '') ?>&status=<?= esc($filters['status'] ?? 'all') ?>" class="rounded px-2.5 py-1 text-xs border border-border bg-background hover:bg-muted">&larr; Prev</a>
-            <?php endif; ?>
-            
-            <span class="text-xs font-mono px-2">Hal <?= $pagination['page'] ?> / <?= max(1, $pagination['totalPages']) ?></span>
-
-            <?php if ($pagination['page'] < $pagination['totalPages']): ?>
-                <a href="?page=<?= $pagination['page'] + 1 ?>&q=<?= esc($filters['q'] ?? '') ?>&status=<?= esc($filters['status'] ?? 'all') ?>" class="rounded px-2.5 py-1 text-xs border border-border bg-background hover:bg-muted">Next &rarr;</a>
-            <?php endif; ?>
-        </div>
-    </div>
+    <?= view('layouts/partials/pagination', ['pagination' => $pagination, 'baseUrl' => base_url('member')]) ?>
 </div>
 
 <!-- Modal Create / Edit Member (Standardized Sizing: max-w-lg) -->
@@ -267,5 +252,11 @@ function escapeHtml(str) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
     });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.ModalUtils) {
+        window.ModalUtils.register('memberModal', { onClose: closeMemberModal });
+    }
+});
 </script>
 <?= $this->endSection() ?>

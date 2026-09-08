@@ -1,0 +1,55 @@
+{
+    "roles": {
+        "master": {
+            "all": true
+        },
+        "admin": {
+            "dashboard": true,
+            "post": true,
+            "headline": true,
+            "media": true,
+            "files": true,
+            "embed-chart": true,
+            "statistic": true,
+            "statistic/report": true,
+            "apps-version": true,
+            "apps-push-notif": true,
+            "apps-feature-content": true,
+            "kanal/master": true,
+            "kanal/sub": true,
+            "kanal/stats": true,
+            "member": true,
+            "user": true
+        },
+        "editor": {
+            "dashboard": true,
+            "post": true,
+            "headline": true,
+            "media": true,
+            "files": true,
+            "embed-chart": true,
+            "statistic": true,
+            "statistic/report": true,
+            "kanal/master": true,
+            "kanal/sub": true,
+            "kanal/stats": true
+        },
+        "author": {
+            "dashboard": true,
+            "post": true,
+            "media": true,
+            "files": true,
+            "statistic": true,
+            "statistic/report": true
+        },
+        "contributor": {
+            "dashboard": true,
+            "post": true,
+            "media": true,
+            "files": true,
+            "statistic": true,
+            "statistic/report": true
+        }
+    },
+    "users": {}
+}

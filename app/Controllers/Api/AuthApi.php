@@ -100,12 +100,16 @@ class AuthApi extends BaseController
         $company = trim($this->request->getPost('company') ?: '');
 
         if (empty($fullName) || empty($email) || empty($password)) {
-            $json = $this->request->getJSON(true);
-            if ($json) {
-                $fullName = trim($json['name'] ?? '');
-                $email = trim($json['email'] ?? '');
-                $password = trim($json['password'] ?? '');
-                $company = trim($json['company'] ?? '');
+            try {
+                $json = $this->request->getJSON(true);
+                if ($json && is_array($json)) {
+                    $fullName = trim($json['name'] ?? '');
+                    $email = trim($json['email'] ?? '');
+                    $password = trim($json['password'] ?? '');
+                    $company = trim($json['company'] ?? '');
+                }
+            } catch (\Throwable $e) {
+                // Not a valid JSON payload (e.g. form-urlencoded), proceed to validation check
             }
         }
 

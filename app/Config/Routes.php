@@ -90,6 +90,8 @@ $routes->get('/member/delete/(:num)', 'Member::delete/$1', ['filter' => 'role:ma
 $routes->get('/user', 'User::index', ['filter' => 'role:master,admin']);
 $routes->post('/user/save', 'User::save', ['filter' => 'role:master,admin']);
 $routes->get('/user/delete/(:num)', 'User::delete/$1', ['filter' => 'role:master,admin']);
+$routes->get('/user/permissions/(:num)', 'User::getPermissions/$1', ['filter' => 'role:master,admin']);
+$routes->post('/user/permissions/save', 'User::savePermissions', ['filter' => 'role:master,admin']);
 
 // AI Editorial Assistant (Gemini)
 $routes->post('/api/ai/title', 'AiAssistant::generateTitle');

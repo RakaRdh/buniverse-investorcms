@@ -143,10 +143,15 @@
                         <tr class="transition-colors hover:bg-muted/50">
                             <td class="p-4">
                                 <div>
-                                    <span class="block font-medium text-foreground text-xs leading-relaxed">
+                                    <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
                                         <?php if ($post['is_premium']): ?>
-                                            <span class="inline-flex items-center rounded-sm bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 uppercase mr-1">[Premium]</span>
+                                            <span class="inline-flex items-center rounded-sm bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 uppercase">[Premium]</span>
                                         <?php endif; ?>
+                                        <span class="inline-flex items-center rounded-sm bg-success/15 px-1.5 py-0.5 text-[10px] font-bold text-success uppercase">
+                                            <?= esc($post['status'] ?? 'Published') ?>
+                                        </span>
+                                    </div>
+                                    <span class="block font-medium text-foreground text-xs leading-relaxed">
                                         <?= esc($post['title']) ?>
                                     </span>
                                     <span class="text-[11px] text-muted-foreground"><?= esc($post['category']) ?> &bull; By <?= esc($post['author']) ?></span>
@@ -169,10 +174,15 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Left Column Pagination -->
+        <?php if (!empty($pagination)): ?>
+            <?= view('layouts/partials/pagination', ['pagination' => $pagination, 'baseUrl' => base_url('headline'), 'extraParams' => ['target_category' => $targetCategory]]) ?>
+        <?php endif; ?>
     </div>
 
     <!-- Right Column: Dropdown Category & Target Headline Queue (Desktop View) -->
-    <div class="space-y-4 hidden sm:block">
+    <div class="space-y-4 hidden sm:block headline-sticky-sidebar">
         <form method="post" action="<?= base_url('headline/save') ?>" class="surface-card p-5 space-y-4">
             <div>
                 <div class="flex items-center justify-between mb-1.5">

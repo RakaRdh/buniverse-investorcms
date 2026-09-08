@@ -1,0 +1,1042 @@
+{
+    "info": {
+        "_postman_id": "84b625a1-c2de-49ee-8d63-4690c621d7f2",
+        "name": "InvestorCMS API",
+        "description": "Comprehensive automated test collection for Investor.id Newsroom CMS & Reader APIs.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "01 - Public Articles",
+            "description": "Endpoints for reading published news, article details, and taxonomy categories.",
+            "item": [
+                {
+                    "name": "Get Articles List",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response format is JSON with success status', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.be.an('object');",
+                                    "    pm.expect(jsonData.status).to.eql('success');",
+                                    "    pm.expect(jsonData.data).to.be.an('array');",
+                                    "    pm.expect(jsonData.meta).to.be.an('object');",
+                                    "});",
+                                    "",
+                                    "pm.test('Articles list has required fields', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.data.length > 0) {",
+                                    "        var article = jsonData.data[0];",
+                                    "        pm.expect(article).to.have.property('id');",
+                                    "        pm.expect(article).to.have.property('title');",
+                                    "        pm.expect(article).to.have.property('slug');",
+                                    "        pm.expect(article).to.have.property('status');",
+                                    "        pm.expect(article.status.toLowerCase()).to.eql('published');",
+                                    "        pm.expect(article).to.have.property('category_name');",
+                                    "        pm.expect(article).to.have.property('published_at');",
+                                    "        pm.environment.set('sample_article_slug', article.slug);",
+                                    "        pm.environment.set('sample_article_id', article.id);",
+                                    "    }",
+                                    "});",
+                                    "",
+                                    "pm.test('Response latency is acceptable (< 1500ms)', function () {",
+                                    "    pm.expect(pm.response.responseTime).to.be.below(1500);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/articles?limit=10&sort=latest",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "articles"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "sort",
+                                    "value": "latest",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "description": "Mengambil daftar artikel terbaru yang sudah berstatus Published dengan metadata relasi kategori dan penulis."
+                    }
+                },
+                {
+                    "name": "Get Filtered Articles by Category",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Returned items count does not exceed limit (5)', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data.length).to.be.at.most(5);",
+                                    "    pm.expect(jsonData.meta.limit).to.eql(5);",
+                                    "});",
+                                    "",
+                                    "pm.test('All returned articles belong to requested category', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    jsonData.data.forEach(function(item) {",
+                                    "        if (item.category_name) {",
+                                    "            pm.expect(item.category_name.toLowerCase()).to.include('market');",
+                                    "        }",
+                                    "    });",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/articles?limit=5&category=Market",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "articles"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "5",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "category",
+                                    "value": "Market",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "description": "Mengambil artikel terfilter berdasarkan nama kategori kanal (misal: Market) dengan limit 5."
+                    }
+                },
+                {
+                    "name": "Get Article Detail by ID or Slug",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response contains full article payload', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql('success');",
+                                    "    var art = jsonData.data;",
+                                    "    pm.expect(art).to.have.property('title');",
+                                    "    pm.expect(art).to.have.property('content');",
+                                    "    pm.expect(art.content).to.be.a('string');",
+                                    "    pm.expect(art).to.have.property('views_count');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/articles/{{sample_article_slug}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "articles",
+                                "{{sample_article_slug}}"
+                            ]
+                        },
+                        "description": "Mengambil detail naskah berita lengkap berdasarkan slug atau ID artikel."
+                    }
+                },
+                {
+                    "name": "Get Categories & Taxonomy Tree",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Taxonomy list returns categories with sub_kanals', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql('success');",
+                                    "    pm.expect(jsonData.data).to.be.an('array');",
+                                    "    pm.expect(jsonData.data.length).to.be.above(0);",
+                                    "    var firstCat = jsonData.data[0];",
+                                    "    pm.expect(firstCat).to.have.property('name');",
+                                    "    pm.expect(firstCat).to.have.property('slug');",
+                                    "    pm.expect(firstCat).to.have.property('sub_kanals');",
+                                    "    pm.expect(firstCat.sub_kanals).to.be.an('array');",
+                                    "});",
+                                    "",
+                                    "pm.test('Core financial channels are present', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    var names = jsonData.data.map(function(c) { return c.name.toLowerCase(); });",
+                                    "    pm.expect(names).to.include('market');",
+                                    "    pm.expect(names).to.include('finance');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/categories",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "categories"
+                            ]
+                        },
+                        "description": "Mengambil struktur hirarki pohon kanal berita dan sub-kanal Investor.id beserta kalkulasi jumlah artikel."
+                    }
+                },
+                {
+                    "name": "Search Published Articles",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Search response returns valid array of matches', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql('success');",
+                                    "    pm.expect(jsonData.data).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/search?q=saham&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "saham",
+                                    "description": ""
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "description": "Melakukan pencarian artikel berita berdasarkan kata kunci pencarian (query q)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "02 - Market & Financial",
+            "description": "Endpoints for financial indices, IDX ticker quotes, currency, and market movers.",
+            "item": [
+                {
+                    "name": "Get Financial Market Ticker",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response includes timestamp and ticker items', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql('success');",
+                                    "    pm.expect(jsonData).to.have.property('updated_at');",
+                                    "    pm.expect(jsonData.data).to.be.an('array');",
+                                    "    pm.expect(jsonData.data.length).to.be.above(0);",
+                                    "});",
+                                    "",
+                                    "pm.test('Ticker items contain mandatory financial fields', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    jsonData.data.forEach(function(item) {",
+                                    "        pm.expect(item).to.have.property('symbol');",
+                                    "        pm.expect(item).to.have.property('name');",
+                                    "        pm.expect(item).to.have.property('price');",
+                                    "        pm.expect(item).to.have.property('direction');",
+                                    "        pm.expect(['up', 'down', 'flat']).to.include(item.direction);",
+                                    "    });",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/market/ticker",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "market",
+                                "ticker"
+                            ]
+                        },
+                        "description": "Mengambil data ticker bursa saham & komoditas (IHSG, LQ45, IDX30, USD/IDR, Emas Antam)."
+                    }
+                },
+                {
+                    "name": "Get Market Top Movers",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Market movers payload structure is valid', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql('success');",
+                                    "    pm.expect(jsonData.data).to.be.an('object');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/market/movers",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "market",
+                                "movers"
+                            ]
+                        },
+                        "description": "Mengambil data saham top gainers, top losers, dan volume movers di Bursa Efek Indonesia."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "03 - Client Member Auth",
+            "description": "Authentication and registration endpoints for portal readers & VIP members.",
+            "item": [
+                {
+                    "name": "Client Login (Valid Member)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Returns success with member profile data', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql('success');",
+                                    "    pm.expect(jsonData).to.have.property('data');",
+                                    "    pm.expect(jsonData.data.email).to.eql('budi.hartono@djarumcapital.co.id');",
+                                    "    pm.expect(jsonData.data.status).to.eql('Active');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "email",
+                                    "value": "budi.hartono@djarumcapital.co.id",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "member123",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/client-login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "client-login"
+                            ]
+                        },
+                        "description": "Autentikasi akun member investor dengan email dan kata sandi valid."
+                    }
+                },
+                {
+                    "name": "Client Login (Invalid Password - Negative Test)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 401 Unauthorized', function () {",
+                                    "    pm.response.to.have.status(401);",
+                                    "});",
+                                    "",
+                                    "pm.test('Returns error status and appropriate message', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql('error');",
+                                    "    pm.expect(jsonData.message.toLowerCase()).to.include('tidak sesuai');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "email",
+                                    "value": "budi.hartono@djarumcapital.co.id",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "wrong_password_999",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/client-login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "client-login"
+                            ]
+                        },
+                        "description": "Pengujian negatif: login member dengan kata sandi yang salah harus ditolak dengan status 401."
+                    }
+                },
+                {
+                    "name": "Client Register (Validation Check - Negative Test)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 400 Bad Request or Error', function () {",
+                                    "    pm.expect([400, 422]).to.include(pm.response.code);",
+                                    "});",
+                                    "",
+                                    "pm.test('Returns error status', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql('error');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "email",
+                                    "value": "incomplete_registration@test.com",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/client-register",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "client-register"
+                            ]
+                        },
+                        "description": "Pengujian negatif: pendaftaran member tanpa kelengkapan nama atau password harus ditolak."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "04 - Editorial Search & Inserters",
+            "description": "Endpoints used by the Post Editor for IDX stock autocomplete and taxonomy tags.",
+            "item": [
+                {
+                    "name": "Search IDX Stock Tickers",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Returns matching stock ticker list', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.be.an('array');",
+                                    "    pm.expect(jsonData.length).to.be.above(0);",
+                                    "    var stock = jsonData[0];",
+                                    "    pm.expect(stock).to.have.property('ticker');",
+                                    "    pm.expect(stock).to.have.property('name');",
+                                    "    pm.expect(stock.ticker).to.eql('BBCA');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/stocks/search?q=BCA",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "stocks",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "BCA",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "description": "Pencarian real-time kode ticker emiten saham di Bursa Efek Indonesia (IDX) untuk disisipkan ke dalam artikel."
+                    }
+                },
+                {
+                    "name": "Search Editorial Tags",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Returns tags array with label & slug', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.be.an('array');",
+                                    "    if (jsonData.length > 0) {",
+                                    "        pm.expect(jsonData[0]).to.have.property('label');",
+                                    "        pm.expect(jsonData[0]).to.have.property('slug');",
+                                    "    }",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/tags/search?q=saham",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "tags",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "saham",
+                                    "description": ""
+                                }
+                            ]
+                        },
+                        "description": "Pencarian kata kunci topik / tags redaksi untuk artikel."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "05 - AI Editorial Assistant",
+            "description": "AI generation endpoints powered by Gemini for journalistic title, summary, and tag extraction.",
+            "item": [
+                {
+                    "name": "AI Generate Title",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Response returns valid JSON payload', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('status');",
+                                    "    if (jsonData.status === 'success') {",
+                                    "        pm.expect(jsonData.data).to.have.property('title');",
+                                    "        pm.expect(jsonData.data.title).to.be.a('string');",
+                                    "    } else {",
+                                    "        pm.expect(jsonData).to.have.property('data');",
+                                    "    }",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "body",
+                                    "value": "Bank Indonesia memutuskan untuk menahan suku bunga acuan BI-Rate di level 6,00 persen demi menjaga stabilitas nilai tukar rupiah dan memperkuat pertumbuhan ekonomi nasional.",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/ai/title",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ai",
+                                "title"
+                            ]
+                        },
+                        "description": "Menghasilkan rekomendasi judul berita SEO-friendly menggunakan Gemini AI berdasarkan naskah body."
+                    }
+                },
+                {
+                    "name": "AI Generate Summary",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Response returns JSON format', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('status');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "body",
+                                    "value": "Indeks Harga Saham Gabungan (IHSG) ditutup menguat 42 poin ke level 7.284 didorong oleh penguatan saham-saham perbankan besar dan sentimen positif arus modal asing yang kembali masuk ke pasar saham domestik.",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/ai/summary",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ai",
+                                "summary"
+                            ]
+                        },
+                        "description": "Menghasilkan ringkasan / summary lead berita secara otomatis menggunakan AI."
+                    }
+                },
+                {
+                    "name": "AI Generate Tags",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Response returns JSON format', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('status');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "body",
+                                    "value": "Kinerja emiten batu bara dan nikel diproyeksikan menguat menyusul naiknya harga komoditas global dan tingginya permintaan ekspor ke kawasan Asia Timur.",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/ai/tags",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "ai",
+                                "tags"
+                            ]
+                        },
+                        "description": "Mengekstraksi topik dan entitas kata kunci untuk tagging naskah artikel."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "06 - CMS Auth & Permissions Security",
+            "description": "Security and RBAC verification endpoints for CMS administration.",
+            "item": [
+                {
+                    "name": "Protected Route Redirection (Negative Security Test)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Redirects unauthenticated request to login page or blocks access', function () {",
+                                    "    pm.expect([200, 302, 401, 403]).to.include(pm.response.code);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "text/html,application/xhtml+xml"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/dashboard",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "dashboard"
+                            ]
+                        },
+                        "description": "Memverifikasi bahwa akses ke halaman CMS internal tanpa sesi login ditolak dan dialihkan ke /login."
+                    }
+                },
+                {
+                    "name": "Get User Permissions by ID",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Responds with either redirect/login or valid permission JSON payload', function () {",
+                                    "    pm.expect([200, 302, 401, 403, 404]).to.include(pm.response.code);",
+                                    "    var contentType = pm.response.headers.get('Content-Type') || '';",
+                                    "    if (contentType.includes('application/json')) {",
+                                    "        var jsonData = pm.response.json();",
+                                    "        pm.expect(jsonData).to.have.property('status');",
+                                    "        if (pm.response.code === 200) {",
+                                    "            pm.expect(jsonData).to.have.property('permissions');",
+                                    "        }",
+                                    "    } else {",
+                                    "        pm.expect(pm.response.text().toLowerCase()).to.include('login');",
+                                    "    }",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/user/permissions/6",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "user",
+                                "permissions",
+                                "6"
+                            ]
+                        },
+                        "description": "Endpoint manajemen izin granular per-user CMS Investor. Membutuhkan sesi administrator/master."
+                    }
+                },
+                {
+                    "name": "Staff CMS Login Attempt",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Login returns redirect to dashboard or login page status', function () {",
+                                    "    pm.expect([200, 302]).to.include(pm.response.code);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "username",
+                                    "value": "raka_h",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "password123",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "login"
+                            ]
+                        },
+                        "description": "Percobaan login akun staf newsroom CMS Investor."
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "sample_article_slug",
+            "value": "kinerja-saham-perbankan-big-caps-melonjak-prospek-bbca-bmri",
+            "type": "string"
+        }
+    ]
+}

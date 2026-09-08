@@ -80,10 +80,6 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
 
             <!-- Action Buttons -->
             <div class="flex items-center gap-2 w-full sm:w-auto">
-                <button type="submit" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-xs hover:bg-[#2B6CB0]/90 transition-colors">
-                    <i data-lucide="filter" class="size-3.5"></i>
-                    <span>Terapkan</span>
-                </button>
                 <?php
                     $hasActiveMoreFilters = (!empty($filters['author']) && $filters['author'] !== 'all') 
                         || (!empty($filters['editor']) && $filters['editor'] !== 'all') 
@@ -94,6 +90,10 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
                     <i data-lucide="sliders-horizontal" class="size-3.5"></i>
                     <span id="moreFilterText"><?= $hasActiveMoreFilters ? 'Less Filter' : 'More Filter' ?></span>
                     <i data-lucide="chevron-down" id="moreFilterArrow" class="size-3 transition-transform <?= $hasActiveMoreFilters ? 'rotate-180' : '' ?>"></i>
+                </button>
+                <button type="submit" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-xs hover:bg-[#2B6CB0]/90 transition-colors">
+                    <i data-lucide="filter" class="size-3.5"></i>
+                    <span>Terapkan</span>
                 </button>
                 <?php if (!$isDefaultFilter): ?>
                     <a href="<?= base_url('post') ?>" class="inline-flex items-center justify-center rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors" title="Reset All Filters">

@@ -77,39 +77,8 @@
 
     <!-- Media Pagination Footer -->
     <?php if (!empty($pagination) && $pagination['totalPages'] > 1): ?>
-        <?php
-            $mediaQueryParams = $_GET;
-            $buildMediaUrl = function($pageNum) use ($mediaQueryParams) {
-                $params = $mediaQueryParams;
-                $params['page'] = $pageNum;
-                return base_url('media') . '?' . http_build_query($params);
-            };
-        ?>
-        <div class="surface-card p-4 mt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <div>
-                Menampilkan <strong class="text-foreground"><?= $pagination['from'] ?>–<?= $pagination['to'] ?></strong> dari <strong class="text-foreground"><?= $pagination['totalItems'] ?></strong> aset media (Halaman <?= $pagination['page'] ?>/<?= $pagination['totalPages'] ?>)
-            </div>
-            <div class="flex items-center gap-1">
-                <?php if ($pagination['page'] > 1): ?>
-                    <a href="<?= $buildMediaUrl($pagination['page'] - 1) ?>" class="rounded-md border border-input bg-background px-3 py-1 font-medium text-foreground hover:bg-muted transition-colors">Previous</a>
-                <?php else: ?>
-                    <span class="rounded-md border border-input bg-background px-3 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Previous</span>
-                <?php endif; ?>
-
-                <?php for ($p = 1; $p <= $pagination['totalPages']; $p++): ?>
-                    <?php if ($p == $pagination['page']): ?>
-                        <span class="rounded-md bg-[#2B6CB0] px-3 py-1 font-bold text-white"><?= $p ?></span>
-                    <?php else: ?>
-                        <a href="<?= $buildMediaUrl($p) ?>" class="rounded-md border border-input bg-background px-3 py-1 font-medium text-foreground hover:bg-muted transition-colors"><?= $p ?></a>
-                    <?php endif; ?>
-                <?php endfor; ?>
-
-                <?php if ($pagination['page'] < $pagination['totalPages']): ?>
-                    <a href="<?= $buildMediaUrl($pagination['page'] + 1) ?>" class="rounded-md border border-input bg-background px-3 py-1 font-medium text-foreground hover:bg-muted transition-colors">Next</a>
-                <?php else: ?>
-                    <span class="rounded-md border border-input bg-background px-3 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Next</span>
-                <?php endif; ?>
-            </div>
+        <div class="surface-card mt-6">
+            <?= view('layouts/partials/pagination', ['pagination' => $pagination, 'baseUrl' => base_url('media')]) ?>
         </div>
     <?php endif; ?>
 <?php endif; ?>

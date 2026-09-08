@@ -145,6 +145,7 @@ class ArticleApi extends BaseController
                 n.slug_value AS slug,
                 n.summary_text AS summary,
                 n.body_text AS body,
+                n.body_text AS content,
                 n.view_count AS views_count,
                 n.entity_date AS published_at,
                 n.status_code AS status,

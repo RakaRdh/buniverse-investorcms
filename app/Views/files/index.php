@@ -82,17 +82,10 @@
         </table>
     </div>
 
-    <!-- Pagination Footer Matching Gambar 4 -->
-    <div class="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-        <div>
-            Showing 1 to <?= count($files) ?> of <?= count($files) ?> entries
-        </div>
-        <div class="flex items-center gap-1">
-            <button type="button" class="rounded-md border border-input bg-background px-3 py-1 text-foreground opacity-50 cursor-not-allowed">Previous</button>
-            <button type="button" class="rounded-md bg-[#2B6CB0] px-3 py-1 font-bold text-white">1</button>
-            <button type="button" class="rounded-md border border-input bg-background px-3 py-1 text-foreground opacity-50 cursor-not-allowed">Next</button>
-        </div>
-    </div>
+    <!-- Pagination Footer -->
+    <?php if (!empty($pagination)): ?>
+        <?= view('layouts/partials/pagination', ['pagination' => $pagination, 'baseUrl' => base_url('files')]) ?>
+    <?php endif; ?>
 </div>
 
 <!-- Upload File Modal -->
@@ -100,7 +93,7 @@
     <div class="surface-card w-full max-w-lg p-5 shadow-2xl space-y-3.5 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-150">
         <div class="flex items-center justify-between border-b border-border pb-3">
             <h3 class="text-sm font-bold text-foreground">Upload & Register Document</h3>
-            <button type="button" onclick="document.getElementById('uploadFileModal').style.display='none'" class="text-muted-foreground hover:text-foreground">
+            <button type="button" onclick="closeUploadFileModal()" class="text-muted-foreground hover:text-foreground">
                 <i data-lucide="x" class="size-4"></i>
             </button>
         </div>
@@ -114,8 +107,8 @@
                 <input type="url" name="url" placeholder="https://img.beritasatu.com/..." class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             </div>
             <div class="flex justify-end gap-2 pt-2 border-t border-border">
-                <button type="button" onclick="document.getElementById('uploadFileModal').style.display='none'" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
-                <button type="submit" class="rounded-md bg-[#2B6CB0] px-4 py-2 text-xs font-bold uppercase text-white hover:bg-[#2B6CB0]/90">Simpan File</button>
+                <button type="button" onclick="closeUploadFileModal()" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
+                <button type="submit" class="rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground hover:bg-primary/90">Simpan File</button>
             </div>
         </form>
     </div>
@@ -125,4 +118,16 @@
 
 <?= $this->section('scripts') ?>
 <script src="/js/pages/files.js"></script>
+<script>
+function closeUploadFileModal() {
+    const m = document.getElementById('uploadFileModal');
+    if (m) m.style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.ModalUtils) {
+        window.ModalUtils.register('uploadFileModal', { onClose: closeUploadFileModal });
+    }
+});
+</script>
 <?= $this->endSection() ?>

@@ -107,4 +107,78 @@ class User extends BaseController
 
         return redirect()->to('/user')->with('success', 'User removed.');
     }
+
+    /**
+     * Get permission configuration for a specific user
+     */
+    public function getPermissions($id)
+    {
+        $sessionRole = session()->get('user_role') ?? 'Admin';
+        if (!in_array(strtolower($sessionRole), ['master', 'admin'])) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized'])->setStatusCode(403);
+        }
+
+        $permFile = WRITEPATH . 'data/json/permissions.json';
+        $perms = [];
+        if (file_exists($permFile)) {
+            $perms = json_decode(file_get_contents($permFile), true) ?: [];
+        }
+
+        $userId = (string)$id;
+        $user = $this->adminModel->find((int)$id);
+        if (!$user) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'User not found'])->setStatusCode(404);
+        }
+
+        $userRole = strtolower($user['attr_role_code'] ?? 'author');
+        $defaultRolePerms = $perms['roles'][$userRole] ?? [];
+        $userCustomPerms = $perms['users'][$userId] ?? $defaultRolePerms;
+
+        return $this->response->setJSON([
+            'status'      => 'success',
+            'user_id'     => (int)$id,
+            'user_name'   => $user['attr_display_name'],
+            'user_role'   => $user['attr_role_code'],
+            'permissions' => $userCustomPerms
+        ]);
+    }
+
+    /**
+     * Save customized page permissions for a user
+     */
+    public function savePermissions()
+    {
+        $sessionRole = session()->get('user_role') ?? 'Admin';
+        if (!in_array(strtolower($sessionRole), ['master', 'admin'])) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized'])->setStatusCode(403);
+        }
+
+        $userId = $this->request->getPost('user_id');
+        $pages = $this->request->getPost('pages') ?: []; // array of page keys
+
+        if (empty($userId)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid user ID'])->setStatusCode(400);
+        }
+
+        $permFile = WRITEPATH . 'data/json/permissions.json';
+        $perms = ['roles' => [], 'users' => []];
+        if (file_exists($permFile)) {
+            $perms = json_decode(file_get_contents($permFile), true) ?: ['roles' => [], 'users' => []];
+        }
+
+        $pagePerms = [];
+        if (is_array($pages)) {
+            foreach ($pages as $p) {
+                $pagePerms[trim($p)] = true;
+            }
+        }
+
+        $perms['users'][(string)$userId] = $pagePerms;
+        file_put_contents($permFile, json_encode($perms, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        $sessionUser = (int)(session()->get('user_id') ?: 9);
+        $this->activityLogModel->logAction($sessionUser, 'USER', 'UPDATE', "Updated page permissions for User ID: {$userId}");
+
+        return $this->response->setJSON(['status' => 'success', 'message' => 'Permissions updated successfully.']);
+    }
 }

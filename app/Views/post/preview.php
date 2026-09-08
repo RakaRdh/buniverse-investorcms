@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= esc($title) ?> — Investor.id Live Preview</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="/img/investor-logo.jpg">
+    <link rel="shortcut icon" href="/img/investor-logo.jpg">
+    
     <!-- Fonts: Plus Jakarta Sans (Headings) & Inter (UI/Body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -434,7 +438,20 @@
 
             </div>
         </main>
+    </div>
 
+    <!-- Mobile Floating Action Bar (Sticky at bottom on small screens) -->
+    <div class="block lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xs border-t border-slate-200 p-3 shadow-lg">
+        <div class="flex items-center justify-between gap-3 max-w-md mx-auto">
+            <div class="min-w-0">
+                <span class="block truncate text-xs font-bold text-slate-900"><?= esc($article['title']) ?></span>
+                <span class="text-[10px] text-slate-500 font-medium"><?= esc($article['kanal'] ?? 'Market') ?> &bull; <?= esc($article['status']) ?></span>
+            </div>
+            <button type="button" onclick="window.close()" class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#2B6CB0] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#2B6CB0]/90 transition-colors">
+                <i data-lucide="arrow-left" class="size-3.5"></i>
+                <span>Kembali</span>
+            </button>
+        </div>
     </div>
 
     <script>

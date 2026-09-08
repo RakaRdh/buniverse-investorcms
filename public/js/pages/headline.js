@@ -5,6 +5,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.lucide) {
         window.lucide.createIcons();
     }
+
+    if (window.ModalUtils) {
+        window.ModalUtils.register('confirmAddModal', { onClose: closeConfirmModals });
+        window.ModalUtils.register('confirmRemoveModal', { onClose: closeConfirmModals });
+    }
 });
 
 function onTargetCategoryChange(selectedCategory) {

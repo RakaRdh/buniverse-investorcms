@@ -30,6 +30,7 @@ class Headline extends BaseController
         // Filtering parameters for available posts
         $keyword = $this->request->getGet('q');
         $categoryFilter = $this->request->getGet('category');
+        $page = (int)($this->request->getGet('page') ?? 1);
 
         $filters = [
             'status' => 'Published',
@@ -37,12 +38,26 @@ class Headline extends BaseController
             'kanal'  => $categoryFilter,
         ];
 
-        $availableResult = $this->articleModel->getArticlesWithRelations($filters, 1, 30);
+        $perPage = 25;
+        $availableResult = $this->articleModel->getArticlesWithRelations($filters, $page, $perPage);
+
+        $totalItems = $availableResult['total'] ?? count($availableResult['data']);
+        $totalPages = max(1, (int)ceil($totalItems / $perPage));
+
+        $pagination = [
+            'page'       => $page,
+            'perPage'    => $perPage,
+            'totalItems' => $totalItems,
+            'totalPages' => $totalPages,
+            'from'       => $totalItems > 0 ? (($page - 1) * $perPage) + 1 : 0,
+            'to'         => min($page * $perPage, $totalItems),
+        ];
 
         return view('headline/index', [
             'title'          => 'Headline Management',
             'breadcrumb'     => 'Headline / Placements',
             'availablePosts' => $availableResult['data'],
+            'pagination'     => $pagination,
             'headlines'      => $headlines,
             'targetCategory' => $targetCategory,
             'categories'     => $categories,
@@ -57,6 +72,16 @@ class Headline extends BaseController
     {
         $articleId = (int)$this->request->getPost('article_id');
         $targetCategory = $this->request->getPost('target_category') ?: 'Headline';
+
+        // Server-side validation: Verify article exists and is Published
+        $article = $this->articleModel->find($articleId);
+        if (!$article) {
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Artikel tidak ditemukan.");
+        }
+
+        if (strcasecmp($article['status_code'] ?? '', 'published') !== 0) {
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Gagal: Hanya artikel berstatus 'Published' yang dapat dijadikan headline.");
+        }
 
         $exists = $this->headlineModel
             ->where('ref_entity_nano_id', $articleId)

@@ -16,12 +16,14 @@ class Files extends BaseController
     public function index()
     {
         $keyword = $this->request->getGet('q');
-        $files = $this->fileModel->getFilesWithUploader($keyword);
+        $page = (int)($this->request->getGet('page') ?? 1);
+        $result = $this->fileModel->getFilesWithUploader($keyword, $page, 25);
 
         return view('files/index', [
             'title'      => 'Files Management',
             'breadcrumb' => 'Files / All Files',
-            'files'      => $files,
+            'files'      => $result['data'],
+            'pagination' => $result,
             'keyword'    => $keyword ?? ''
         ]);
     }

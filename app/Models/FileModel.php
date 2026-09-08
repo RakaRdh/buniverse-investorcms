@@ -17,9 +17,9 @@ class FileModel extends Model
     protected $useTimestamps = false;
 
     /**
-     * JOIN Query: Files with uploader identifier
+     * JOIN Query: Files with uploader identifier and pagination
      */
-    public function getFilesWithUploader(?string $keyword = null): array
+    public function getFilesWithUploader(?string $keyword = null, int $page = 1, int $perPage = 25): array
     {
         $builder = $this->db->table('storage_item_record f')
             ->select('
@@ -39,6 +39,20 @@ class FileModel extends Model
             ->groupEnd();
         }
 
-        return $builder->get()->getResultArray();
+        $countBuilder = clone $builder;
+        $totalItems = $countBuilder->countAllResults(false);
+
+        $offset = ($page - 1) * $perPage;
+        $data = $builder->limit($perPage, $offset)->get()->getResultArray();
+
+        return [
+            'data'       => $data,
+            'totalItems' => $totalItems,
+            'page'       => $page,
+            'perPage'    => $perPage,
+            'totalPages' => max(1, (int)ceil($totalItems / $perPage)),
+            'from'       => $totalItems > 0 ? $offset + 1 : 0,
+            'to'         => min($offset + $perPage, $totalItems),
+        ];
     }
 }

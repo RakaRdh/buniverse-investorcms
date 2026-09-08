@@ -127,6 +127,8 @@
     <i data-lucide="arrow-up" class="size-4"></i>
 </button>
 
+<!-- Modal Utilities -->
+<script src="/js/utils/modal-utils.js"></script>
 <!-- Custom Modern Newsroom JS -->
 <script src="/js/newsroom.js"></script>
 <?= $this->renderSection('scripts') ?>

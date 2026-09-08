@@ -140,19 +140,19 @@ class ArticleModel extends Model
      */
     public function getLightweightArticles(int $limit = 50): array
     {
-        $builder = $this->db->table('tb_entity_nano n')
+        $builder = $this->db->table('entity_nano n')
             ->select('
                 n.ref_entity_nano_id AS id,
-                n.attr_title AS title,
-                n.attr_intro_text AS summary,
+                n.headline_text AS title,
+                n.summary_text AS summary,
                 DATE_FORMAT(n.entity_date, "%d %b %Y") AS publish_date,
-                COALESCE(cat.attr_title, "Market") AS kanal,
-                COALESCE(thumb.meta_value, "/img/investor_placeholder.jpg") AS thumbnail
+                COALESCE(ANY_VALUE(c.charlie_name_a), "Market") AS kanal,
+                COALESCE(ANY_VALUE(thumb.meta_value), "/img/investor_placeholder.jpg") AS thumbnail
             ')
-            ->join('tb_nano_category nc', 'nc.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('tb_category_nano cat', 'cat.ref_category_nano_id = nc.ref_category_nano_id', 'left')
-            ->join('tb_nano_meta thumb', 'thumb.ref_entity_nano_id = n.ref_entity_nano_id AND thumb.meta_key = "thumbnail"', 'left')
-            ->where('n.entity_status', 1)
+            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
+            ->join('entity_charlie c', 'c.ref_entity_charlie_id = ncl.ref_entity_charlie_id', 'left')
+            ->join('entity_nano_meta thumb', 'thumb.ref_entity_nano_id = n.ref_entity_nano_id AND thumb.meta_key = "thumbnail"', 'left')
+            ->where('LOWER(n.status_code)', 'published')
             ->groupBy('n.ref_entity_nano_id')
             ->orderBy('n.entity_date', 'DESC')
             ->limit($limit);

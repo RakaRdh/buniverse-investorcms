@@ -1415,4 +1415,15 @@ async function uploadCoverFile(file) {
     }
 }
 
+// Register all editor modal dialogs with ModalUtils
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.ModalUtils) {
+        window.ModalUtils.register('mediaChooserModal', { onClose: () => closeMediaChooserModal() });
+        window.ModalUtils.register('articleLinkModal', { onClose: () => closeArticleLinkModal() });
+        window.ModalUtils.register('embedChartModal', { onClose: () => closeEmbedChartModal() });
+        window.ModalUtils.register('embedSocmedModal', { onClose: () => closeEmbedSocmedModal() });
+        window.ModalUtils.register('embedStockModal', { onClose: () => closeEmbedStockModal() });
+    }
+});
+
 
