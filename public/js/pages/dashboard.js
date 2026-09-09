@@ -1,34 +1,34 @@
 let dashboardChart = null;
 
-const chartDatasets = {
+const chartDatasets = window.serverChartDatasets || {
     today: {
-        categories: ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'],
+        categories: ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'],
         series: [{
             name: 'Published Articles',
-            data: [4, 8, 14, 26, 18, 11, 22, 38, 29, 16, 19, 24]
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0]
         }, {
             name: 'Drafts Created',
-            data: [2, 5, 8, 12, 7, 4, 9, 11, 6, 5, 8, 9]
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0]
         }]
     },
     '7d': {
-        categories: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+        categories: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
         series: [{
             name: 'Published Articles',
-            data: [34, 42, 38, 48, 52, 28, 22]
+            data: [0, 0, 0, 0, 0, 0, 0]
         }, {
             name: 'Drafts Created',
-            data: [12, 16, 14, 19, 18, 9, 7]
+            data: [0, 0, 0, 0, 0, 0, 0]
         }]
     },
     '30d': {
-        categories: ['W1 (1-7)', 'W2 (8-14)', 'W3 (15-21)', 'W4 (22-28)', 'W5 (29-31)'],
+        categories: ['W1', 'W2', 'W3', 'W4', 'W5'],
         series: [{
             name: 'Published Articles',
-            data: [210, 245, 230, 285, 140]
+            data: [0, 0, 0, 0, 0]
         }, {
             name: 'Drafts Created',
-            data: [75, 88, 82, 94, 48]
+            data: [0, 0, 0, 0, 0]
         }]
     }
 };

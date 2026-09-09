@@ -55,7 +55,7 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
         <p class="mt-2 sm:mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['todayArticles'] ?></p>
         <p class="mt-1 sm:mt-2 inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium text-success">
             <i data-lucide="arrow-up-right" class="size-3"></i>
-            <span>+12%</span>
+            <span><?= esc($metrics['todayGrowth']) ?></span>
             <span class="hidden sm:inline text-muted-foreground">vs yesterday</span>
         </p>
     </div>
@@ -70,7 +70,7 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
         </div>
         <p class="mt-2 sm:mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['published'] ?></p>
         <p class="mt-1 sm:mt-2 text-[11px] sm:text-xs text-muted-foreground truncate">
-            94% on-time delivery
+            <?= esc($metrics['onTimeDelivery']) ?> on-time delivery
         </p>
     </div>
 
@@ -99,7 +99,7 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
         <p class="mt-2 sm:mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['totalViews'] ?></p>
         <p class="mt-1 sm:mt-2 inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium text-success">
             <i data-lucide="arrow-up-right" class="size-3"></i>
-            <span>+18.4%</span>
+            <span><?= esc($metrics['viewsGrowth']) ?></span>
             <span class="hidden sm:inline text-muted-foreground">growth</span>
         </p>
     </div>
@@ -319,6 +319,9 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script>
+window.serverChartDatasets = <?= json_encode($chartDatasets ?? null) ?>;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="/js/pages/dashboard.js"></script>
 <?= $this->endSection() ?>

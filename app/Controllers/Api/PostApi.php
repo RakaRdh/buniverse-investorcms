@@ -52,10 +52,8 @@ class PostApi extends BaseController
         $authorName = !empty($data['author']) ? $data['author'] : (session('username') ?: 'Redaksi Investor');
         $authorId = $this->authorModel->findOrCreate($authorName);
 
-        $category = null;
-        if (!empty($subKanal)) {
-            $category = $this->categoryModel->where('charlie_name_a', $subKanal)->first();
-        }
+        // Primary Category is ALWAYS the Master Kanal (parent_id IS NULL)
+        $category = $this->categoryModel->where('charlie_name_a', $kanalName)->where('parent_id IS NULL')->first();
         if (!$category) {
             $category = $this->categoryModel->where('charlie_name_a', $kanalName)->first();
         }

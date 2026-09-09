@@ -51,5 +51,8 @@
             "statistic/report": true
         }
     },
-    "users": {}
+    "users": {
+        "2": [],
+        "8": []
+    }
 }

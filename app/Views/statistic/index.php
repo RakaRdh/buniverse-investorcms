@@ -106,28 +106,28 @@
             <div>
                 <div class="flex justify-between text-xs mb-1">
                     <span class="font-medium text-foreground">Mobile Web & Apps</span>
-                    <span class="font-bold text-primary">76.4%</span>
+                    <span class="font-bold text-primary"><?= esc($metrics['devices']['mobile']) ?>%</span>
                 </div>
                 <div class="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div class="h-full bg-primary rounded-full" style="width: 76.4%"></div>
+                    <div class="h-full bg-primary rounded-full" style="width: <?= esc($metrics['devices']['mobile']) ?>%"></div>
                 </div>
             </div>
             <div>
                 <div class="flex justify-between text-xs mb-1">
                     <span class="font-medium text-foreground">Desktop Browser</span>
-                    <span class="font-bold text-accent">21.2%</span>
+                    <span class="font-bold text-accent"><?= esc($metrics['devices']['desktop']) ?>%</span>
                 </div>
                 <div class="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div class="h-full bg-accent rounded-full" style="width: 21.2%"></div>
+                    <div class="h-full bg-accent rounded-full" style="width: <?= esc($metrics['devices']['desktop']) ?>%"></div>
                 </div>
             </div>
             <div>
                 <div class="flex justify-between text-xs mb-1">
                     <span class="font-medium text-foreground">Tablet & Other</span>
-                    <span class="font-bold text-muted-foreground">2.4%</span>
+                    <span class="font-bold text-muted-foreground"><?= esc($metrics['devices']['tablet']) ?>%</span>
                 </div>
                 <div class="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div class="h-full bg-muted-foreground/50 rounded-full" style="width: 2.4%"></div>
+                    <div class="h-full bg-muted-foreground/50 rounded-full" style="width: <?= esc($metrics['devices']['tablet']) ?>%"></div>
                 </div>
             </div>
         </div>
@@ -141,19 +141,19 @@
         <div class="space-y-2 text-xs pt-1">
             <div class="flex items-center justify-between py-1 border-b border-border/50">
                 <span class="text-foreground font-medium">Google News & Discover</span>
-                <span class="font-bold text-foreground">48.2%</span>
+                <span class="font-bold text-foreground"><?= esc($metrics['referrals']['google']) ?>%</span>
             </div>
             <div class="flex items-center justify-between py-1 border-b border-border/50">
                 <span class="text-foreground font-medium">Direct URL & Bookmark</span>
-                <span class="font-bold text-foreground">24.5%</span>
+                <span class="font-bold text-foreground"><?= esc($metrics['referrals']['direct']) ?>%</span>
             </div>
             <div class="flex items-center justify-between py-1 border-b border-border/50">
                 <span class="text-foreground font-medium">Social Media (X, IG, LinkedIn)</span>
-                <span class="font-bold text-foreground">16.3%</span>
+                <span class="font-bold text-foreground"><?= esc($metrics['referrals']['social']) ?>%</span>
             </div>
             <div class="flex items-center justify-between py-1">
                 <span class="text-foreground font-medium">Syndication / Aggregators</span>
-                <span class="font-bold text-foreground">11.0%</span>
+                <span class="font-bold text-foreground"><?= esc($metrics['referrals']['syndication']) ?>%</span>
             </div>
         </div>
     </div>
@@ -178,39 +178,42 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script>
+window.serverTrafficDatasets = <?= json_encode($trafficDatasets ?? null) ?>;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
 let trafficChart = null;
 
-const statTrafficDatasets = {
+const statTrafficDatasets = window.serverTrafficDatasets || {
     today: {
         categories: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'],
         series: [{
             name: 'Direct & App Visitors',
-            data: [12, 8, 28, 64, 82, 95, 76, 45]
+            data: [0, 0, 0, 0, 0, 0, 0, 0]
         }, {
             name: 'Search & Syndication',
-            data: [8, 5, 18, 42, 60, 72, 58, 30]
+            data: [0, 0, 0, 0, 0, 0, 0, 0]
         }]
     },
     '7d': {
-        categories: ['Sen (25/8)', 'Sel (26/8)', 'Rab (27/8)', 'Kam (28/8)', 'Jum (29/8)', 'Sab (30/8)', 'Min (31/8)'],
+        categories: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
         series: [{
             name: 'Direct & App Visitors',
-            data: [110, 125, 140, 135, 155, 92, 84]
+            data: [0, 0, 0, 0, 0, 0, 0]
         }, {
             name: 'Search & Syndication',
-            data: [85, 95, 115, 105, 120, 68, 60]
+            data: [0, 0, 0, 0, 0, 0, 0]
         }]
     },
     mtd: {
         categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         series: [{
             name: 'Direct & App Visitors',
-            data: [45, 52, 68, 74, 92, 110, 125, 140, 135, 120, 95, 88]
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         }, {
             name: 'Search & Syndication',
-            data: [30, 40, 45, 55, 70, 85, 95, 115, 105, 90, 75, 65]
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         }]
     }
 };

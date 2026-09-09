@@ -19,6 +19,7 @@ class Dashboard extends BaseController
         $topArticles = $this->articleModel->getTopArticles(5);
         $pendingArticles = $this->articleModel->getPendingArticles(5);
         $recentArticles = $this->articleModel->getArticlesWithRelations([], 1, 10)['data'];
+        $chartDatasets = $this->articleModel->getPublishingChartData();
 
         return view('dashboard/index', [
             'title'           => 'Newsroom Overview',
@@ -26,7 +27,8 @@ class Dashboard extends BaseController
             'posts'           => $recentArticles,
             'topArticles'     => $topArticles,
             'pendingArticles' => $pendingArticles,
-            'metrics'         => $metrics
+            'metrics'         => $metrics,
+            'chartDatasets'   => $chartDatasets
         ]);
     }
 }

@@ -24,7 +24,7 @@ test.describe('02 - Post Editorial Management', () => {
 
   test('Create new article transaction (/post/new) with dynamic fields', async ({ page }) => {
     await page.goto('/post/new');
-    await expect(page.locator('form')).toBeVisible();
+    await expect(page.locator('#postEditorForm')).toBeVisible();
 
     const testTitle = `E2E Automated Post - ${Date.now()}`;
     await page.fill('input[name="title"], input[name="headline_text"]', testTitle);
@@ -47,7 +47,7 @@ test.describe('02 - Post Editorial Management', () => {
     }
 
     // Select category if dropdown exists
-    const categorySelect = page.locator('select[name="category"], select[name="category_id"], select#category');
+    const categorySelect = page.locator('select[name="category"], select[name="category_id"], select#category, select[name="kanal"]');
     if (await categorySelect.count() > 0) {
       const options = await categorySelect.locator('option').all();
       if (options.length > 1) {
@@ -56,7 +56,7 @@ test.describe('02 - Post Editorial Management', () => {
     }
 
     // Submit form (Simpan Draft / Publish)
-    const submitBtn = page.locator('button[type="submit"]').first();
+    const submitBtn = page.locator('#postEditorForm button[type="submit"]').first();
     await submitBtn.click();
 
     // Expect navigation back to post list or edit page with success indication
@@ -65,8 +65,8 @@ test.describe('02 - Post Editorial Management', () => {
   });
 
   test('Article live preview simulator (/post/preview) renders responsive frame and favicon', async ({ page }) => {
-    // Open preview of an existing article
-    await page.goto('/post/preview/416');
+    // Open preview of an existing article (seeded baseline ID 1)
+    await page.goto('/post/preview/1');
     await expect(page).toHaveTitle(/Preview|Pratinjau|Investor/i);
 
     // Favicon must be defined in head
@@ -82,7 +82,7 @@ test.describe('02 - Post Editorial Management', () => {
 
   test('Article preview on mobile viewport displays sticky action bar', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/post/preview/416');
+    await page.goto('/post/preview/1');
 
     // Sticky action bar at the bottom should be visible
     const bottomBar = page.locator('.sticky.bottom-0, .fixed.bottom-0');

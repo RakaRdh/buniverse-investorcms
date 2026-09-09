@@ -135,68 +135,73 @@
         <div class="surface-card p-5 sm:p-6 w-full lg:order-1 lg:col-span-2 space-y-5 shadow-sm border border-border">
             
             <!-- Featured Image / Cover Card in Main Left Column -->
-            <div class="p-4 rounded-xl border border-border bg-muted/30 space-y-3">
-                <div class="flex items-center justify-between border-b border-border/60 pb-2">
+            <div class="p-4 sm:p-5 rounded-xl border border-border bg-muted/30 space-y-4">
+                <div class="flex items-center justify-between border-b border-border/60 pb-2.5">
                     <div class="flex items-center gap-2">
                         <i data-lucide="image" class="size-4 text-primary"></i>
                         <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">Featured Image / Cover Utama</h3>
                     </div>
-                    <span class="text-[10px] text-muted-foreground font-mono bg-background px-2 py-0.5 rounded border border-border">16:9 Ratio</span>
+                    <span class="text-[10px] text-muted-foreground font-mono bg-background px-2.5 py-0.5 rounded border border-border">16:9 Ratio</span>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                    <!-- Cover Preview Box & Drag-and-Drop Zone -->
-                    <div id="coverDropzone" class="relative aspect-video w-full overflow-hidden rounded-lg border-2 border-dashed border-border hover:border-primary bg-slate-900 shadow-inner group shrink-0 transition-all cursor-pointer" onclick="document.getElementById('localFileInput').click()">
-                        <img id="imagePreview" src="<?= esc($article['thumbnail'] ?? '/img/investor_placeholder.jpg') ?>" alt="Cover Preview" class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
-                        
-                        <!-- Drag-over overlay -->
-                        <div id="coverDropOverlay" class="absolute inset-0 bg-[#2B6CB0]/85 backdrop-blur-xs flex flex-col items-center justify-center text-white hidden z-20 transition-all">
-                            <i data-lucide="upload-cloud" class="size-8 animate-bounce mb-1"></i>
-                            <span class="text-xs font-bold">Lepaskan gambar di sini</span>
+                <div class="flex flex-col lg:flex-row gap-5 items-stretch w-full">
+                    <!-- Sisi Kiri: Preview Cover 16:9 & Tombol Pilih Media -->
+                    <div class="w-full lg:w-64 xl:w-72 shrink-0 flex flex-col justify-between space-y-2.5">
+                        <div id="coverPreviewBox" class="relative aspect-video w-full overflow-hidden rounded-lg border-2 border-border bg-slate-900 shadow-sm group shrink-0">
+                            <img id="imagePreview" src="<?= esc($article['thumbnail'] ?? '/img/investor_placeholder.jpg') ?>" alt="Cover Preview" class="h-full w-full object-cover transition-transform duration-200" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
+                            
+                            <!-- Uploading spinner overlay -->
+                            <div id="coverUploadSpinner" class="absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center text-white hidden z-20">
+                                <svg class="animate-spin size-6 text-white mb-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span class="text-[11px] font-medium">Standarisasi & Upload...</span>
+                            </div>
+
+                            <div class="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between rounded bg-black/60 backdrop-blur-xs px-2 py-0.5 text-[10px] text-white pointer-events-none">
+                                <span class="truncate font-medium">Cover Aktif</span>
+                                <i data-lucide="sparkles" class="size-3 text-amber-400"></i>
+                            </div>
                         </div>
 
-                        <!-- Uploading spinner overlay -->
-                        <div id="coverUploadSpinner" class="absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center text-white hidden z-20">
-                            <svg class="animate-spin size-6 text-white mb-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="text-[11px] font-medium">Standarisasi & Upload...</span>
-                        </div>
-
-                        <div class="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between rounded bg-black/60 backdrop-blur-xs px-2 py-0.5 text-[10px] text-white pointer-events-none">
-                            <span class="truncate font-medium">Cover Utama (16:9)</span>
-                            <i data-lucide="sparkles" class="size-3 text-amber-400"></i>
-                        </div>
+                        <!-- Button: Pilih dari Pustaka Media -->
+                        <button type="button" onclick="openMediaChooserModal('cover')" class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-2xs">
+                            <i data-lucide="images" class="size-4"></i>
+                            <span>Pilih dari Media Library</span>
+                        </button>
                     </div>
 
-                    <!-- Action Buttons: 3 Options for Cover Image -->
-                    <div class="md:col-span-2 flex flex-col justify-start items-stretch space-y-2.5 w-full min-w-0 md:pl-2">
+                    <!-- Sisi Kanan: Area Upload Dropzone Lebar Penuh (Menjangkau sampai ujung kanan) -->
+                    <div class="flex-1 min-w-0 flex flex-col justify-between space-y-2.5">
                         <input type="hidden" name="thumbnail" id="thumbnailInput" value="<?= esc($article['thumbnail'] ?? '/img/investor_placeholder.jpg') ?>">
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <!-- Option 1: Media Library Modal -->
-                            <button type="button" onclick="openMediaChooserModal('cover')" class="inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-2xs">
-                                <i data-lucide="images" class="size-4"></i>
-                                <span>Pilih dari Media</span>
-                            </button>
-                            
-                            <!-- Option 2: Upload from Device -->
-                            <label class="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors cursor-pointer shadow-2xs">
-                                <i data-lucide="upload" class="size-4 text-primary"></i>
-                                <span>Upload Perangkat</span>
-                                <input type="file" id="localFileInput" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleLocalImageUpload(this)">
-                            </label>
+
+                        <!-- Wide Dropzone Container (Identik 100% dengan Halaman Upload Media) -->
+                        <div id="coverDropzone" class="relative flex-1 w-full rounded-xl border-2 border-dashed border-primary/40 hover:border-primary bg-primary/5 hover:bg-primary/10 transition-all p-6 text-center space-y-3 flex flex-col items-center justify-center cursor-pointer group min-h-[140px]">
+                            <input type="file" id="localFileInput" accept="image/jpeg,image/png,image/webp" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="handleLocalImageUpload(this)">
+
+                            <!-- Drag-over overlay -->
+                            <div id="coverDropOverlay" class="absolute inset-0 bg-[#2B6CB0]/90 backdrop-blur-xs rounded-xl flex flex-col items-center justify-center text-white hidden z-20 pointer-events-none transition-all">
+                                <i data-lucide="upload-cloud" class="size-10 animate-bounce mb-1.5"></i>
+                                <span class="text-xs font-bold">Lepaskan file gambar di sini</span>
+                            </div>
+
+                            <!-- Center Content: Cloud Upload Icon + Teks Utama + Subtitle (Identik dengan Upload Media) -->
+                            <div class="mx-auto size-12 rounded-full bg-primary/15 flex items-center justify-center text-primary group-hover:scale-110 transition-transform pointer-events-none">
+                                <i data-lucide="upload-cloud" class="size-6"></i>
+                            </div>
+                            <div class="pointer-events-none">
+                                <div class="text-sm font-bold text-foreground">
+                                    <span class="text-primary hover:underline">Klik untuk pilih gambar</span> atau seret file ke sini
+                                </div>
+                                <p class="text-xs text-muted-foreground mt-1">
+                                    Mendukung format JPG, PNG, atau WebP (Rekomendasi min. 1200×675 px, max 5MB)
+                                </p>
+                            </div>
                         </div>
 
-                        <!-- Option 3: Drag & Drop Hint -->
-                        <div class="flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-border bg-background/50 text-[11px] text-muted-foreground">
-                            <i data-lucide="mouse-pointer-click" class="size-3.5 text-primary shrink-0"></i>
-                            <span>Atau <strong>drag & drop</strong> file gambar langsung ke kotak preview cover di kiri.</span>
-                        </div>
-
-                        <p class="w-full text-[11px] text-muted-foreground leading-relaxed pt-0.5">
-                            Format disarankan: <strong>JPG, PNG, atau WebP</strong>. Gambar otomatis dioptimasi ke max 1200px JPEG 85%.
+                        <p class="text-[11px] text-muted-foreground leading-normal">
+                            Format disarankan: <strong>JPG, PNG, atau WebP</strong>. Gambar otomatis dioptimasi dan distandarisasi ke resolusi max 1200px JPEG 85%.
                         </p>
                     </div>
                 </div>
@@ -470,12 +475,12 @@
                 <input type="hidden" name="content" id="hiddenContentInput" value="<?= esc($article['content'] ?? '') ?>">
             </div>
 
-            <!-- I. Kata Kunci (Tags) with Real-Time Autocomplete & Chips -->
+            <!-- I. Kata Kunci / Keyword (Tags) Integrated Input System (Matching PortalBerita) -->
             <div class="pt-2 border-t border-border space-y-1.5">
                 <div class="flex items-center justify-between">
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                         <i data-lucide="tag" class="size-3.5 text-primary"></i>
-                        <span>Kata Kunci (Tags)</span>
+                        <span>Kata Kunci / Keyword (Tags)</span>
                     </label>
                     <button type="button" onclick="handleAiAssistance('tags')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
                         <i data-lucide="sparkles" class="size-3 text-accent"></i>
@@ -483,21 +488,25 @@
                     </button>
                 </div>
                 
-                <!-- Tag Input Container with Real-Time Dropdown Suggestions -->
                 <div class="relative">
-                    <input type="text" name="tags" id="articleTagsInput" value="<?= esc($article['tags'] ?? '') ?>" autocomplete="off" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary" placeholder="Ketik tag, pisahkan dengan koma (,) atau pilih saran...">
-                    
-                    <!-- Real-Time Autocomplete Dropdown List -->
-                    <div id="tagAutocompleteDropdown" class="absolute z-50 left-0 right-0 top-full mt-1 bg-background border border-border rounded-lg shadow-xl overflow-hidden hidden max-h-48 overflow-y-auto">
+                    <!-- Integrated Tags Input Wrapper -->
+                    <div id="tagsInputWrapper" class="flex flex-wrap items-center gap-1.5 p-2 border border-input rounded-md focus-within:border-primary focus-within:ring-1 focus-within:ring-primary bg-background min-h-[42px] transition-all cursor-text shadow-2xs" onclick="document.getElementById('artTagInput').focus()">
+                        <div id="tags-badge-container" class="flex flex-wrap items-center gap-1.5">
+                            <!-- Badges rendered dynamically via JS -->
+                        </div>
+                        <input id="artTagInput" type="text" autocomplete="off" placeholder="Ketik keyword / tag lalu tekan Enter atau koma (,)..." class="flex-grow min-w-[140px] focus:outline-none text-xs bg-transparent border-none p-0 text-foreground placeholder:text-muted-foreground">
+                    </div>
+
+                    <!-- Hidden input submitted with the form -->
+                    <input type="hidden" name="tags" id="articleTagsInput" value="<?= esc($article['tags'] ?? '') ?>">
+
+                    <!-- Autocomplete Suggestions Dropdown -->
+                    <div id="tag-suggestions-dropdown" class="hidden absolute left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-border/60 animate-in fade-in duration-150">
                         <!-- Populated dynamically via JS -->
                     </div>
                 </div>
 
-                <!-- Active Tag Badges / Chips -->
-                <div id="tagChipsContainer" class="flex flex-wrap gap-1.5 pt-1">
-                    <!-- Populated via JS on load and update -->
-                </div>
-                <span class="text-[10px] text-muted-foreground block">Tekan koma (,) atau Enter untuk menambahkan tag. Rekomendasi dari database muncul saat mengetik.</span>
+                <span class="text-[10px] text-muted-foreground block">Ketik kata kunci dan tekan <strong>Enter</strong> atau <strong>koma (,)</strong> untuk menambahkan. Tekan <strong>Backspace</strong> untuk menghapus badge terakhir.</span>
             </div>
 
             <!-- Bottom Action Footer -->

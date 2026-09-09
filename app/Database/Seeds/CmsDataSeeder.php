@@ -11,6 +11,32 @@ class CmsDataSeeder extends Seeder
     {
         DataRepository::initialize();
 
+        // 0. Bersihkan data transaksional dan artikel sebelum seed ulang
+        $this->db->query('SET FOREIGN_KEY_CHECKS = 0');
+        $tablesToClean = [
+            'entity_nano_charlie_link',
+            'entity_nano_aubert_link',
+            'entity_nano_teta_link',
+            'entity_nano_meta',
+            'entity_nano_headline',
+            'article_points',
+            'ai_generated_logs',
+            'entity_nano',
+            'asset_item_record',
+            'storage_item_record',
+            'chart_config',
+            'content_feature',
+            'notif_message',
+            'interaction_feedback',
+            'entity_teta',
+        ];
+        foreach ($tablesToClean as $tbl) {
+            if ($this->db->tableExists($tbl)) {
+                $this->db->query("TRUNCATE TABLE {$tbl}");
+            }
+        }
+        $this->db->query('SET FOREIGN_KEY_CHECKS = 1');
+
         // 1. entity_nano_status (Master status artikel)
         $statuses = [
             ['record_id' => 1, 'label_name' => 'Draft'],
@@ -199,6 +225,19 @@ class CmsDataSeeder extends Seeder
                     'ref_entity_nano_id' => $nanoId,
                     'meta_key'           => 'headline_type',
                     'meta_value'         => $p['headline_type'],
+                ]);
+            }
+            $seedKanal = $p['kanal'] ?? ($p['category'] ?? 'Market');
+            $this->db->table('entity_nano_meta')->insert([
+                'ref_entity_nano_id' => $nanoId,
+                'meta_key'           => 'kanal',
+                'meta_value'         => $seedKanal,
+            ]);
+            if (!empty($p['sub_kanal'])) {
+                $this->db->table('entity_nano_meta')->insert([
+                    'ref_entity_nano_id' => $nanoId,
+                    'meta_key'           => 'sub_kanal',
+                    'meta_value'         => $p['sub_kanal'],
                 ]);
             }
         }

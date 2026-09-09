@@ -6,11 +6,6 @@
 
 <?= $this->section('content') ?>
 
-<!-- Informasi Penting Banner (Gambar 4 Reference) -->
-<div class="mb-6 rounded-md border border-[#FEDF89] bg-[#FFF9EB] px-4 py-3 text-xs text-[#B54708]">
-    <p class="font-bold">Informasi Penting!</p>
-    <p class="mt-0.5">Pastikan untuk selalu check email resmi kantor.</p>
-</div>
 
 <!-- Toolbar & Search Bar Matching Gambar 4 -->
 <div class="surface-card p-4 mb-6">

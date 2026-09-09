@@ -197,11 +197,8 @@ class Post extends BaseController
         $authorName = $this->request->getPost('author') ?: 'Raka Herdika';
         $authorId = $this->authorModel->findOrCreate($authorName);
 
-        // Find or fallback category
-        $category = null;
-        if (!empty($subKanal)) {
-            $category = $this->categoryModel->where('charlie_name_a', $subKanal)->first();
-        }
+        // Primary Category is ALWAYS the Master Kanal (parent_id IS NULL)
+        $category = $this->categoryModel->where('charlie_name_a', $kanalName)->where('parent_id IS NULL')->first();
         if (!$category) {
             $category = $this->categoryModel->where('charlie_name_a', $kanalName)->first();
         }
@@ -257,6 +254,13 @@ class Post extends BaseController
             'ref_entity_acc_id' => $sessionUser,
         ];
 
+        // If article was already created as draft (e.g. via AutoSave), update it instead of inserting duplicate!
+        $existingId = (int)($this->request->getPost('id') ?: 0);
+        if ($existingId > 0 && $this->articleModel->find($existingId)) {
+            $this->articleModel->updateArticle($existingId, $articleData, $authorId, $categoryId, $tags, $points, (int)$sessionUser);
+            return redirect()->to('/post')->with('success', 'Article successfully updated and stored in database!');
+        }
+
         $this->articleModel->createArticle($articleData, $authorId, $categoryId, $tags, $points);
 
         return redirect()->to('/post')->with('success', 'Article successfully created and stored in database!');
@@ -292,11 +296,8 @@ class Post extends BaseController
         $authorName = $this->request->getPost('author') ?: 'Raka Herdika';
         $authorId = $this->authorModel->findOrCreate($authorName);
 
-        // Find or fallback category
-        $category = null;
-        if (!empty($subKanal)) {
-            $category = $this->categoryModel->where('charlie_name_a', $subKanal)->first();
-        }
+        // Primary Category is ALWAYS Master Kanal
+        $category = $this->categoryModel->where('charlie_name_a', $kanalName)->where('parent_id IS NULL')->first();
         if (!$category) {
             $category = $this->categoryModel->where('charlie_name_a', $kanalName)->first();
         }

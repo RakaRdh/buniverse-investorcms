@@ -73,7 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('input', () => {
             markEditorDirty();
         });
-        form.addEventListener('submit', () => {
+        form.addEventListener('submit', (e) => {
+            if (isFormSubmitting) {
+                e.preventDefault();
+                return false;
+            }
             isFormSubmitting = true;
             if (quill) {
                 const hiddenContent = document.getElementById('hiddenContentInput');
@@ -81,7 +85,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     hiddenContent.value = quill.root.innerHTML;
                 }
             }
+            // Disable submit buttons to prevent double submissions
+            form.querySelectorAll('button[type="submit"]').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-70', 'cursor-not-allowed');
+            });
         });
+    }
+
+    // Restore cached scrape cover if thumbnail input is empty
+    const thumbInput = document.getElementById('thumbnailInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const currentArtId = document.getElementById('articleIdInput')?.value || 'new';
+    if (thumbInput && (!thumbInput.value || thumbInput.value.includes('placeholder'))) {
+        const cachedCover = localStorage.getItem('cms_cover_cache_' + currentArtId);
+        if (cachedCover) {
+            thumbInput.value = cachedCover;
+            if (imagePreview) imagePreview.src = cachedCover;
+        }
     }
 
     // 5. Initialize Cascading Kanal -> Sub-Kanal
@@ -96,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 7. Initialize Cover Image Drag-and-Drop & Auto-Save
     initCoverDropzone();
     initAutoSave();
+    initTagAutocomplete();
 });
 
 function initCharCounters() {
@@ -912,10 +934,14 @@ async function handleAiAssistance(field) {
             });
             const json = await res.json();
             if (json.status === 'success') {
-                const tagsInput = document.getElementById('articleTagsInput') || document.getElementById('tagsInput');
-                if (tagsInput && Array.isArray(json.data.tags)) {
-                    tagsInput.value = json.data.tags.join(', ');
-                    tagsInput.dispatchEvent(new Event('input'));
+                if (Array.isArray(json.data.tags)) {
+                    json.data.tags.forEach(t => {
+                        const clean = t.replace(/^#/, '').trim();
+                        if (clean && !chosenTags.includes(clean)) chosenTags.push(clean);
+                    });
+                    syncTagsToInput();
+                    renderTags();
+                    markEditorDirty();
                 }
                 if (typeof showToast === 'function') {
                     showToast('Tag kata kunci berhasil di-generate!', 'success');
@@ -1002,20 +1028,23 @@ async function executeScrapeArticle() {
                 }
             }
 
-            // 2. Set thumbnail / cover image
+            // 2. Set thumbnail / cover image & persist cache
             if (data.thumbnail_url) {
-                const coverInput = document.getElementById('coverImageInput');
-                const coverPreview = document.getElementById('coverImagePreview');
-                const coverEmptyState = document.getElementById('coverEmptyState');
+                const coverInput = document.getElementById('thumbnailInput');
+                const coverPreview = document.getElementById('imagePreview');
 
                 if (coverInput) coverInput.value = data.thumbnail_url;
                 if (coverPreview) {
                     coverPreview.src = data.thumbnail_url;
-                    coverPreview.classList.remove('hidden');
                 }
-                if (coverEmptyState) {
-                    coverEmptyState.classList.add('hidden');
-                }
+
+                // Cache to localStorage so scraped cover is sticky even if not yet submitted
+                try {
+                    const artId = document.getElementById('articleIdInput')?.value || 'new';
+                    localStorage.setItem('cms_cover_cache_' + artId, data.thumbnail_url);
+                } catch (e) {}
+
+                markEditorDirty();
             }
 
             // 3. Set source if input exists
@@ -1076,131 +1105,151 @@ function previewArticlePage() {
     setTimeout(() => tempForm.remove(), 500);
 }
 
-// 13. Tag Autocomplete & Tag Chips Manager
+// 13. Tag Autocomplete & Tag Badges Manager (Matching PortalBerita)
+let chosenTags = [];
 let tagSearchDebounceTimer = null;
 
 function initTagAutocomplete() {
-    const input = document.getElementById('articleTagsInput');
-    const dropdown = document.getElementById('tagAutocompleteDropdown');
-    const chipsContainer = document.getElementById('tagChipsContainer');
-    if (!input || !dropdown) return;
+    const hiddenInput = document.getElementById('articleTagsInput');
+    const tagInput = document.getElementById('artTagInput');
+    const dropdown = document.getElementById('tag-suggestions-dropdown');
 
-    renderTagChips();
+    if (!hiddenInput) return;
 
-    // Debounced input search
-    input.addEventListener('input', (e) => {
-        renderTagChips();
+    // Initialize chosenTags from hidden input value
+    if (hiddenInput.value && hiddenInput.value.trim()) {
+        chosenTags = hiddenInput.value
+            .split(',')
+            .map(t => t.replace(/^#/, '').trim())
+            .filter(Boolean);
+    }
+    renderTags();
+
+    if (!tagInput || !dropdown) return;
+
+    // Debounced search on input
+    tagInput.addEventListener('input', (e) => {
         clearTimeout(tagSearchDebounceTimer);
-        const val = input.value;
-        // Search using the last token after the comma
-        const tokens = val.split(',');
-        const lastToken = tokens[tokens.length - 1].trim();
+        const rawVal = e.target.value;
 
-        if (lastToken.length < 2) {
-            dropdown.innerHTML = '';
+        // If comma entered, commit immediately
+        if (rawVal.includes(',')) {
+            const clean = rawVal.replace(/,/g, '').trim();
+            if (clean) addTag(clean);
+            tagInput.value = '';
             dropdown.classList.add('hidden');
+            dropdown.innerHTML = '';
+            return;
+        }
+
+        const q = rawVal.trim();
+        if (q.length < 1) {
+            dropdown.classList.add('hidden');
+            dropdown.innerHTML = '';
             return;
         }
 
         tagSearchDebounceTimer = setTimeout(async () => {
             try {
-                const res = await fetch('/api/tags/search?q=' + encodeURIComponent(lastToken));
+                const res = await fetch('/api/tags/search?q=' + encodeURIComponent(q));
                 if (!res.ok) return;
                 const data = await res.json();
+                dropdown.innerHTML = '';
+
                 if (data && data.length > 0) {
-                    let html = '';
                     data.forEach(item => {
-                        html += `
-                            <div class="px-3 py-2 text-xs hover:bg-primary/10 hover:text-primary cursor-pointer flex items-center justify-between border-b border-border/40 last:border-0 transition-colors" onclick="selectSuggestedTag('${escapeHtml(item.label)}')">
-                                <span class="font-medium text-foreground">${escapeHtml(item.label)}</span>
-                                <span class="text-[10px] text-muted-foreground font-mono">#${escapeHtml(item.slug || '')}</span>
-                            </div>
+                        const div = document.createElement('div');
+                        div.className = "px-3 py-2 text-xs hover:bg-primary/10 hover:text-primary cursor-pointer flex items-center justify-between transition-colors";
+                        div.innerHTML = `
+                            <span class="font-semibold text-foreground">${escapeHtml(item.label)}</span>
+                            <span class="text-[10px] text-muted-foreground font-mono">#${escapeHtml(item.slug || '')}</span>
                         `;
+                        div.onclick = () => addTag(item.label);
+                        dropdown.appendChild(div);
                     });
-                    dropdown.innerHTML = html;
-                    dropdown.classList.remove('hidden');
-                } else {
-                    dropdown.innerHTML = `<div class="p-2.5 text-xs text-muted-foreground italic">Tag baru: "${escapeHtml(lastToken)}" (akan dibuat otomatis)</div>`;
-                    dropdown.classList.remove('hidden');
                 }
+
+                // Add write-in item suggestion matching PortalBerita
+                const freeForm = document.createElement('div');
+                freeForm.className = "px-3 py-2 bg-muted/40 hover:bg-primary/10 hover:text-primary cursor-pointer font-bold text-primary text-xs flex items-center gap-1.5 border-t border-border/40 transition-colors";
+                freeForm.innerHTML = `<i data-lucide="plus" class="size-3"></i><span>Buat tag baru: "${escapeHtml(q)}"</span>`;
+                freeForm.onclick = () => addTag(q);
+                dropdown.appendChild(freeForm);
+                if (window.lucide) lucide.createIcons();
+
+                dropdown.classList.remove('hidden');
             } catch (err) {
                 console.error('Tag search failed', err);
             }
-        }, 250);
+        }, 200);
+    });
+
+    // Keydown navigation: Enter adds tag, Backspace on empty removes last tag
+    tagInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = tagInput.value.replace(/,/g, '').trim();
+            if (val) addTag(val);
+        } else if (e.key === 'Backspace' && tagInput.value === '' && chosenTags.length > 0) {
+            removeTag(chosenTags.length - 1);
+        }
     });
 
     // Close dropdown on click outside
     document.addEventListener('click', (e) => {
-        if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.add('hidden');
-        }
-    });
-
-    // Enter key creates tag chip
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const val = input.value.trim();
-            if (val && !val.endsWith(',')) {
-                input.value = val + ', ';
-                renderTagChips();
-            }
+        if (!tagInput.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.add('hidden');
         }
     });
 }
 
-function selectSuggestedTag(tagName) {
-    const input = document.getElementById('articleTagsInput');
-    const dropdown = document.getElementById('tagAutocompleteDropdown');
-    if (!input) return;
+function renderTags() {
+    const container = document.getElementById('tags-badge-container');
+    if (!container) return;
+    container.innerHTML = '';
 
-    let tokens = input.value.split(',').map(t => t.trim()).filter(Boolean);
-    if (tokens.length > 0) {
-        tokens.pop(); // Replace the partial token
-    }
-    if (!tokens.includes(tagName)) {
-        tokens.push(tagName);
-    }
-    input.value = tokens.join(', ') + ', ';
-    if (dropdown) dropdown.classList.add('hidden');
-    renderTagChips();
-    input.focus();
-}
-
-function removeTagChip(index) {
-    const input = document.getElementById('articleTagsInput');
-    if (!input) return;
-    let tokens = input.value.split(',').map(t => t.trim()).filter(Boolean);
-    tokens.splice(index, 1);
-    input.value = tokens.length > 0 ? tokens.join(', ') + ', ' : '';
-    renderTagChips();
-}
-
-function renderTagChips() {
-    const input = document.getElementById('articleTagsInput');
-    const chipsContainer = document.getElementById('tagChipsContainer');
-    if (!input || !chipsContainer) return;
-
-    const tokens = input.value.split(',').map(t => t.trim()).filter(Boolean);
-    if (tokens.length === 0) {
-        chipsContainer.innerHTML = '';
-        return;
-    }
-
-    let chipsHtml = '';
-    tokens.forEach((tag, idx) => {
-        chipsHtml += `
-            <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/25 px-2.5 py-0.5 text-[11px] font-medium text-primary shadow-2xs">
-                <span>#${escapeHtml(tag)}</span>
-                <button type="button" onclick="removeTagChip(${idx})" class="text-primary/60 hover:text-primary hover:scale-110 transition-transform">
-                    <i data-lucide="x" class="size-3"></i>
-                </button>
-            </span>
+    chosenTags.forEach((tag, idx) => {
+        const badge = document.createElement('span');
+        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 border border-primary/25 text-primary rounded-md font-semibold text-xs animate-in fade-in zoom-in-95 duration-150 select-none";
+        badge.innerHTML = `
+            <span>#${escapeHtml(tag)}</span>
+            <button type="button" onclick="removeTag(${idx})" class="text-primary/70 hover:text-primary hover:scale-125 transition-transform font-black text-sm leading-none ml-0.5">&times;</button>
         `;
+        container.appendChild(badge);
     });
-    chipsContainer.innerHTML = chipsHtml;
-    if (window.lucide) lucide.createIcons();
+}
+
+function addTag(tag) {
+    tag = tag.replace(/^#/, '').trim();
+    if (tag && !chosenTags.includes(tag)) {
+        chosenTags.push(tag);
+        syncTagsToInput();
+        renderTags();
+        markEditorDirty();
+    }
+    const input = document.getElementById('artTagInput');
+    const dropdown = document.getElementById('tag-suggestions-dropdown');
+    if (input) input.value = '';
+    if (dropdown) {
+        dropdown.classList.add('hidden');
+        dropdown.innerHTML = '';
+    }
+}
+
+function removeTag(idx) {
+    if (idx >= 0 && idx < chosenTags.length) {
+        chosenTags.splice(idx, 1);
+        syncTagsToInput();
+        renderTags();
+        markEditorDirty();
+    }
+}
+
+function syncTagsToInput() {
+    const hidden = document.getElementById('articleTagsInput');
+    if (hidden) {
+        hidden.value = chosenTags.join(', ');
+    }
 }
 
 function escapeHtml(str) {
@@ -1305,6 +1354,10 @@ async function performAutoSave() {
             lastAutoSavedContent = currentFingerprint;
             if (idInput && result.id) {
                 idInput.value = result.id;
+                const formEl = document.getElementById('postEditorForm');
+                if (formEl && formEl.action.includes('/post/save')) {
+                    formEl.action = '/post/update/' + result.id;
+                }
             }
             if (dot) dot.className = 'size-2 rounded-full bg-emerald-500';
             if (text) text.textContent = `Tersimpan otomatis ${result.saved_at}`;
@@ -1324,39 +1377,51 @@ async function performAutoSave() {
 // =========================================================================
 function initCoverDropzone() {
     const dropzone = document.getElementById('coverDropzone');
+    const previewBox = document.getElementById('coverPreviewBox');
     const overlay = document.getElementById('coverDropOverlay');
-    if (!dropzone) return;
 
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (overlay) {
-                overlay.classList.remove('hidden');
-                overlay.classList.add('flex');
-            }
-            dropzone.classList.add('border-primary');
-        }, false);
-    });
+    const elements = [dropzone, previewBox].filter(Boolean);
+    if (!elements.length) return;
 
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => {
+    elements.forEach(el => {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            el.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                    overlay.classList.add('flex');
+                }
+                if (dropzone) dropzone.classList.add('border-primary');
+            }, false);
+        });
+
+        ['dragleave'].forEach(eventName => {
+            el.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (overlay) {
+                    overlay.classList.remove('flex');
+                    overlay.classList.add('hidden');
+                }
+                if (dropzone) dropzone.classList.remove('border-primary');
+            }, false);
+        });
+
+        el.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
             if (overlay) {
                 overlay.classList.remove('flex');
                 overlay.classList.add('hidden');
             }
-            dropzone.classList.remove('border-primary');
+            if (dropzone) dropzone.classList.remove('border-primary');
+            const dt = e.dataTransfer;
+            const files = dt ? dt.files : null;
+            if (files && files.length > 0) {
+                uploadCoverFile(files[0]);
+            }
         }, false);
-    });
-
-    dropzone.addEventListener('drop', (e) => {
-        const dt = e.dataTransfer;
-        const files = dt ? dt.files : null;
-        if (files && files.length > 0) {
-            uploadCoverFile(files[0]);
-        }
     });
 }
 

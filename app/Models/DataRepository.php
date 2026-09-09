@@ -362,8 +362,34 @@ class DataRepository
         foreach ($rawArticles as $i => $item) {
             $id = $i + 1;
             $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $item['title'])));
-            $hoursAgo = ($i * 2) + 1;
-            $createTime = date('d M Y H:i', strtotime("-{$hoursAgo} hours"));
+
+            // Variasikan tanggal rilis secara realistis:
+            // - Artikel 0-11: Hari ini (jam bervariasi antara 06:00 sampai 17:00)
+            // - Artikel 12-25: 1 sampai 7 hari yang lalu
+            // - Artikel 26-49: 8 sampai 28 hari yang lalu
+            if ($i < 12) {
+                // Hari ini
+                $hour = 6 + ($i % 12);
+                $minute = ($i * 7) % 60;
+                $timestamp = strtotime(date('Y-m-d') . " {$hour}:{$minute}:00");
+            } elseif ($i < 26) {
+                // 1 s/d 7 hari lalu
+                $daysAgo = 1 + (($i - 12) % 7);
+                $hour = 8 + (($i * 3) % 12);
+                $timestamp = strtotime("-{$daysAgo} days {$hour}:15:00");
+            } else {
+                // 8 s/d 28 hari lalu
+                $daysAgo = 8 + (($i - 26) % 21);
+                $hour = 9 + (($i * 2) % 10);
+                $timestamp = strtotime("-{$daysAgo} days {$hour}:30:00");
+            }
+
+            $createTime = date('Y-m-d H:i:s', $timestamp);
+            $formattedTime = date('d M Y H:i', $timestamp);
+
+            $catParts = explode(' ', $item['cat'], 2);
+            $primaryKanal = $catParts[0] ?? 'Market';
+            $subKanal = $catParts[1] ?? '';
 
             $posts[] = [
                 'id' => $id,
@@ -372,6 +398,8 @@ class DataRepository
                 'author' => $item['author'],
                 'category' => $item['cat'],
                 'category_slug' => $item['cat_slug'],
+                'kanal' => $primaryKanal,
+                'sub_kanal' => $subKanal,
                 'post_by' => $item['post_by'],
                 'create_date' => $createTime,
                 'publish_date' => $createTime,
