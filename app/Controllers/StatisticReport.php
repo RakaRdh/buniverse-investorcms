@@ -58,26 +58,53 @@ class StatisticReport extends BaseController
 
         // Get users list
         $allUsers = $this->adminModel->select('
-                ref_entity_principal_id AS id,
-                attr_display_name AS name,
-                attr_identifier AS username,
-                attr_contact_val AS email,
-                attr_role_code AS role
+                userID AS id,
+                name,
+                username,
+                email,
+                roleName AS role
             ')->findAll();
 
-        $authorUsers = array_filter($allUsers, fn($u) => ($u['role'] ?? '') === 'Author');
-        $editorUsers = array_filter($allUsers, fn($u) => in_array($u['role'] ?? '', ['Editor', 'Admin']));
-        $contribUsers = array_filter($allUsers, fn($u) => ($u['role'] ?? '') === 'Contributor');
+        $authorUsers = array_filter($allUsers, fn($u) => in_array(strtolower($u['role'] ?? ''), ['editor', 'redpel', 'riset']));
+        $editorUsers = array_filter($allUsers, fn($u) => in_array(strtolower($u['role'] ?? ''), ['administrator', 'redpel', 'editor']));
 
-        // Build matrices
-        $authorMatrix = $this->buildMatrix($authorUsers, $dateColumns, $fromDate, $toDate, true);
-        $editorMatrix = $this->buildMatrix($editorUsers, $dateColumns, $fromDate, $toDate, false);
-        $contribMatrix = $this->buildMatrix($contribUsers, $dateColumns, $fromDate, $toDate, true);
+        // Build matrices (Author & Editor)
+        $fullAuthorMatrix = $this->buildMatrix($authorUsers, $dateColumns, $fromDate, $toDate, true);
+        $fullEditorMatrix = $this->buildMatrix($editorUsers, $dateColumns, $fromDate, $toDate, false);
 
-        $totalFilteredArticles = $this->articleModel->db->table('entity_nano')
-            ->where('entity_date >=', date('Y-m-d 00:00:00', $fromTimestamp))
-            ->where('entity_date <=', date('Y-m-d 23:59:59', $toTimestamp))
+        // Pagination for matrix rows
+        $page = max(1, (int)($this->request->getGet('page') ?? 1));
+        $perPage = 15;
+
+        $targetFullMatrix = ($tab === 'editor') ? $fullEditorMatrix : $fullAuthorMatrix;
+        $totalItems = count($targetFullMatrix);
+        $totalPages = max(1, (int)ceil($totalItems / $perPage));
+        if ($page > $totalPages) {
+            $page = $totalPages;
+        }
+        $offset = ($page - 1) * $perPage;
+
+        $authorMatrix = array_slice($fullAuthorMatrix, ($tab === 'author') ? $offset : 0, ($tab === 'author') ? $perPage : count($fullAuthorMatrix));
+        $editorMatrix = array_slice($fullEditorMatrix, ($tab === 'editor') ? $offset : 0, ($tab === 'editor') ? $perPage : count($fullEditorMatrix));
+
+        $pagination = [
+            'page'       => $page,
+            'perPage'    => $perPage,
+            'totalItems' => $totalItems,
+            'totalPages' => $totalPages,
+            'from'       => $totalItems > 0 ? $offset + 1 : 0,
+            'to'         => min($offset + $perPage, $totalItems),
+        ];
+
+        $totalFilteredArticles = $this->articleModel->db->table('article')
+            ->where('articleDate >=', date('Y-m-d 00:00:00', $fromTimestamp))
+            ->where('articleDate <=', date('Y-m-d 23:59:59', $toTimestamp))
             ->countAllResults();
+
+        // Default tab fallback if invalid or contributor
+        if (!in_array($tab, ['author', 'editor'])) {
+            $tab = 'author';
+        }
 
         return view('statistic/report', [
             'title'                 => 'Editorial Performance Matrix Report',
@@ -88,7 +115,8 @@ class StatisticReport extends BaseController
             'dateColumns'           => $dateColumns,
             'authorMatrix'          => $authorMatrix,
             'editorMatrix'          => $editorMatrix,
-            'contribMatrix'         => $contribMatrix,
+            'fullPersonnelCount'    => $totalItems,
+            'pagination'            => $pagination,
             'totalFilteredArticles' => $totalFilteredArticles,
         ]);
     }
@@ -106,26 +134,26 @@ class StatisticReport extends BaseController
 
             if ($isAuthor) {
                 // Author query matching author link or byline
-                $res = $db->table('entity_nano n')
-                    ->select('DATE(n.entity_date) AS pdate, COUNT(DISTINCT n.ref_entity_nano_id) AS cnt, SUM(n.view_count) AS vsum')
-                    ->join('entity_nano_aubert_link nal', 'nal.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-                    ->join('entity_aubert a', 'a.ref_entity_aubert_id = nal.ref_entity_aubert_id', 'left')
-                    ->where('n.entity_date >=', $fromDate . ' 00:00:00')
-                    ->where('n.entity_date <=', $toDate . ' 23:59:59')
+                $res = $db->table('article n')
+                    ->select('DATE(n.articleDate) AS pdate, COUNT(DISTINCT n.articleID) AS cnt, SUM(n.viewed) AS vsum')
+                    ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
+                    ->join('authors a', 'a.authorID = nal.authorID', 'left')
+                    ->where('n.articleDate >=', $fromDate . ' 00:00:00')
+                    ->where('n.articleDate <=', $toDate . ' 23:59:59')
                     ->groupStart()
-                        ->like('a.aubert_name_a', $u['name'])
-                        ->orWhere('n.ref_entity_acc_id', $u['id'])
+                        ->like('a.authorName', $u['name'])
+                        ->orWhere('n.userID', $u['id'])
                     ->groupEnd()
-                    ->groupBy('DATE(n.entity_date)')
+                    ->groupBy('DATE(n.articleDate)')
                     ->get()->getResultArray();
             } else {
-                // Editor query matching ref_entity_acc_id
-                $res = $db->table('entity_nano n')
-                    ->select('DATE(n.entity_date) AS pdate, COUNT(DISTINCT n.ref_entity_nano_id) AS cnt, SUM(n.view_count) AS vsum')
-                    ->where('n.ref_entity_acc_id', $u['id'])
-                    ->where('n.entity_date >=', $fromDate . ' 00:00:00')
-                    ->where('n.entity_date <=', $toDate . ' 23:59:59')
-                    ->groupBy('DATE(n.entity_date)')
+                // Editor query matching userID
+                $res = $db->table('article n')
+                    ->select('DATE(n.articleDate) AS pdate, COUNT(DISTINCT n.articleID) AS cnt, SUM(n.viewed) AS vsum')
+                    ->where('n.userID', $u['id'])
+                    ->where('n.articleDate >=', $fromDate . ' 00:00:00')
+                    ->where('n.articleDate <=', $toDate . ' 23:59:59')
+                    ->groupBy('DATE(n.articleDate)')
                     ->get()->getResultArray();
             }
 
@@ -151,5 +179,44 @@ class StatisticReport extends BaseController
 
         usort($matrix, fn($a, $b) => $b['published_count'] <=> $a['published_count']);
         return $matrix;
+    }
+
+    /**
+     * Replika legacy: Article::DailyArticleProductivity($from, $to)
+     * Hourly productivity heatmap (24 jam x rentang tanggal)
+     * Tabel: article (R)
+     */
+    public function hourlyHeatmap()
+    {
+        $fromDate = $this->request->getGet('from') ?: date('Y-m-d', strtotime('-7 days'));
+        $toDate = $this->request->getGet('to') ?: date('Y-m-d');
+
+        $db = $this->articleModel->db;
+        $records = $db->table('article')
+            ->select('DATE(articleDate) AS pdate, HOUR(articleDate) AS phour, COUNT(*) AS total')
+            ->where('articleDate >=', $fromDate . ' 00:00:00')
+            ->where('articleDate <=', $toDate . ' 23:59:59')
+            ->whereIn('LOWER(status)', ['publish', 'published'])
+            ->groupBy('DATE(articleDate), HOUR(articleDate)')
+            ->orderBy('pdate', 'ASC')
+            ->orderBy('phour', 'ASC')
+            ->get()->getResultArray();
+
+        $matrix = [];
+        foreach ($records as $r) {
+            $date = $r['pdate'];
+            $hour = (int)$r['phour'];
+            if (!isset($matrix[$date])) {
+                $matrix[$date] = array_fill(0, 24, 0);
+            }
+            $matrix[$date][$hour] = (int)$r['total'];
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'from'   => $fromDate,
+            'to'     => $toDate,
+            'data'   => $matrix,
+        ]);
     }
 }

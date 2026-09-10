@@ -22,15 +22,15 @@ test.describe('08 - Members & RBAC User Management', () => {
 
     // Table should show existing user roles
     const tableText = await table.first().innerText();
-    expect(tableText).toMatch(/Master|Admin|Editor|Reporter/i);
+    expect(tableText).toMatch(/Administrator|Editor|Redpel|Riset|Sekred|Support/i);
 
-    // Click "Tambah User" button
-    const addUserBtn = page.locator('button:has-text("Tambah User"), button[data-modal-target="addUserModal"]');
+    // Click "Tambah User" / "Register Staff" button
+    const addUserBtn = page.locator('button:has-text("Register"), button:has-text("Tambah User"), button[onclick*="newUserModal"]').first();
     if (await addUserBtn.count() > 0) {
-      await addUserBtn.first().click();
+      await addUserBtn.click();
 
       // Modal should open
-      const modal = page.locator('#addUserModal, [role="dialog"]').first();
+      const modal = page.locator('#newUserModal');
       await expect(modal).toBeVisible();
 
       // Check username input field exists
@@ -38,34 +38,31 @@ test.describe('08 - Members & RBAC User Management', () => {
       await expect(usernameInput).toBeVisible();
 
       // Close modal
-      const closeBtn = modal.locator('button:has-text("Batal"), button[data-modal-close]').first();
+      const closeBtn = modal.locator('button:has-text("Batal"), button[onclick*="closeNewUserModal"]').first();
       if (await closeBtn.count() > 0) {
         await closeBtn.click();
       }
     }
   });
 
-  test('User permissions modal loads granular checkboxes and can be saved', async ({ page }) => {
+  test('User permissions modal loads informative read-only page access overview', async ({ page }) => {
     await page.goto('/user');
 
-    // Click on permissions button for user ID 6 (Arnoldus Kristianus)
-    const permBtn = page.locator('button[data-user-id="6"], button[onclick*="openPermissionsModal(6)"]').first();
+    // Click on permissions button for first available staff
+    const permBtn = page.locator('button[onclick*="openPermissionModal"]').first();
     if (await permBtn.count() > 0) {
       await permBtn.click();
 
       // Permissions modal should appear
-      const permModal = page.locator('#permissionsModal, [role="dialog"]:has-text("Hak Akses")');
-      await expect(permModal.first()).toBeVisible();
+      const permModal = page.locator('#permissionModal');
+      await expect(permModal).toBeVisible();
 
-      // Checkboxes for modules should be rendered
-      const checkboxes = permModal.locator('input[type="checkbox"]');
-      await expect(checkboxes.first()).toBeVisible();
-
-      // Close modal
-      const cancelBtn = permModal.locator('button:has-text("Batal"), button:has-text("Tutup")').first();
-      if (await cancelBtn.count() > 0) {
-        await cancelBtn.click();
-      }
+      // Verify module indicators and close button
+      await expect(page.locator('#permissionUserDesc')).toBeVisible();
+      const closeBtn = permModal.locator('button:has-text("Tutup")').first();
+      await expect(closeBtn).toBeVisible();
+      await closeBtn.click();
+      await expect(permModal).toBeHidden();
     }
   });
 });

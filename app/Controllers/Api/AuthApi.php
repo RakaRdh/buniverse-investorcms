@@ -51,8 +51,8 @@ class AuthApi extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $member = $db->table('client_account_entity')
-            ->where('attr_contact_val', $email)
+        $member = $db->table('member')
+            ->where('email', $email)
             ->get()->getRowArray();
 
         if (!$member) {
@@ -63,7 +63,7 @@ class AuthApi extends BaseController
         }
 
         $expectedHash = md5($password);
-        if ($member['attr_credential_hash'] !== $expectedHash && $password !== 'investor123') {
+        if ($member['password'] !== $expectedHash && $password !== 'investor123') {
             return $this->response->setStatusCode(401)->setJSON([
                 'status'  => 'error',
                 'message' => 'Kata sandi tidak sesuai.'
@@ -71,19 +71,19 @@ class AuthApi extends BaseController
         }
 
         // Update last access timestamp
-        $db->table('client_account_entity')
-            ->where('ref_entity_client_id', $member['ref_entity_client_id'])
-            ->update(['attr_last_access_at' => date('Y-m-d H:i:s')]);
+        $db->table('member')
+            ->where('memberID', $member['memberID'])
+            ->update(['lastlogin' => date('Y-m-d H:i:s')]);
 
         return $this->response->setJSON([
             'status'  => 'success',
             'message' => 'Login member berhasil!',
             'data'    => [
-                'id'        => (int)$member['ref_entity_client_id'],
-                'name'      => $member['attr_full_name'],
-                'email'     => $member['attr_contact_val'],
-                'company'   => $member['attr_profile_summary'],
-                'status'    => MemberModel::getStatusLabel($member['attr_status_code']),
+                'id'        => (int)$member['memberID'],
+                'name'      => $member['fullname'],
+                'email'     => $member['email'],
+                'company'   => $member['bio'] ?? 'Investor.id Member',
+                'status'    => MemberModel::getStatusLabel($member['status']),
             ]
         ]);
     }
@@ -121,8 +121,8 @@ class AuthApi extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $existing = $db->table('client_account_entity')
-            ->where('attr_contact_val', $email)
+        $existing = $db->table('member')
+            ->where('email', $email)
             ->countAllResults();
 
         if ($existing > 0) {

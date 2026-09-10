@@ -35,9 +35,9 @@ class Files extends BaseController
         $sessionUser = session()->get('user_id') ?: 1;
 
         $this->fileModel->insert([
-            'attr_header_title'      => $name,
-            'attr_resource_name'     => $url,
-            'ref_entity_principal_id'=> $sessionUser,
+            'title'     => $name,
+            'filename'  => $url,
+            'userID'    => $sessionUser,
         ]);
 
         return redirect()->to('/files')->with('success', 'File registered successfully in database.');

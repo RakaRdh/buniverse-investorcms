@@ -1,9 +1,7 @@
 {
     "roles": {
-        "master": {
-            "all": true
-        },
-        "admin": {
+        "administrator": {
+            "all": true,
             "dashboard": true,
             "post": true,
             "headline": true,
@@ -12,14 +10,46 @@
             "embed-chart": true,
             "statistic": true,
             "statistic/report": true,
-            "apps-version": true,
-            "apps-push-notif": true,
-            "apps-feature-content": true,
             "kanal/master": true,
             "kanal/sub": true,
             "kanal/stats": true,
+            "apps-version": true,
+            "apps-push-notif": true,
+            "apps-feature-content": true,
             "member": true,
             "user": true
+        },
+        "admin": {
+            "all": true,
+            "dashboard": true,
+            "post": true,
+            "headline": true,
+            "media": true,
+            "files": true,
+            "embed-chart": true,
+            "statistic": true,
+            "statistic/report": true,
+            "kanal/master": true,
+            "kanal/sub": true,
+            "kanal/stats": true,
+            "apps-version": true,
+            "apps-push-notif": true,
+            "apps-feature-content": true,
+            "member": true,
+            "user": true
+        },
+        "redpel": {
+            "dashboard": true,
+            "post": true,
+            "headline": true,
+            "media": true,
+            "files": true,
+            "embed-chart": true,
+            "statistic": true,
+            "statistic/report": true,
+            "kanal/master": true,
+            "kanal/sub": true,
+            "kanal/stats": true
         },
         "editor": {
             "dashboard": true,
@@ -34,25 +64,53 @@
             "kanal/sub": true,
             "kanal/stats": true
         },
-        "author": {
+        "riset": {
+            "all": true,
             "dashboard": true,
             "post": true,
+            "headline": true,
             "media": true,
             "files": true,
+            "embed-chart": true,
             "statistic": true,
-            "statistic/report": true
+            "statistic/report": true,
+            "kanal/master": true,
+            "kanal/sub": true,
+            "kanal/stats": true,
+            "apps-version": true,
+            "apps-push-notif": true,
+            "apps-feature-content": true,
+            "member": true,
+            "user": true
         },
-        "contributor": {
+        "sekred": {
+            "all": true,
             "dashboard": true,
             "post": true,
+            "headline": true,
             "media": true,
             "files": true,
+            "embed-chart": true,
             "statistic": true,
-            "statistic/report": true
+            "statistic/report": true,
+            "kanal/master": true,
+            "kanal/sub": true,
+            "kanal/stats": true,
+            "apps-version": true,
+            "apps-push-notif": true,
+            "apps-feature-content": true,
+            "member": true,
+            "user": true
+        },
+        "support": {
+            "dashboard": true,
+            "files": true,
+            "apps-version": true,
+            "apps-push-notif": true,
+            "apps-feature-content": true
         }
     },
     "users": {
-        "2": [],
-        "8": []
+        "2": []
     }
 }

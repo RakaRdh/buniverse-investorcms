@@ -171,18 +171,28 @@ main .surface-card table {
 }
 
 /* Collapsed sidebar states */
-.sidebar-collapsed {
+.sidebar-collapsed,
+html.sidebar-pre-collapsed #desktopSidebar {
   width: 76px !important;
+}
+
+html.sidebar-pre-collapsed #mainWorkspaceWrapper {
+  padding-left: 76px !important;
 }
 
 .sidebar-collapsed .nav-label,
 .sidebar-collapsed .group-label,
 .sidebar-collapsed .brand-desc,
-.sidebar-collapsed .brand-title {
+.sidebar-collapsed .brand-title,
+html.sidebar-pre-collapsed #desktopSidebar .nav-label,
+html.sidebar-pre-collapsed #desktopSidebar .group-label,
+html.sidebar-pre-collapsed #desktopSidebar .brand-desc,
+html.sidebar-pre-collapsed #desktopSidebar .brand-title {
   display: none !important;
 }
 
-.sidebar-collapsed .nav-item-link {
+.sidebar-collapsed .nav-item-link,
+html.sidebar-pre-collapsed #desktopSidebar .nav-item-link {
   justify-content: center !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
@@ -281,5 +291,116 @@ main .surface-card table {
   border-top-color: #2B6CB0;
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
+}
+
+/* Embed Chart Layout Helpers (Guaranteed layout without Tailwind grid dependence) */
+.chart-form-row {
+  display: flex;
+  flex-direction: row;
+  gap: 1.25rem;
+  width: 100%;
+}
+@media (max-width: 640px) {
+  .chart-form-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+.chart-form-col {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.chart-stats-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+.chart-stat-item {
+  flex: 1 1 0%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  background-color: hsl(var(--muted) / 0.45);
+  border: 1px solid hsl(var(--border) / 0.7);
+}
+
+/* Custom styled dropdown select to prevent text and icon overlap */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 0.75rem) center !important;
+  background-size: 1em 1em;
+  padding-left: 0.75rem !important;
+  padding-right: 2.25rem !important;
+  text-align: left;
+}
+
+.dark select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+/* Smooth Accordion Dropdown Animation for Sidebar */
+.sidebar-dropdown-wrapper .dropdown-menu {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease-out;
+  opacity: 0;
+  overflow: hidden;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.sidebar-dropdown-wrapper .dropdown-menu > .dropdown-menu-inner {
+  min-height: 0;
+}
+
+.sidebar-dropdown-wrapper .dropdown-menu.dropdown-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+/* Lucide Icons Anti-Blink & Layout Shift Prevention */
+[data-lucide] {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Match explicit sizes commonly used in sidebar & topbar before Lucide SVG renders */
+i[data-lucide].size-4, i[data-lucide].size-4\.5, i[data-lucide].size-5, i[data-lucide].size-3\.5 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+i[data-lucide].size-4 { width: 1rem; height: 1rem; }
+i[data-lucide].size-4\.5 { width: 1.125rem; height: 1.125rem; }
+i[data-lucide].size-5 { width: 1.25rem; height: 1.25rem; }
+i[data-lucide].size-3\.5 { width: 0.875rem; height: 0.875rem; }
+
+/* Page Load Anti-Blink: Suppress transition animations during initial render */
+body.preload,
+body.preload *,
+body.preload *::before,
+body.preload *::after {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -ms-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
+  animation-duration: 0s !important;
+  -webkit-animation-duration: 0s !important;
 }
 

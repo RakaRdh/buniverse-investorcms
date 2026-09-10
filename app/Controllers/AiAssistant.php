@@ -31,7 +31,7 @@ class AiAssistant extends BaseController
             $title = $this->gemini->generateTitle($body);
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $logId = $this->logAiGeneration([
-                'ref_entity_nano_id' => $articleId,
+                'article_id'         => $articleId,
                 'action_type'        => 'title',
                 'input_title'        => null,
                 'input_body_snapshot' => mb_substr($body, 0, 500),
@@ -52,7 +52,7 @@ class AiAssistant extends BaseController
         } catch (\Throwable $e) {
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $this->logAiGeneration([
-                'ref_entity_nano_id' => $articleId,
+                'article_id'         => $articleId,
                 'action_type'        => 'title',
                 'input_title'        => null,
                 'input_body_snapshot' => mb_substr($body, 0, 500),
@@ -88,7 +88,7 @@ class AiAssistant extends BaseController
             $summary = $this->gemini->generateSummary($title, $body);
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $logId = $this->logAiGeneration([
-                'ref_entity_nano_id' => $articleId,
+                'article_id'         => $articleId,
                 'action_type'        => 'summary',
                 'input_title'        => $title,
                 'input_body_snapshot' => mb_substr($body, 0, 500),
@@ -109,7 +109,7 @@ class AiAssistant extends BaseController
         } catch (\Throwable $e) {
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $this->logAiGeneration([
-                'ref_entity_nano_id' => $articleId,
+                'article_id'         => $articleId,
                 'action_type'        => 'summary',
                 'input_title'        => $title,
                 'input_body_snapshot' => mb_substr($body, 0, 500),
@@ -144,7 +144,7 @@ class AiAssistant extends BaseController
             $tags = $this->gemini->generateTags($body);
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $logId = $this->logAiGeneration([
-                'ref_entity_nano_id' => $articleId,
+                'article_id'         => $articleId,
                 'action_type'        => 'tags',
                 'input_title'        => null,
                 'input_body_snapshot' => mb_substr($body, 0, 500),
@@ -165,7 +165,7 @@ class AiAssistant extends BaseController
         } catch (\Throwable $e) {
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $this->logAiGeneration([
-                'ref_entity_nano_id' => $articleId,
+                'article_id'         => $articleId,
                 'action_type'        => 'tags',
                 'input_title'        => null,
                 'input_body_snapshot' => mb_substr($body, 0, 500),
@@ -200,7 +200,7 @@ class AiAssistant extends BaseController
             $points = $this->gemini->generatePoints($body);
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $logId = $this->logAiGeneration([
-                'ref_entity_nano_id' => $articleId,
+                'article_id'         => $articleId,
                 'action_type'        => 'points',
                 'input_title'        => null,
                 'input_body_snapshot' => mb_substr($body, 0, 500),
@@ -221,7 +221,7 @@ class AiAssistant extends BaseController
         } catch (\Throwable $e) {
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $this->logAiGeneration([
-                'ref_entity_nano_id' => $articleId,
+                'article_id'         => $articleId,
                 'action_type'        => 'points',
                 'input_title'        => null,
                 'input_body_snapshot' => mb_substr($body, 0, 500),
@@ -255,14 +255,14 @@ class AiAssistant extends BaseController
             $data = $this->gemini->scrapeArticle($url);
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $logId = $this->logAiGeneration([
-                'ref_entity_nano_id' => null,
-                'action_type'        => 'scrape',
-                'input_title'        => 'SCRAPE: ' . $url,
+                'article_id'          => null,
+                'action_type'         => 'scrape',
+                'input_title'         => 'SCRAPE: ' . $url,
                 'input_body_snapshot' => $url,
-                'generated_result'   => mb_substr($data['body'] ?? '', 0, 1000),
-                'model_name'         => $this->gemini->getLastModelUsed() ?: $this->gemini->getPrimaryModel(),
-                'latency_ms'         => $latency,
-                'error_message'      => null
+                'generated_result'    => mb_substr($data['body'] ?? '', 0, 1000),
+                'model_name'          => $this->gemini->getLastModelUsed() ?: $this->gemini->getPrimaryModel(),
+                'latency_ms'          => $latency,
+                'error_message'       => null
             ]);
             $data['log_id'] = $logId;
 
@@ -278,14 +278,14 @@ class AiAssistant extends BaseController
         } catch (\Throwable $e) {
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $this->logAiGeneration([
-                'ref_entity_nano_id' => null,
-                'action_type'        => 'scrape',
-                'input_title'        => 'SCRAPE: ' . $url,
+                'article_id'          => null,
+                'action_type'         => 'scrape',
+                'input_title'         => 'SCRAPE: ' . $url,
                 'input_body_snapshot' => $url,
-                'generated_result'   => null,
-                'model_name'         => $this->gemini->getLastModelUsed() ?: $this->gemini->getPrimaryModel(),
-                'latency_ms'         => $latency,
-                'error_message'      => $e->getMessage()
+                'generated_result'    => null,
+                'model_name'          => $this->gemini->getLastModelUsed() ?: $this->gemini->getPrimaryModel(),
+                'latency_ms'          => $latency,
+                'error_message'       => $e->getMessage()
             ]);
 
             return $this->response->setJSON([
@@ -334,8 +334,8 @@ class AiAssistant extends BaseController
             $userId = session('user_id') ?: 1;
 
             $record = [
-                'ref_entity_nano_id'      => $data['ref_entity_nano_id'] ?? null,
-                'ref_entity_principal_id' => $userId,
+                'article_id'              => $data['article_id'] ?? null,
+                'user_id'                 => $userId,
                 'action_type'             => $data['action_type'] ?? 'general',
                 'provider_code'           => $data['provider_code'] ?? 'gemini',
                 'model_name'              => $data['model_name'] ?? 'gemini-3.5-flash-lite',

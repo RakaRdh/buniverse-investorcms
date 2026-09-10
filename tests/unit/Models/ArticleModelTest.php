@@ -37,10 +37,10 @@ final class ArticleModelTest extends CIUnitTestCase
 
     public function testGetArticlesWithStatusFilter(): void
     {
-        $result = $this->model->getArticlesWithRelations(['status' => 'Published'], 1, 10);
+        $result = $this->model->getArticlesWithRelations(['status' => 'Publish'], 1, 10);
         $this->assertIsArray($result);
         foreach ($result['data'] as $article) {
-            $this->assertSame('Published', $article['status']);
+            $this->assertSame('Publish', $article['status']);
         }
     }
 

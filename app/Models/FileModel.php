@@ -6,13 +6,13 @@ use CodeIgniter\Model;
 
 class FileModel extends Model
 {
-    protected $table = 'storage_item_record';
-    protected $primaryKey = 'ref_entity_file_id';
+    protected $table = 'files';
+    protected $primaryKey = 'fileID';
     protected $allowedFields = [
-        'attr_header_title',
-        'attr_resource_name',
-        'attr_recorded_at',
-        'ref_entity_principal_id'
+        'title',
+        'filename',
+        'timestamp',
+        'userID'
     ];
     protected $useTimestamps = false;
 
@@ -21,21 +21,21 @@ class FileModel extends Model
      */
     public function getFilesWithUploader(?string $keyword = null, int $page = 1, int $perPage = 25): array
     {
-        $builder = $this->db->table('storage_item_record f')
+        $builder = $this->db->table('files f')
             ->select('
-                f.ref_entity_file_id AS id,
-                f.attr_header_title AS name,
-                f.attr_resource_name AS url,
-                f.attr_recorded_at AS date,
-                p.attr_identifier AS upload_by
+                f.fileID AS id,
+                f.title AS name,
+                f.filename AS url,
+                f.timestamp AS date,
+                p.username AS upload_by
             ')
-            ->join('sys_principal_entity p', 'p.ref_entity_principal_id = f.ref_entity_principal_id', 'left')
-            ->orderBy('f.attr_recorded_at', 'DESC');
+            ->join('useradministrator p', 'p.userID = f.userID', 'left')
+            ->orderBy('f.timestamp', 'DESC');
 
         if (!empty($keyword)) {
             $builder->groupStart()
-                ->like('f.attr_header_title', $keyword)
-                ->orLike('p.attr_identifier', $keyword)
+                ->like('f.title', $keyword)
+                ->orLike('p.username', $keyword)
             ->groupEnd();
         }
 

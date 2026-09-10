@@ -52,12 +52,12 @@ class PostApi extends BaseController
         $authorName = !empty($data['author']) ? $data['author'] : (session('username') ?: 'Redaksi Investor');
         $authorId = $this->authorModel->findOrCreate($authorName);
 
-        // Primary Category is ALWAYS the Master Kanal (parent_id IS NULL)
-        $category = $this->categoryModel->where('charlie_name_a', $kanalName)->where('parent_id IS NULL')->first();
+        // Primary Category is ALWAYS the Master Kanal (parent IS NULL)
+        $category = $this->categoryModel->where('categoryName', $kanalName)->where('parent IS NULL')->first();
         if (!$category) {
-            $category = $this->categoryModel->where('charlie_name_a', $kanalName)->first();
+            $category = $this->categoryModel->where('categoryName', $kanalName)->first();
         }
-        $categoryId = $category ? (int)$category['ref_entity_charlie_id'] : 1;
+        $categoryId = $category ? (int)$category['categoryID'] : 1;
 
         $rawTags = $data['tags'] ?? '';
         $tags = is_array($rawTags) ? $rawTags : array_values(array_filter(array_map('trim', explode(',', $rawTags))));
@@ -83,7 +83,7 @@ class PostApi extends BaseController
             'sub_kanal'         => $subKanal,
             'is_premium'        => (int)($data['is_premium'] ?? 0),
             'headline_type'     => $data['headline_type'] ?? 'none',
-            'ref_entity_acc_id' => $sessionUser,
+            'userID'            => $sessionUser,
         ];
 
         try {
@@ -156,4 +156,44 @@ class PostApi extends BaseController
             ]);
         }
     }
+
+    /**
+     * POST /api/post/release-lock/(:num)
+     * Dipanggil saat tab browser ditutup atau user berpindah halaman (beforeunload)
+     * Tabel: article (W)
+     */
+    public function releaseLock(int $id)
+    {
+        $userId = session('user_id');
+        if ($userId) {
+            $this->articleModel->releaseLock($id, (int)$userId);
+        }
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Lock released'
+        ]);
+    }
+
+    /**
+     * POST /api/post/force-unlock/(:num)
+     * Membuka lock artikel secara paksa (Khusus Administrator & Redpel)
+     * Tabel: article (W)
+     */
+    public function forceUnlock(int $id)
+    {
+        $userRole = session('user_role') ?? 'Admin';
+        if (!in_array(strtolower($userRole), ['administrator', 'redpel', 'admin'])) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'error'   => 'Akses ditolak: Hanya Administrator dan Redpel yang dapat melakukan force unlock.'
+            ]);
+        }
+
+        $this->articleModel->forceUnlock($id);
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Gembok artikel #' . $id . ' berhasil dilepas.'
+        ]);
+    }
 }
+

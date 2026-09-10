@@ -77,6 +77,40 @@
     </div>
 </form>
 
+<?php if (!empty($isEdit) && isset($usedInArticles)): ?>
+<div class="surface-card rounded-xl border border-border p-5 mt-6 space-y-3">
+    <div class="flex items-center gap-2 border-b border-border pb-3">
+        <i data-lucide="link-2" class="size-4 text-primary"></i>
+        <h3 class="text-sm font-bold text-foreground">Artikel yang Menggunakan Media Ini (<?= count($usedInArticles) ?>)</h3>
+    </div>
+
+    <?php if (empty($usedInArticles)): ?>
+        <p class="text-xs text-muted-foreground py-2 italic">Belum ada artikel yang menautkan media ini.</p>
+    <?php else: ?>
+        <div class="divide-y divide-border">
+            <?php foreach ($usedInArticles as $art): ?>
+                <div class="py-2.5 flex items-center justify-between text-xs">
+                    <div class="min-w-0 pr-4">
+                        <a href="<?= base_url('post/edit/' . $art['id']) ?>" class="font-semibold text-primary hover:underline truncate block">
+                            <?= esc($art['title']) ?>
+                        </a>
+                        <span class="text-[11px] text-muted-foreground">Tayang: <?= date('d M Y H:i', strtotime($art['publish_date'])) ?> WIB</span>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase <?= strtolower($art['status']) === 'publish' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-slate-100 text-slate-700' ?>">
+                            <?= esc($art['status']) ?>
+                        </span>
+                        <a href="<?= base_url('post/edit/' . $art['id']) ?>" class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Buka di Editor">
+                            <i data-lucide="external-link" class="size-3.5"></i>
+                        </a>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>

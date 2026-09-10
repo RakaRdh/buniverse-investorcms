@@ -68,23 +68,43 @@ class Apps extends BaseController
         ]);
     }
 
+    /**
+     * @deprecated LEGACY DEAD CODE — External FCM Push Notification
+     * Legacy memanggil Firebase HTTP API / Cron untuk broadcast notifikasi mobile app.
+     * Pada CI4, data hanya disimpan ke DB lokal `pushnotif` dan panggilan eksternal FCM di-stub
+     * agar terisolasi murni dan tidak ada payload yang keluar ke production / real device.
+     */
     public function createPushNotif()
     {
         $title = $this->request->getPost('title') ?? 'Breaking Market Update';
+        $pushType = $this->request->getPost('push_type') ?: 'NewsLanding';
         $sessionUser = session()->get('user_id') ?: 1;
 
+        // Push type routing sesuai variasi target legacy
+        $pushUrl = '/news';
+        $urlTarget = 'inbound';
+        if ($pushType === 'NewsLanding') {
+            $articleId = (int)($this->request->getPost('article_id') ?? 0);
+            $pushUrl = $articleId > 0 ? "/article/detail/{$articleId}" : '/news';
+        } elseif ($pushType === 'TVShow') {
+            $pushUrl = '/tv/live';
+        } elseif ($pushType === 'WebPage') {
+            $pushUrl = $this->request->getPost('url') ?: 'https://investor.id';
+            $urlTarget = 'outbound';
+        }
+
         $this->notifModel->insert([
-            'posted_by'        => $sessionUser,
-            'push_date'        => date('Y-m-d H:i:s'),
-            'push_type'        => 'broadcast',
-            'push_url'         => '/news',
-            'target_direction' => 'outbound',
-            'push_slug'        => url_title($title, '-', true),
-            'push_title'       => $title,
-            'push_body'        => $title,
-            'push_image'       => '/img/investor_placeholder.jpg',
-            'push_message_ref' => 'REF-' . rand(1000, 9999),
-            'status_code'      => 'state_1',
+            'postBy'         => $sessionUser,
+            'pushDate'       => date('Y-m-d H:i:s'),
+            'pushType'       => $pushType,
+            'pushUrl'        => $pushUrl,
+            'urlTarget'      => $urlTarget,
+            'pushSlug'       => url_title($title, '-', true),
+            'pushTitle'      => $title,
+            'pushBody'       => $title,
+            'pushImage'      => $this->request->getPost('image') ?: '/img/investor_placeholder.jpg',
+            'fcm_message_id' => null,
+            'status'         => 'ready',
         ]);
 
         return redirect()->to('/apps-push-notif')->with('success', 'Push notification recorded to database successfully!');
@@ -103,23 +123,42 @@ class Apps extends BaseController
 
     public function saveFeatureContent()
     {
+        $id = (int)$this->request->getPost('id');
         $title = $this->request->getPost('title');
         $badge = $this->request->getPost('badge');
         $image = $this->request->getPost('image');
+        $type = $this->request->getPost('type') ?: (!empty($badge) ? 'tag' : 'banner');
+        if (!in_array($type, ['tag', 'banner'])) {
+            $type = 'banner';
+        }
         $username = session()->get('user_username') ?: 'raka_h';
 
-        $this->featureModel->insert([
-            'content_type'  => 'Carousel',
-            'content_title' => $title,
-            'content_tag'   => $badge,
-            'set_by'        => $username,
-            'set_date'      => date('Y-m-d H:i:s'),
-            'image_url'     => $image ?: '/img/investor_placeholder.jpg',
-            'link_url'      => '/post/1',
-            'position_val'  => 'top',
-            'numeric_val'   => $this->featureModel->countAllResults() + 1,
-        ]);
+        $data = [
+            'type'      => $type,
+            'title'     => $title,
+            'tag'       => ($type === 'tag') ? $badge : '',
+            'setby'     => $username,
+            'setdate'   => date('Y-m-d H:i:s'),
+            'imageUrl'  => $image ?: '/img/investor_placeholder.jpg',
+            'linkUrl'   => ($type === 'banner') ? ($this->request->getPost('link_url') ?: '/post/1') : '',
+            'position'  => 'top',
+        ];
 
-        return redirect()->to('/apps-feature-content')->with('success', 'App feature content card saved to database.');
+        if ($id > 0) {
+            $this->featureModel->update($id, $data);
+            $msg = 'App feature content card updated successfully.';
+        } else {
+            $data['num'] = $this->featureModel->countAllResults() + 1;
+            $this->featureModel->insert($data);
+            $msg = 'App feature content card saved to database.';
+        }
+
+        return redirect()->to('/apps-feature-content')->with('success', $msg);
+    }
+
+    public function deleteFeature(int $id)
+    {
+        $this->featureModel->delete($id);
+        return redirect()->to('/apps-feature-content')->with('success', 'Feature content removed from database.');
     }
 }

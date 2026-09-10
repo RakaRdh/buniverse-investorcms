@@ -58,19 +58,22 @@ class Media extends BaseController
 
         if ($item) {
             $item = [
-                'id'      => $item['ref_entity_media_id'],
-                'title'   => $item['attr_resource_title'],
-                'image'   => $item['attr_resource_name'],
-                'caption' => $item['attr_short_description'],
-                'source'  => $item['attr_origin_source'],
+                'id'      => $item['mediaID'],
+                'title'   => $item['mediaTitle'],
+                'image'   => $item['filename'],
+                'caption' => $item['caption'],
+                'source'  => $item['source'],
             ];
         }
 
+        $usedInArticles = $this->mediaModel->getArticlesUsingMedia((int)$id);
+
         return view('media/upload', [
-            'title'      => 'Edit Media Information',
-            'breadcrumb' => 'Media / Edit',
-            'media'      => $item,
-            'isEdit'     => true
+            'title'          => 'Edit Media Information',
+            'breadcrumb'     => 'Media / Edit',
+            'media'          => $item,
+            'isEdit'         => true,
+            'usedInArticles' => $usedInArticles,
         ]);
     }
 
@@ -97,14 +100,25 @@ class Media extends BaseController
             $imagePath = '/img/investor_placeholder.jpg';
         }
 
+        $mediaTitle = $this->request->getPost('title') ?? 'Media Item';
+        $caption = $this->request->getPost('caption') ?? '';
+
         $this->mediaModel->insert([
-            'attr_resource_title'    => $this->request->getPost('title') ?? 'Media Item',
-            'attr_short_description' => $this->request->getPost('caption') ?? '',
-            'attr_full_description'  => $this->request->getPost('caption') ?? '',
-            'attr_resource_name'     => $imagePath,
-            'attr_origin_source'     => $this->request->getPost('source') ?: 'Investor.id / Riset',
-            'attr_aubert_name'       => $username,
-            'ref_entity_principal_id'=> $sessionUser,
+            'mediaTitle'  => $mediaTitle,
+            'caption'     => $caption,
+            'description' => $caption,
+            'filename'    => $imagePath,
+            'source'      => $this->request->getPost('source') ?: 'Investor.id / Riset',
+            'author'      => $username,
+            'userID'      => $sessionUser,
+            'timestamp'   => date('Y-m-d H:i:s'),
+        ]);
+
+        // Production convention: log insert foto with JSON details
+        $activityLog = new \App\Models\ActivityLogModel();
+        $activityLog->logAction((int)$sessionUser, 'insert', 'foto', [
+            'mediaTitle' => $mediaTitle,
+            'caption'    => $caption,
         ]);
 
         return redirect()->to('/media')->with('success', 'Media asset berhasil disimpan ke database!');
@@ -112,11 +126,14 @@ class Media extends BaseController
 
     public function update($id)
     {
+        $mediaTitle = $this->request->getPost('title');
+        $caption = $this->request->getPost('caption');
+
         $updateData = [
-            'attr_resource_title'    => $this->request->getPost('title'),
-            'attr_short_description' => $this->request->getPost('caption'),
-            'attr_full_description'  => $this->request->getPost('caption'),
-            'attr_origin_source'     => $this->request->getPost('source') ?: 'Investor.id / Riset',
+            'mediaTitle'  => $mediaTitle,
+            'caption'     => $caption,
+            'description' => $caption,
+            'source'      => $this->request->getPost('source') ?: 'Investor.id / Riset',
         ];
 
         // Check for local file upload first
@@ -128,12 +145,20 @@ class Media extends BaseController
             }
             $newName = $file->getRandomName();
             $file->move($uploadDir, $newName);
-            $updateData['attr_resource_name'] = '/uploads/media/' . $newName;
+            $updateData['filename'] = '/uploads/media/' . $newName;
         } elseif ($this->request->getPost('image')) {
-            $updateData['attr_resource_name'] = $this->request->getPost('image');
+            $updateData['filename'] = $this->request->getPost('image');
         }
 
         $this->mediaModel->update((int)$id, $updateData);
+
+        // Production convention: log edit foto with JSON details
+        $sessionUser = session()->get('user_id') ?: 1;
+        $activityLog = new \App\Models\ActivityLogModel();
+        $activityLog->logAction((int)$sessionUser, 'edit', 'foto', [
+            'mediaTitle' => $mediaTitle,
+            'caption'    => $caption,
+        ]);
 
         return redirect()->to('/media')->with('success', 'Media information updated!');
     }

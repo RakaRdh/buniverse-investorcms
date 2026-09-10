@@ -58,11 +58,11 @@ class Kanal extends BaseController
         $name = trim($this->request->getPost('name') ?? '');
         if (!empty($name)) {
             $this->categoryModel->insert([
-                'charlie_name_a' => $name,
-                'field_label_a'  => url_title($name, '-', true),
-                'parent_id'      => null,
-                'status_code'    => 1,
-                'numeric_val'    => $this->categoryModel->countAllResults() + 1,
+                'categoryName' => $name,
+                'label'        => url_title($name, '-', true),
+                'parent'       => null,
+                'status'       => 1,
+                'num'          => $this->categoryModel->countAllResults() + 1,
             ]);
             $newId = $this->categoryModel->insertID();
             $this->categoryModel->syncBackup($newId);
@@ -78,11 +78,11 @@ class Kanal extends BaseController
 
         if (!empty($name) && $parentId > 0) {
             $this->categoryModel->insert([
-                'charlie_name_a' => $name,
-                'field_label_a'  => url_title($name, '-', true),
-                'parent_id'      => $parentId,
-                'status_code'    => 1,
-                'numeric_val'    => 1,
+                'categoryName' => $name,
+                'label'        => url_title($name, '-', true),
+                'parent'       => $parentId,
+                'status'       => 1,
+                'num'          => 1,
             ]);
             $newId = $this->categoryModel->insertID();
             $this->categoryModel->syncBackup($newId);

@@ -6,14 +6,14 @@ use CodeIgniter\Model;
 
 class CategoryModel extends Model
 {
-    protected $table = 'entity_charlie';
-    protected $primaryKey = 'ref_entity_charlie_id';
+    protected $table = 'category';
+    protected $primaryKey = 'categoryID';
     protected $allowedFields = [
-        'charlie_name_a',
-        'field_label_a',
-        'parent_id',
-        'status_code',
-        'numeric_val'
+        'categoryName',
+        'label',
+        'parent',
+        'status',
+        'num'
     ];
     protected $useTimestamps = false;
 
@@ -22,38 +22,38 @@ class CategoryModel extends Model
      */
     public function getKanalTree(): array
     {
-        $parents = $this->db->table('entity_charlie c')
+        $parents = $this->db->table('category c')
             ->select('
-                c.ref_entity_charlie_id AS id,
-                c.charlie_name_a AS name,
-                c.field_label_a AS slug,
-                c.status_code,
-                c.numeric_val,
-                COUNT(DISTINCT ncl.ref_entity_nano_id) AS article_count,
-                SUM(COALESCE(n.view_count, 0)) AS total_views
+                c.categoryID AS id,
+                c.categoryName AS name,
+                c.label AS slug,
+                c.status AS status_code,
+                c.num AS numeric_val,
+                COUNT(DISTINCT ncl.articleID) AS article_count,
+                SUM(COALESCE(n.viewed, 0)) AS total_views
             ')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_charlie_id = c.ref_entity_charlie_id', 'left')
-            ->join('entity_nano n', 'n.ref_entity_nano_id = ncl.ref_entity_nano_id', 'left')
-            ->where('c.parent_id IS NULL')
-            ->groupBy('c.ref_entity_charlie_id')
-            ->orderBy('c.numeric_val', 'ASC')
+            ->join('articlecategory ncl', 'ncl.categoryID = c.categoryID', 'left')
+            ->join('article n', 'n.articleID = ncl.articleID', 'left')
+            ->where('c.parent IS NULL')
+            ->groupBy('c.categoryID')
+            ->orderBy('c.num', 'ASC')
             ->get()->getResultArray();
 
         foreach ($parents as &$p) {
-            $p['sub_kanals'] = $this->db->table('entity_charlie c')
+            $p['sub_kanals'] = $this->db->table('category c')
                 ->select('
-                    c.ref_entity_charlie_id AS id,
-                    c.charlie_name_a AS name,
-                    c.field_label_a AS slug,
-                    c.status_code,
-                    COUNT(DISTINCT ncl.ref_entity_nano_id) AS article_count,
-                    SUM(COALESCE(n.view_count, 0)) AS total_views
+                    c.categoryID AS id,
+                    c.categoryName AS name,
+                    c.label AS slug,
+                    c.status AS status_code,
+                    COUNT(DISTINCT ncl.articleID) AS article_count,
+                    SUM(COALESCE(n.viewed, 0)) AS total_views
                 ')
-                ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_charlie_id = c.ref_entity_charlie_id', 'left')
-                ->join('entity_nano n', 'n.ref_entity_nano_id = ncl.ref_entity_nano_id', 'left')
-                ->where('c.parent_id', $p['id'])
-                ->groupBy('c.ref_entity_charlie_id')
-                ->orderBy('c.numeric_val', 'ASC')
+                ->join('articlecategory ncl', 'ncl.categoryID = c.categoryID', 'left')
+                ->join('article n', 'n.articleID = ncl.articleID', 'left')
+                ->where('c.parent', $p['id'])
+                ->groupBy('c.categoryID')
+                ->orderBy('c.num', 'ASC')
                 ->get()->getResultArray();
             $p['sub_count'] = count($p['sub_kanals']);
         }
@@ -66,23 +66,23 @@ class CategoryModel extends Model
      */
     public function getSubKanalsList(): array
     {
-        return $this->db->table('entity_charlie sub')
+        return $this->db->table('category sub')
             ->select('
-                sub.ref_entity_charlie_id AS id,
-                sub.charlie_name_a AS name,
-                sub.field_label_a AS slug,
-                parent.charlie_name_a AS parent_name,
-                parent.field_label_a AS parent_slug,
-                COUNT(DISTINCT ncl.ref_entity_nano_id) AS article_count,
-                SUM(COALESCE(n.view_count, 0)) AS total_views
+                sub.categoryID AS id,
+                sub.categoryName AS name,
+                sub.label AS slug,
+                parent.categoryName AS parent_name,
+                parent.label AS parent_slug,
+                COUNT(DISTINCT ncl.articleID) AS article_count,
+                SUM(COALESCE(n.viewed, 0)) AS total_views
             ')
-            ->join('entity_charlie parent', 'parent.ref_entity_charlie_id = sub.parent_id')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_charlie_id = sub.ref_entity_charlie_id', 'left')
-            ->join('entity_nano n', 'n.ref_entity_nano_id = ncl.ref_entity_nano_id', 'left')
-            ->where('sub.parent_id IS NOT NULL')
-            ->groupBy('sub.ref_entity_charlie_id')
-            ->orderBy('parent.numeric_val', 'ASC')
-            ->orderBy('sub.numeric_val', 'ASC')
+            ->join('category parent', 'parent.categoryID = sub.parent')
+            ->join('articlecategory ncl', 'ncl.categoryID = sub.categoryID', 'left')
+            ->join('article n', 'n.articleID = ncl.articleID', 'left')
+            ->where('sub.parent IS NOT NULL')
+            ->groupBy('sub.categoryID')
+            ->orderBy('parent.num', 'ASC')
+            ->orderBy('sub.num', 'ASC')
             ->get()->getResultArray();
     }
 
@@ -112,13 +112,13 @@ class CategoryModel extends Model
     }
 
     /**
-     * Sync single row to backup table entity_charlie_backup
+     * Sync single row to backup table category_backup
      */
     public function syncBackup(int $id): void
     {
         $row = $this->find($id);
         if ($row) {
-            $this->db->table('entity_charlie_backup')->replace($row);
+            $this->db->table('category_backup')->replace($row);
         }
     }
 }

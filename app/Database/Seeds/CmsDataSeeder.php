@@ -4,6 +4,7 @@ namespace App\Database\Seeds;
 
 use CodeIgniter\Database\Seeder;
 use App\Models\DataRepository;
+use App\Models\AdminModel;
 
 class CmsDataSeeder extends Seeder
 {
@@ -11,256 +12,376 @@ class CmsDataSeeder extends Seeder
     {
         DataRepository::initialize();
 
-        // 0. Bersihkan data transaksional dan artikel sebelum seed ulang
+        // 0. TRUNCATE FRESH SEMUA TABEL TERKAIT
         $this->db->query('SET FOREIGN_KEY_CHECKS = 0');
-        $tablesToClean = [
-            'entity_nano_charlie_link',
-            'entity_nano_aubert_link',
-            'entity_nano_teta_link',
-            'entity_nano_meta',
-            'entity_nano_headline',
-            'article_points',
+        $tablesToTruncate = [
+            'articlestatus',
+            'useradministrator',
+            'category',
+            'category_backup',
+            'categorymenu',
+            'authors',
+            'authors_current',
+            'keyword',
+            'articlekeyword',
+            'tag',
+            'articletag',
+            'articlepoints',
+            'articlemeta',
+            'articlecategory',
+            'articleauthor',
+            'articleheadline',
+            'articlehistory',
             'ai_generated_logs',
-            'entity_nano',
-            'asset_item_record',
-            'storage_item_record',
-            'chart_config',
-            'content_feature',
-            'notif_message',
-            'interaction_feedback',
-            'entity_teta',
+            'article',
+            'media',
+            'mediaarticle',
+            'files',
+            'chartdata',
+            'featurecontent',
+            'pushnotif',
+            'pushregistered',
+            'pushtodevice',
+            'pushtodevicescron',
+            'editorlog',
+            'member',
+            'memberbackup',
+            'memberfavarticle',
+            'memberpost',
+            'sahamemiten',
+            'saham',
+            'saham_topvalue',
+            'saham_index',
+            'saham_sectoral',
+            'apps',
+            'googledocs',
+            'user2fauth',
+            'commentar',
         ];
-        foreach ($tablesToClean as $tbl) {
+
+        foreach ($tablesToTruncate as $tbl) {
             if ($this->db->tableExists($tbl)) {
-                $this->db->query("TRUNCATE TABLE {$tbl}");
+                $this->db->query("TRUNCATE TABLE `{$tbl}`");
             }
         }
         $this->db->query('SET FOREIGN_KEY_CHECKS = 1');
 
-        // 1. entity_nano_status (Master status artikel)
+        // 1. articlestatus (4 Master Status Produksi: Draft, Publish, Hold, Deleted)
         $statuses = [
-            ['record_id' => 1, 'label_name' => 'Draft'],
-            ['record_id' => 2, 'label_name' => 'Review'],
-            ['record_id' => 3, 'label_name' => 'Scheduled'],
-            ['record_id' => 4, 'label_name' => 'Published'],
-            ['record_id' => 5, 'label_name' => 'Archived'],
+            ['id' => 1, 'label' => 'Draft'],
+            ['id' => 2, 'label' => 'Publish'],
+            ['id' => 3, 'label' => 'Hold'],
+            ['id' => 4, 'label' => 'Deleted'],
         ];
-        foreach ($statuses as $st) {
-            $existing = $this->db->table('entity_nano_status')->where('label_name', $st['label_name'])->get()->getRow();
-            if (!$existing) {
-                $this->db->table('entity_nano_status')->insert($st);
-            }
+        $this->db->table('articlestatus')->insertBatch($statuses);
+
+        // 2. useradministrator (15 Editorial Staff Accounts - SHA-512 Encrypted Salt)
+        $defaultStaff = [
+            // 1. Administrator (Master - Akses Penuh)
+            ['username' => 'raka_h',        'name' => 'Raka Herdika',           'alias' => 'RHR', 'email' => 'raka@investor.id',          'role' => 'administrator', 'password' => 'password123'],
+            ['username' => 'admin',         'name' => 'Redaksi Master Admin',   'alias' => 'AGG', 'email' => 'admin@investor.id',         'role' => 'administrator', 'password' => 'password123'],
+            // 2. Redpel (Redaktur Pelaksana - Otoritas setara Editor)
+            ['username' => 'budi_redpel',   'name' => 'Budi Prakoso',           'alias' => 'BDP', 'email' => 'budi.redpel@investor.id',   'role' => 'redpel',        'password' => 'password123'],
+            ['username' => 'hendra_redpel', 'name' => 'Hendra Kusuma',          'alias' => 'HNK', 'email' => 'hendra.redpel@investor.id', 'role' => 'redpel',        'password' => 'password123'],
+            // 3. Editor (Editor & Jurnalis Penulis Artikel)
+            ['username' => 'dewi_editor',   'name' => 'Dewi Sartika',           'alias' => 'DWS', 'email' => 'dewi.editor@investor.id',   'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'natasha_k',     'name' => 'Natasha Khairunisa',     'alias' => 'NKH', 'email' => 'natasha@investor.id',        'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'dimas_a',       'name' => 'Dimas Anggoro',          'alias' => 'DMA', 'email' => 'dimas.editor@investor.id',  'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'siti_r',        'name' => 'Siti Rahmawati',         'alias' => 'STR', 'email' => 'siti.editor@investor.id',   'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'bambang_w',     'name' => 'Bambang Wijaya',         'alias' => 'BMW', 'email' => 'bambang.editor@investor.id','role' => 'editor',        'password' => 'password123'],
+            ['username' => 'fajar_p',       'name' => 'Fajar Pratama',          'alias' => 'FJP', 'email' => 'fajar.editor@investor.id',  'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'anisa_m',       'name' => 'Anisa Maharani',         'alias' => 'ANM', 'email' => 'anisa.editor@investor.id',  'role' => 'editor',        'password' => 'password123'],
+            // 4. Riset (Tim Riset & Analis - Akses Terbuka)
+            ['username' => 'rizky_k',       'name' => 'Rizky Kurniawan',        'alias' => 'RZK', 'email' => 'rizky.riset@investor.id',   'role' => 'riset',         'password' => 'password123'],
+            ['username' => 'maya_s',        'name' => 'Maya Safitri',           'alias' => 'MYS', 'email' => 'maya.riset@investor.id',    'role' => 'riset',         'password' => 'password123'],
+            // 5. Sekred (Sekretariat Redaksi - Akses Terbuka)
+            ['username' => 'sekred',        'name' => 'Agus Triyono',           'alias' => 'AGT', 'email' => 'sekred@investor.id',        'role' => 'sekred',        'password' => 'password123'],
+            // 6. Support (IT Dev & Support - Akses Terbatas)
+            ['username' => 'support',       'name' => 'IT Dev & Support',       'alias' => 'DEV', 'email' => 'support@investor.id',        'role' => 'support',       'password' => 'password123'],
+        ];
+
+        $userMap = []; // username => userID
+        foreach ($defaultStaff as $u) {
+            $salt = AdminModel::generateSalt(128);
+            $hashedPass = AdminModel::encodePassword($u['password'], $salt);
+            $this->db->table('useradministrator')->insert([
+                'name'      => $u['name'],
+                'username'  => $u['username'],
+                'alias'     => $u['alias'],
+                'slug'      => url_title($u['name'], '-', true),
+                'password'  => $hashedPass,
+                'salt'      => $salt,
+                'email'     => $u['email'],
+                'active'    => 1,
+                'roleName'  => $u['role'],
+                'lastLogin' => date('Y-m-d H:i:s'),
+            ]);
+            $userMap[$u['username']] = $this->db->insertID();
         }
 
-        // 2. sys_principal_entity (Admin & Staff users - Login by Username: attr_identifier)
-        $users = DataRepository::get('users') ?? [];
-        $userMap = []; // username => ref_entity_principal_id
-        foreach ($users as $u) {
-            $existing = $this->db->table('sys_principal_entity')->where('attr_identifier', $u['username'])->get()->getRow();
-            if (!$existing) {
-                $this->db->table('sys_principal_entity')->insert([
-                    'attr_display_name'    => $u['name'],
-                    'attr_identifier'      => $u['username'],
-                    'attr_alt_label'       => $u['email'],
-                    'attr_slug_token'      => url_title($u['name'], '-', true),
-                    'attr_credential_hash' => password_hash($u['password'] ?? 'password123', PASSWORD_BCRYPT),
-                    'attr_credential_salt' => '',
-                    'attr_contact_val'     => $u['email'],
-                    'attr_is_active'       => 1,
-                    'attr_role_code'       => $u['role'],
-                    'attr_last_access_at'  => date('Y-m-d H:i:s'),
-                ]);
-                $userMap[$u['username']] = $this->db->insertID();
-            } else {
-                // Synchronize demo credentials and profile
-                if (!empty($u['password'])) {
-                    $this->db->table('sys_principal_entity')
-                        ->where('ref_entity_principal_id', $existing->ref_entity_principal_id)
-                        ->update([
-                            'attr_display_name'    => $u['name'],
-                            'attr_alt_label'       => $u['email'],
-                            'attr_contact_val'     => $u['email'],
-                            'attr_credential_hash' => password_hash($u['password'], PASSWORD_BCRYPT),
-                            'attr_credential_salt' => '', // Reset salt so AdminModel can re-authenticate & encode
-                            'attr_is_active'       => 1,
-                            'attr_role_code'       => $u['role'],
-                        ]);
-                }
-                $userMap[$u['username']] = $existing->ref_entity_principal_id;
-            }
+        // 3. category & category_backup (68 Production Categories)
+        $prodCategories = [
+            ['categoryID' => 1, 'categoryName' => 'market-and-corporate', 'label' => 'Market and Corporate', 'parent' => null, 'status' => 0, 'num' => 1],
+            ['categoryID' => 2, 'categoryName' => 'finance', 'label' => 'Finance', 'parent' => null, 'status' => 1, 'num' => 2],
+            ['categoryID' => 3, 'categoryName' => 'business', 'label' => 'Business', 'parent' => null, 'status' => 1, 'num' => 3],
+            ['categoryID' => 4, 'categoryName' => 'it-and-telecommunication', 'label' => 'IT and Telco', 'parent' => null, 'status' => 0, 'num' => 4],
+            ['categoryID' => 5, 'categoryName' => 'international', 'label' => 'International', 'parent' => null, 'status' => 1, 'num' => 6],
+            ['categoryID' => 6, 'categoryName' => 'national', 'label' => 'National', 'parent' => null, 'status' => 1, 'num' => 5],
+            ['categoryID' => 7, 'categoryName' => 'lifestyle', 'label' => 'Lifestyle', 'parent' => null, 'status' => 1, 'num' => 7],
+            ['categoryID' => 8, 'categoryName' => 'corporate-action', 'label' => 'Corporate Action', 'parent' => 12, 'status' => 1, 'num' => 1],
+            ['categoryID' => 9, 'categoryName' => 'bond', 'label' => 'Bond', 'parent' => 12, 'status' => 1, 'num' => 4],
+            ['categoryID' => 10, 'categoryName' => 'commodities', 'label' => 'Commodities', 'parent' => 12, 'status' => 1, 'num' => 6],
+            ['categoryID' => 11, 'categoryName' => 'mutual-fund', 'label' => 'Mutual Fund', 'parent' => 12, 'status' => 1, 'num' => 5],
+            ['categoryID' => 12, 'categoryName' => 'market', 'label' => 'Market', 'parent' => null, 'status' => 1, 'num' => 1],
+            ['categoryID' => 13, 'categoryName' => 'tips', 'label' => 'Tips', 'parent' => 51, 'status' => 1, 'num' => 3],
+            ['categoryID' => 14, 'categoryName' => 'banking', 'label' => 'Banking', 'parent' => 2, 'status' => 1, 'num' => 0],
+            ['categoryID' => 15, 'categoryName' => 'insurance', 'label' => 'Insurance', 'parent' => 2, 'status' => 1, 'num' => 0],
+            ['categoryID' => 16, 'categoryName' => 'multifinance', 'label' => 'Multifinance', 'parent' => 2, 'status' => 1, 'num' => 0],
+            ['categoryID' => 17, 'categoryName' => 'personal-finance', 'label' => 'Personal Finance', 'parent' => 2, 'status' => 0, 'num' => 0],
+            ['categoryID' => 18, 'categoryName' => 'fintech', 'label' => 'Fintech', 'parent' => 2, 'status' => 1, 'num' => 0],
+            ['categoryID' => 19, 'categoryName' => 'others', 'label' => 'Others', 'parent' => 2, 'status' => 1, 'num' => 0],
+            ['categoryID' => 20, 'categoryName' => 'industry-trade', 'label' => 'Industry & Trade', 'parent' => 3, 'status' => 0, 'num' => 0],
+            ['categoryID' => 21, 'categoryName' => 'energy', 'label' => 'Energy', 'parent' => 3, 'status' => 1, 'num' => 2],
+            ['categoryID' => 22, 'categoryName' => 'infrastructure', 'label' => 'Infrastructure', 'parent' => 3, 'status' => 1, 'num' => 3],
+            ['categoryID' => 23, 'categoryName' => 'property', 'label' => 'Property', 'parent' => 3, 'status' => 1, 'num' => 4],
+            ['categoryID' => 24, 'categoryName' => 'agribusiness', 'label' => 'Agribusiness', 'parent' => 3, 'status' => 1, 'num' => 6],
+            ['categoryID' => 25, 'categoryName' => 'ecommerce', 'label' => 'E-commerce', 'parent' => 3, 'status' => 1, 'num' => 7],
+            ['categoryID' => 26, 'categoryName' => 'macroeconomics', 'label' => 'Macroeconomics', 'parent' => 3, 'status' => 0, 'num' => 0],
+            ['categoryID' => 27, 'categoryName' => 'information-technology', 'label' => 'IT', 'parent' => 4, 'status' => 0, 'num' => 0],
+            ['categoryID' => 28, 'categoryName' => 'telecommunication', 'label' => 'Telecommunication', 'parent' => 4, 'status' => 0, 'num' => 0],
+            ['categoryID' => 29, 'categoryName' => 'new-product', 'label' => 'New Product', 'parent' => 4, 'status' => 0, 'num' => 0],
+            ['categoryID' => 30, 'categoryName' => 'united-states', 'label' => 'US', 'parent' => 5, 'status' => 0, 'num' => 0],
+            ['categoryID' => 31, 'categoryName' => 'european-union', 'label' => 'EU', 'parent' => 5, 'status' => 0, 'num' => 0],
+            ['categoryID' => 32, 'categoryName' => 'asia', 'label' => 'Asia', 'parent' => 5, 'status' => 0, 'num' => 0],
+            ['categoryID' => 33, 'categoryName' => 'world', 'label' => 'World', 'parent' => 5, 'status' => 0, 'num' => 0],
+            ['categoryID' => 34, 'categoryName' => 'politic', 'label' => 'Politic', 'parent' => 6, 'status' => 0, 'num' => 0],
+            ['categoryID' => 35, 'categoryName' => 'general', 'label' => 'General', 'parent' => 6, 'status' => 0, 'num' => 0],
+            ['categoryID' => 36, 'categoryName' => 'sport', 'label' => 'Sport', 'parent' => 7, 'status' => 1, 'num' => 0],
+            ['categoryID' => 37, 'categoryName' => 'art', 'label' => 'Art & Entertainment', 'parent' => 7, 'status' => 1, 'num' => 0],
+            ['categoryID' => 38, 'categoryName' => 'opini', 'label' => 'Opini', 'parent' => 51, 'status' => 1, 'num' => 2],
+            ['categoryID' => 39, 'categoryName' => 'uncategorized', 'label' => 'Uncategorized', 'parent' => null, 'status' => 0, 'num' => 0],
+            ['categoryID' => 40, 'categoryName' => 'editorial', 'label' => 'Editorial', 'parent' => null, 'status' => 1, 'num' => 8],
+            ['categoryID' => 42, 'categoryName' => 'health', 'label' => 'Health', 'parent' => 7, 'status' => 1, 'num' => 0],
+            ['categoryID' => 43, 'categoryName' => 'bedah-emiten', 'label' => 'Bedah Emiten', 'parent' => 1, 'status' => 0, 'num' => 8],
+            ['categoryID' => 44, 'categoryName' => 'rumours', 'label' => 'Rumours', 'parent' => 1, 'status' => 0, 'num' => 1],
+            ['categoryID' => 46, 'categoryName' => 'from-the-readers', 'label' => 'From The Readers', 'parent' => 38, 'status' => 0, 'num' => 0],
+            ['categoryID' => 47, 'categoryName' => 'stock-analysis', 'label' => 'Stock Analysis', 'parent' => 1, 'status' => 0, 'num' => 3],
+            ['categoryID' => 48, 'categoryName' => 'ipo', 'label' => 'IPO', 'parent' => 1, 'status' => 0, 'num' => 9],
+            ['categoryID' => 49, 'categoryName' => 'figure', 'label' => 'Figure', 'parent' => null, 'status' => 0, 'num' => 10],
+            ['categoryID' => 50, 'categoryName' => 'interview', 'label' => 'Interview', 'parent' => 49, 'status' => 0, 'num' => 0],
+            ['categoryID' => 51, 'categoryName' => 'investory', 'label' => 'InveStory', 'parent' => null, 'status' => 1, 'num' => 8],
+            ['categoryID' => 52, 'categoryName' => 'community', 'label' => 'Community', 'parent' => 51, 'status' => 0, 'num' => 0],
+            ['categoryID' => 53, 'categoryName' => 'literation', 'label' => 'Literation', 'parent' => 51, 'status' => 0, 'num' => 0],
+            ['categoryID' => 54, 'categoryName' => 'public-sphere', 'label' => 'Public Sphere', 'parent' => 51, 'status' => 0, 'num' => 0],
+            ['categoryID' => 55, 'categoryName' => 'commercial', 'label' => 'Commercial', 'parent' => null, 'status' => 1, 'num' => 12],
+            ['categoryID' => 56, 'categoryName' => 'infografis', 'label' => 'Infografis', 'parent' => null, 'status' => 1, 'num' => 0],
+            ['categoryID' => 57, 'categoryName' => 'otomotif', 'label' => 'Otomotif', 'parent' => null, 'status' => 0, 'num' => 7],
+            ['categoryID' => 58, 'categoryName' => 'bumee', 'label' => 'Bumee', 'parent' => null, 'status' => 0, 'num' => 0],
+            ['categoryID' => 59, 'categoryName' => 'gallery', 'label' => 'Gallery', 'parent' => null, 'status' => 1, 'num' => 0],
+            ['categoryID' => 60, 'categoryName' => 'stock', 'label' => 'Stock', 'parent' => 12, 'status' => 1, 'num' => 2],
+            ['categoryID' => 61, 'categoryName' => 'crypto', 'label' => 'Crypto', 'parent' => 12, 'status' => 1, 'num' => 3],
+            ['categoryID' => 62, 'categoryName' => 'trade-industry', 'label' => 'Trade & Industry', 'parent' => 3, 'status' => 1, 'num' => 1],
+            ['categoryID' => 63, 'categoryName' => 'telco', 'label' => 'Telco', 'parent' => 3, 'status' => 1, 'num' => 5],
+            ['categoryID' => 64, 'categoryName' => 'automotive', 'label' => 'Automotive', 'parent' => 3, 'status' => 1, 'num' => 6],
+            ['categoryID' => 65, 'categoryName' => 'umkm', 'label' => 'UMKM', 'parent' => 3, 'status' => 1, 'num' => 7],
+            ['categoryID' => 66, 'categoryName' => 'macroeconomy', 'label' => 'Macroeconomy', 'parent' => null, 'status' => 1, 'num' => 4],
+            ['categoryID' => 67, 'categoryName' => 'profil', 'label' => 'Profil', 'parent' => 51, 'status' => 1, 'num' => 1],
+            ['categoryID' => 68, 'categoryName' => 'multimedia', 'label' => 'Multimedia', 'parent' => null, 'status' => 1, 'num' => 0],
+        ];
+
+        $this->db->table('category')->insertBatch($prodCategories);
+        $this->db->table('category_backup')->insertBatch($prodCategories);
+
+        // 4. categorymenu (9 Baris Menu Navigasi Ikon Produksi)
+        $categoryMenuRows = [
+            ['categoryID' => 2,  'num' => 2,  'icon' => 'https://investor.id/img/app-icon/finance.png',       'icondark' => 'https://investor.id/img/app-icon/finance_dark.png',       'img' => 'https://investor.id/img/app-icon/finance.png'],
+            ['categoryID' => 3,  'num' => 3,  'icon' => 'https://investor.id/img/app-icon/business.png',      'icondark' => 'https://investor.id/img/app-icon/business_dark.png',      'img' => 'https://investor.id/img/app-icon/business.png'],
+            ['categoryID' => 5,  'num' => 6,  'icon' => 'https://investor.id/img/app-icon/international.png', 'icondark' => 'https://investor.id/img/app-icon/international_dark.png', 'img' => 'https://investor.id/img/app-icon/international.png'],
+            ['categoryID' => 6,  'num' => 5,  'icon' => 'https://investor.id/img/app-icon/national.png',      'icondark' => 'https://investor.id/img/app-icon/national_dark.png',      'img' => 'https://investor.id/img/app-icon/national.png'],
+            ['categoryID' => 7,  'num' => 7,  'icon' => 'https://investor.id/img/app-icon/lifestyle.png',     'icondark' => 'https://investor.id/img/app-icon/lifestyle_dark.png',     'img' => 'https://investor.id/img/app-icon/lifestyle.png'],
+            ['categoryID' => 12, 'num' => 1,  'icon' => 'https://investor.id/img/app-icon/market.png',        'icondark' => 'https://investor.id/img/app-icon/market_dark.png',        'img' => 'https://investor.id/img/app-icon/market.png'],
+            ['categoryID' => 40, 'num' => 90, 'icon' => 'https://investor.id/img/app-icon/finance.png',       'icondark' => 'https://investor.id/img/app-icon/finance_dark.png',       'img' => 'https://investor.id/img/app-icon/finance.png'],
+            ['categoryID' => 51, 'num' => 8,  'icon' => 'https://investor.id/img/app-icon/investory.png',     'icondark' => 'https://investor.id/img/app-icon/investory_dark.png',     'img' => 'https://investor.id/img/app-icon/investory.png'],
+            ['categoryID' => 66, 'num' => 4,  'icon' => 'https://investor.id/img/app-icon/macroeconomic.png', 'icondark' => 'https://investor.id/img/app-icon/macroeconomic_dark.png', 'img' => 'https://investor.id/img/app-icon/macroeconomic.png'],
+        ];
+        $this->db->table('categorymenu')->insertBatch($categoryMenuRows);
+
+        // 5. authors & authors_current (Authors berakhiran *))
+        $authorNames = [
+            'Raka Herdika*)',
+            'Natasha Khairunisa*)',
+            'Dimas Anggoro*)',
+            'Siti Rahmawati*)',
+            'Bambang Wijaya*)',
+            'Fajar Pratama*)',
+            'Anisa Maharani*)',
+            'Dewi Sartika*)',
+            'Budi Prakoso*)',
+            'Hendra Kusuma*)',
+            'Rizky Kurniawan*)',
+            'Maya Safitri*)',
+            'Agus Triyono*)',
+            'Redaksi Investor*)',
+            'Riset Mandiri Sekuritas*)',
+            'Analis Sucor Asset Management*)',
+            'Tim Datawrapper Redaksi*)',
+        ];
+
+        $authorMap = [];
+        foreach ($authorNames as $authName) {
+            $cleanName = trim(rtrim($authName, '*)'));
+            $slug = url_title($cleanName, '-', true);
+            $this->db->table('authors')->insert([
+                'authorName' => $authName,
+                'email'      => null,
+                'slug'       => $slug,
+                'valid'      => '1',
+            ]);
+            $authId = $this->db->insertID();
+            $authorMap[$authName] = $authId;
+            $authorMap[$cleanName] = $authId;
+
+            // Mirror into authors_current (slug is NULL per production spec)
+            $this->db->table('authors_current')->insert([
+                'authorID'   => $authId,
+                'authorName' => $authName,
+                'slug'       => null,
+            ]);
         }
 
-        // 3. entity_charlie (Kanals & Sub-Kanals)
-        $kanals = DataRepository::get('kanals') ?? [];
-        $categoryMap = []; // 'Market' => id, 'Market Stock' => id, 'Corporate Action' => id, etc.
-        $kOrder = 1;
-        foreach ($kanals as $k) {
-            $existingParent = $this->db->table('entity_charlie')->where('charlie_name_a', $k['name'])->get()->getRow();
-            if (!$existingParent) {
-                $this->db->table('entity_charlie')->insert([
-                    'charlie_name_a' => $k['name'],
-                    'field_label_a'  => $k['slug'],
-                    'parent_id'      => null,
-                    'status_code'    => 1,
-                    'numeric_val'    => $kOrder++,
-                ]);
-                $parentId = $this->db->insertID();
-            } else {
-                $parentId = $existingParent->ref_entity_charlie_id;
-            }
+        // 6. 100 RANDOM ARTIKEL BERITA LENGKAP & RELASINYA
+        $articlesRaw = ArticleSeedData::getArticles();
+        $articleMap = []; // index => articleID
+        $keywordMap = []; // keywordName => keywordID
 
-            $categoryMap[$k['name']] = $parentId;
-            $categoryMap[$k['slug']] = $parentId;
-
-            // Sub-kanals
-            $subOrder = 1;
-            foreach ($k['sub_kanals'] ?? [] as $sub) {
-                $existingSub = $this->db->table('entity_charlie')->where('charlie_name_a', $sub['name'])->get()->getRow();
-                if (!$existingSub) {
-                    $this->db->table('entity_charlie')->insert([
-                        'charlie_name_a' => $sub['name'],
-                        'field_label_a'  => $sub['slug'],
-                        'parent_id'      => $parentId,
-                        'status_code'    => 1,
-                        'numeric_val'    => $subOrder++,
-                    ]);
-                    $subId = $this->db->insertID();
-                } else {
-                    $subId = $existingSub->ref_entity_charlie_id;
-                }
-
-                $categoryMap[$sub['name']] = $subId;
-                $categoryMap[$sub['slug']] = $subId;
-                $categoryMap[$k['name'] . ' ' . $sub['name']] = $subId;
-            }
-        }
-
-        // Sync backup entity_charlie_backup
-        $allCharlies = $this->db->table('entity_charlie')->get()->getResultArray();
-        foreach ($allCharlies as $row) {
-            $existsBackup = $this->db->table('entity_charlie_backup')->where('ref_entity_charlie_id', $row['ref_entity_charlie_id'])->get()->getRow();
-            if (!$existsBackup) {
-                $this->db->table('entity_charlie_backup')->insert($row);
-            }
-        }
-
-        // 4. entity_aubert (Authors)
-        $posts = DataRepository::get('posts') ?? [];
-        $authorMap = []; // author_name => ref_entity_aubert_id
-        foreach ($posts as $p) {
-            $authorName = trim($p['author'] ?? 'Redaksi');
-            if (!empty($authorName) && !isset($authorMap[$authorName])) {
-                $existingAuthor = $this->db->table('entity_aubert')->where('aubert_name_a', $authorName)->get()->getRow();
-                if (!$existingAuthor) {
-                    $this->db->table('entity_aubert')->insert([
-                        'aubert_name_a' => $authorName,
-                        'contact_val'   => '',
-                        'slug_value'    => url_title($authorName, '-', true) ?: 'author-' . uniqid(),
-                        'status_flag'   => 'STATE_1',
-                    ]);
-                    $authorMap[$authorName] = $this->db->insertID();
-                } else {
-                    $authorMap[$authorName] = $existingAuthor->ref_entity_aubert_id;
-                }
-            }
-        }
-
-        // 5. entity_nano & pivot tables
-        $articleMap = []; // old id => new ref_entity_nano_id
-        foreach ($posts as $p) {
-            $pubDate = !empty($p['publish_date']) ? date('Y-m-d H:i:s', strtotime($p['publish_date'])) : date('Y-m-d H:i:s');
-            $createDate = !empty($p['create_date']) ? date('Y-m-d H:i:s', strtotime($p['create_date'])) : date('Y-m-d H:i:s');
-            $postByUsername = $p['post_by'] ?? 'raka_h';
+        foreach ($articlesRaw as $idx => $art) {
+            $postByUsername = $art['post_by'] ?? 'raka_h';
             $accId = $userMap[$postByUsername] ?? 1;
 
-            $this->db->table('entity_nano')->insert([
-                'ref_entity_acc_id' => $accId,
-                'source_channel'    => 'cms',
-                'headline_text'     => $p['title'],
-                'slug_value'        => $p['slug'] ?? url_title($p['title'], '-', true),
-                'entity_date'       => $pubDate,
-                'post_type'         => 'Nano',
-                'view_count'        => (int)($p['views'] ?? 0),
-                'status_code'       => $p['status'] ?? 'Published',
-                'summary_text'      => $p['summary'] ?? '',
-                'body_text'         => $p['content'] ?? '',
-                'created_at'        => $createDate,
-                'edit_lock'         => 0,
-            ]);
-            $nanoId = $this->db->insertID();
-            $articleMap[$p['id']] = $nanoId;
+            $daysAgo = $art['days'] ?? ($idx % 60);
+            $hoursAgo = ($idx * 3) % 24;
+            $pubDate = date('Y-m-d H:i:s', strtotime("-{$daysAgo} days -{$hoursAgo} hours"));
+            $createDate = date('Y-m-d H:i:s', strtotime("-{$daysAgo} days -{$hoursAgo} hours -30 minutes"));
 
-            // Link ke kategori
-            $catKey = $p['category'] ?? ($p['kanal'] ?? '');
-            $charlieId = $categoryMap[$catKey] ?? ($categoryMap[$p['category_slug'] ?? ''] ?? 1);
-            $this->db->table('entity_nano_charlie_link')->insert([
-                'ref_entity_nano_id'    => $nanoId,
-                'ref_entity_charlie_id' => $charlieId,
-            ]);
+            // Full production body style with inline CSS and HTML formatting
+            $bodyContent = '<p><span style="font-family: Verdana, \'Lucida Grande\', Tahoma, Arial, sans-serif; line-height: 16px; font-size: 11px; border-collapse: collapse; color: #333333; ">'
+                . '<span style="font-size: 10pt; ">' . esc($art['lead']) . '</span><br><br>'
+                . '<span style="font-size: 10pt; ">' . esc($art['summary']) . ' Dalam laporannya, para analis menyoroti ketahanan makroekonomi domestik serta perbaikan marjin laba bersih korporasi yang menjadi katalis fundamental utama.</span><br><br>'
+                . '<span style="font-size: 10pt; ">"Kami melihat prospek akumulasi jangka panjang masih sangat terbuka lebar, didukung arus masuk modal asing dan kebijakan suku bunga acuan yang kondusif," ungkap perwakilan riset pasar modal di Jakarta.</span><br><br>'
+                . '<span style="font-size: 10pt; ">Lebih lanjut, pelaku pasar diimbau untuk tetap mencermati faktor risiko geopolitik global serta menerapkan manajemen diversifikasi portofolio secara terukur guna meraih imbal hasil optimal.</span>'
+                . '</span></p>';
 
-            // Link ke penulis
-            $aubertId = $authorMap[$p['author'] ?? ''] ?? 1;
-            $this->db->table('entity_nano_aubert_link')->insert([
-                'ref_entity_nano_id'   => $nanoId,
-                'ref_entity_aubert_id' => $aubertId,
+            $this->db->table('article')->insert([
+                'userID'      => $accId,
+                'source'      => '', // Empty string in production
+                'headline'    => $art['title'],
+                'slug'        => url_title($art['title'], '-', true),
+                'articleDate' => $pubDate,
+                'posttype'    => 'article',
+                'viewed'      => (int)($art['views'] ?? rand(500, 15000)),
+                'status'      => $art['status'] ?? 'Publish',
+                'summary'     => $art['summary'],
+                'body'        => $bodyContent,
+                'createdAt'   => $createDate,
+                'editlock'    => null, // NULL in production
             ]);
 
-            // Save meta for is_premium, thumbnail, upper_deck
-            if (isset($p['is_premium'])) {
-                $this->db->table('entity_nano_meta')->insert([
-                    'ref_entity_nano_id' => $nanoId,
-                    'meta_key'           => 'is_premium',
-                    'meta_value'         => (string)$p['is_premium'],
-                ]);
-            }
-            if (!empty($p['thumbnail'])) {
-                $this->db->table('entity_nano_meta')->insert([
-                    'ref_entity_nano_id' => $nanoId,
-                    'meta_key'           => 'thumbnail',
-                    'meta_value'         => $p['thumbnail'],
-                ]);
-            }
-            if (!empty($p['headline_type'])) {
-                $this->db->table('entity_nano_meta')->insert([
-                    'ref_entity_nano_id' => $nanoId,
-                    'meta_key'           => 'headline_type',
-                    'meta_value'         => $p['headline_type'],
-                ]);
-            }
-            $seedKanal = $p['kanal'] ?? ($p['category'] ?? 'Market');
-            $this->db->table('entity_nano_meta')->insert([
-                'ref_entity_nano_id' => $nanoId,
-                'meta_key'           => 'kanal',
-                'meta_value'         => $seedKanal,
+            $articleId = $this->db->insertID();
+            $articleMap[$idx] = $articleId;
+
+            // Link to category
+            $catId = $art['cat_id'] ?? 12;
+            $this->db->table('articlecategory')->insert([
+                'articleID'  => $articleId,
+                'categoryID' => $catId,
             ]);
-            if (!empty($p['sub_kanal'])) {
-                $this->db->table('entity_nano_meta')->insert([
-                    'ref_entity_nano_id' => $nanoId,
-                    'meta_key'           => 'sub_kanal',
-                    'meta_value'         => $p['sub_kanal'],
+
+            // Link to author
+            $authorNameKey = $art['author'] ?? 'Raka Herdika*)';
+            $authId = $authorMap[$authorNameKey] ?? 1;
+            $this->db->table('articleauthor')->insert([
+                'articleID' => $articleId,
+                'authorID'  => $authId,
+            ]);
+
+            // Article Meta
+            $metaEntries = [
+                'news_source'   => $art['source'] ?? 'Investor Daily',
+                'thumbnail'     => $art['thumb'] ?? '/img/investor_placeholder.jpg',
+                'is_premium'    => (string)($art['is_premium'] ?? 0),
+                'headline_type' => $art['headline_type'] ?? 'none',
+                'upper_deck'    => $art['upper_deck'] ?? 'FOKUS PASAR',
+                'kanal'         => $art['kanal'] ?? 'Market',
+                'sub_kanal'     => $art['sub_kanal'] ?? '',
+            ];
+
+            foreach ($metaEntries as $mKey => $mVal) {
+                $this->db->table('articlemeta')->insert([
+                    'articleID' => $articleId,
+                    'metakey'   => $mKey,
+                    'metaval'   => $mVal,
+                ]);
+            }
+
+            // Article Points (articlepoints table)
+            $points = $art['points'] ?? [
+                'Pertumbuhan kinerja keuangan ditopang efisiensi operasional dan ekspansi pasar.',
+                'Target valuasi dan dividen konsisten mencerminkan fundamental yang solid.',
+                'Prospek jangka panjang industri didukung kebijakan regulasi yang kondusif.'
+            ];
+            foreach ($points as $pIdx => $pText) {
+                $this->db->table('articlepoints')->insert([
+                    'article_id' => $articleId,
+                    'point_text' => $pText,
+                    'sort_order' => $pIdx + 1,
+                    'created_at' => $createDate,
+                ]);
+                $this->db->table('articlemeta')->insert([
+                    'articleID' => $articleId,
+                    'metakey'   => 'point',
+                    'metaval'   => $pText,
+                ]);
+            }
+
+            // Keywords (keyword & articlekeyword pivot)
+            $kwList = $art['keywords'] ?? ['IHSG', 'Saham', 'Pasar Modal'];
+            foreach ($kwList as $kw) {
+                $kw = trim($kw);
+                if (empty($kw)) continue;
+
+                if (!isset($keywordMap[$kw])) {
+                    $slug = url_title($kw, '-', true);
+                    $this->db->table('keyword')->insert([
+                        'keyword' => $kw,
+                        'slug'    => $slug,
+                    ]);
+                    $keywordMap[$kw] = $this->db->insertID();
+                }
+
+                $kwId = $keywordMap[$kw];
+                $this->db->table('articlekeyword')->insert([
+                    'articleID' => $articleId,
+                    'keywordID' => $kwId,
                 ]);
             }
         }
 
-        // 6. entity_nano_headline (Active headlines by Kanal)
-        $activeHeadlines = DataRepository::get('active_headlines') ?? [];
-        $kanalsPool = ['Headline', 'Market', 'Finance', 'Macroeconomy', 'Business'];
-        foreach ($activeHeadlines as $idx => $h) {
-            $mappedNanoId = $articleMap[$h['id']] ?? null;
-            if ($mappedNanoId) {
-                $kLabel = !empty($h['category']) ? $h['category'] : $kanalsPool[$idx % count($kanalsPool)];
-                $this->db->table('entity_nano_headline')->insert([
-                    'charlie_label'      => $kLabel,
-                    'ref_entity_nano_id' => $mappedNanoId,
-                    'numeric_val'        => ($idx % 3) + 1,
-                    'event_timestamp'    => date('Y-m-d H:i:s'),
-                    'status_code'        => 1,
+        // 7. articleheadline (Active Headlines: 'home', 'tropical', 'trending')
+        $headlineCategories = ['home', 'tropical', 'trending'];
+        for ($i = 0; $i < 12; $i++) {
+            if (isset($articleMap[$i])) {
+                $catName = $headlineCategories[$i % count($headlineCategories)];
+                $this->db->table('articleheadline')->insert([
+                    'category'  => $catName,
+                    'articleID' => $articleMap[$i],
+                    'num'       => ($i % 4) + 1,
+                    'timestamp' => date('Y-m-d H:i:s', strtotime("-{$i} hours")),
+                    'status'    => 1,
                 ]);
             }
         }
 
-        // 7. asset_item_record (Media Library)
-        $mediaList = DataRepository::get('media_extended') ?? [];
+        // 8. media & mediaarticle (Media Library: 24 Assets)
         $imgPool = [
             '/img/investor_placeholder.jpg',
             '/img/article2.jpg',
@@ -269,660 +390,451 @@ class CmsDataSeeder extends Seeder
             '/img/article5.jpg',
             '/img/article6.jpg',
         ];
-        foreach ($mediaList as $idx => $m) {
-            $userKey = $m['user'] ?? 'raka_h';
-            $principalId = $userMap[$userKey] ?? 1;
-            $imgFile = $imgPool[$idx % count($imgPool)];
-
-            $this->db->table('asset_item_record')->insert([
-                'attr_short_description' => $m['caption'] ?? '',
-                'attr_full_description'  => $m['caption'] ?? '',
-                'attr_resource_name'     => $m['image'] ?? $imgFile,
-                'attr_resource_title'    => $m['title'] ?? 'Media Item ' . ($idx + 1),
-                'attr_origin_source'     => $m['source'] ?? 'Investor.id / Riset',
-                'attr_aubert_name'       => $userKey,
-                'ref_entity_principal_id'=> $principalId,
-            ]);
-        }
-
-        // 8. storage_item_record (Files)
-        $filesList = DataRepository::get('files_extended') ?? [];
-        foreach ($filesList as $f) {
-            $userKey = $f['upload_by'] ?? 'raka_h';
-            $principalId = $userMap[$userKey] ?? 1;
-
-            $this->db->table('storage_item_record')->insert([
-                'attr_header_title'      => $f['name'] ?? 'Document',
-                'attr_resource_name'     => $f['url'] ?? '/files/download',
-                'ref_entity_principal_id'=> $principalId,
-            ]);
-        }
-
-        // 9. chart_config (Embed Charts)
-        $charts = DataRepository::get('embed_charts') ?? [];
-        foreach ($charts as $c) {
-            $this->db->table('chart_config')->insert([
-                'chart_title'  => $c['title'] ?? 'Market Chart',
-                'x_axis_title' => $c['symbol'] ?? 'IDX:STOCK',
-                'x_axis_data'  => $c['embed_code'] ?? '',
-                'created_at'   => date('Y-m-d H:i:s'),
-                'created_by'   => 1,
-                'updated_at'   => date('Y-m-d H:i:s'),
-                'updated_by'   => 1,
-                'source_val'   => $c['source'] ?? 'Investor Market Feed',
-                'chart_style'  => $c['type'] ?? 'TradingView Widget',
-            ]);
-        }
-
-        // 10. content_feature (Feature Content)
-        $features = DataRepository::get('feature_content') ?? [];
-        foreach ($features as $fc) {
-            $this->db->table('content_feature')->insert([
-                'content_type'  => $fc['type'] ?? 'Feature',
-                'content_title' => $fc['title'] ?? '',
-                'content_tag'   => $fc['badge'] ?? '',
-                'set_by'        => 'raka_h',
-                'set_date'      => date('Y-m-d H:i:s'),
-                'image_url'     => $fc['image'] ?? '/img/investor_placeholder.jpg',
-                'link_url'      => $fc['target_url'] ?? '/post/1',
-                'position_val'  => 'top',
-                'numeric_val'   => $fc['order'] ?? 1,
-            ]);
-        }
-
-        // 11. notif_message (Push Notification History - CRUD only)
-        $pushes = DataRepository::get('push_history') ?? [];
-        foreach ($pushes as $p) {
-            $pDate = !empty($p['push_date']) ? date('Y-m-d H:i:s', strtotime($p['push_date'])) : date('Y-m-d H:i:s');
-            $this->db->table('notif_message')->insert([
-                'posted_by'        => 1,
-                'push_date'        => $pDate,
-                'push_type'        => 'broadcast',
-                'push_url'         => '/news',
-                'target_direction' => 'outbound',
-                'push_slug'        => url_title($p['content'] ?? 'notif', '-', true),
-                'push_title'       => $p['content'] ?? 'Breaking Alert',
-                'push_body'        => $p['content'] ?? 'Push notification body',
-                'push_image'       => '/img/investor_placeholder.jpg',
-                'push_message_ref' => 'REF-' . rand(1000, 9999),
-                'status_code'      => 'state_1',
-            ]);
-        }
-
-        // 12. Dummy activity log (entity_epsilon_log)
-        $this->db->table('entity_epsilon_log')->insert([
-            'ref_entity_epsilon_id' => 1,
-            'action_type_a'        => 'SYSTEM',
-            'action_type_b'        => 'SEED',
-            'log_data'             => 'Initial database seeding executed successfully.',
-        ]);
-
-        // 13. client_account_entity & client_account_backup (Client / Member Subscribers)
-        $members = [
-            [
-                'name'    => 'Budi Hartono Wijaya',
-                'email'   => 'budi.hartono@djarumcapital.co.id',
-                'company' => 'PT Djarum Capital Investama (Corporate VIP)',
-                'status'  => 'STATUS_1',
-                'reg'     => '2025-08-15 10:00:00',
-                'login'   => date('Y-m-d H:i:s', strtotime('-2 hours')),
-            ],
-            [
-                'name'    => 'Sri Mulyani Handayani',
-                'email'   => 'sri.mulyani@mandirisekuritas.co.id',
-                'company' => 'Mandiri Sekuritas Research (Institutional)',
-                'status'  => 'STATUS_1',
-                'reg'     => '2025-09-01 09:30:00',
-                'login'   => date('Y-m-d H:i:s', strtotime('-1 day')),
-            ],
-            [
-                'name'    => 'Anthony Salim Sutanto',
-                'email'   => 'anthony.s@indofoodasset.com',
-                'company' => 'Salim Asset Management (Corporate VIP)',
-                'status'  => 'STATUS_1',
-                'reg'     => '2025-10-12 14:15:00',
-                'login'   => date('Y-m-d H:i:s', strtotime('-3 days')),
-            ],
-            [
-                'name'    => 'Felicia Gunawan',
-                'email'   => 'felicia.gunawan@trimegah.com',
-                'company' => 'Trimegah Securities Equity Analyst (Priority)',
-                'status'  => 'STATUS_1',
-                'reg'     => '2026-01-10 11:20:00',
-                'login'   => date('Y-m-d H:i:s', strtotime('-5 hours')),
-            ],
-            [
-                'name'    => 'Michael Bambang Pratama',
-                'email'   => 'michael.pratama@sucorasset.com',
-                'company' => 'Sucor Asset Management (Priority)',
-                'status'  => 'STATUS_1',
-                'reg'     => '2026-02-01 08:45:00',
-                'login'   => date('Y-m-d H:i:s', strtotime('-12 hours')),
-            ],
-            [
-                'name'    => 'Denny Chandra Kusuma',
-                'email'   => 'denny.kusuma@gmail.com',
-                'company' => 'Retail Trader Community (Retail)',
-                'status'  => 'STATUS_1',
-                'reg'     => '2026-03-15 16:00:00',
-                'login'   => date('Y-m-d H:i:s', strtotime('-1 week')),
-            ],
-            [
-                'name'    => 'Hendra Setiawan',
-                'email'   => 'hendra.setiawan@bca.co.id',
-                'company' => 'PT Bank Central Asia Tbk Treasury (Institutional)',
-                'status'  => 'STATUS_1',
-                'reg'     => '2025-11-20 13:10:00',
-                'login'   => date('Y-m-d H:i:s', strtotime('-4 hours')),
-            ],
-            [
-                'name'    => 'Clarissa Tanoesoedibjo',
-                'email'   => 'clarissa.t@mncgroup.com',
-                'company' => 'MNC Kapital Indonesia (Corporate VIP)',
-                'status'  => 'STATUS_2',
-                'reg'     => date('Y-m-d H:i:s', strtotime('-2 days')),
-                'login'   => null,
-            ],
-            [
-                'name'    => 'Aditya Wardhana',
-                'email'   => 'aditya.wardhana@indopremier.com',
-                'company' => 'Indo Premier Investment (Priority)',
-                'status'  => 'STATUS_3',
-                'reg'     => '2025-05-10 10:00:00',
-                'login'   => date('Y-m-d H:i:s', strtotime('-20 days')),
-            ],
-            [
-                'name'    => 'Rina Wulandari Putri',
-                'email'   => 'rina.wulandari@yahoo.com',
-                'company' => 'Universitas Indonesia Akademisi (Retail)',
-                'status'  => 'STATUS_1',
-                'reg'     => '2026-04-01 14:00:00',
-                'login'   => date('Y-m-d H:i:s', strtotime('-2 days')),
-            ],
+        $mediaTitles = [
+            'Gedung Bursa Efek Indonesia Jakarta',
+            'Aktivitas Kantor Cabang Bank Central Asia',
+            'Fasilitas Smelter Tembaga dan Emas Sumbawa',
+            'Pembangkit Listrik Tenaga Panas Bumi Lumut Balai',
+            'Pelabuhan Petikemas dan Logistik Tanjung Priok',
+            'Jaringan Jalan Tol Trans Jawa Ruang Semarang-Solo',
+            'Pabrik Perakitan Mobil Elektrifikasi Karawang',
+            'Ruang Data Center Hyper-Scale NeutraDC Batam',
+            'Distribusi Bahan Pangan dan Unggas Peternakan',
+            'Menara Telekomunikasi 5G Fiber Optik',
+            'Kawasan Perkantoran SCBD Sudirman Senayan',
+            'Fasilitas Rumah Sakit Spesialis Modern',
         ];
 
+        for ($mIdx = 0; $mIdx < 24; $mIdx++) {
+            $userKey = array_keys($userMap)[$mIdx % count($userMap)];
+            $principalId = $userMap[$userKey] ?? 1;
+            $imgFile = $imgPool[$mIdx % count($imgPool)];
+            $mTitle = $mediaTitles[$mIdx % count($mediaTitles)] . ' #' . ($mIdx + 1);
+
+            $this->db->table('media')->insert([
+                'caption'     => 'Dokumentasi riset redaksi Investor.id terkait ' . $mTitle,
+                'description' => 'Foto dokumentasi resolusi tinggi untuk kebutuhan liputan editorial pasar modal.',
+                'filename'    => $imgFile,
+                'mediaTitle'  => $mTitle,
+                'source'      => 'Investor.id / Riset',
+                'author'      => $userKey,
+                'userID'      => $principalId,
+                'timestamp'   => date('Y-m-d H:i:s', strtotime('-' . ($mIdx * 12) . ' hours')),
+            ]);
+            $mediaId = $this->db->insertID();
+
+            // Link into mediaarticle (0-indexed position, caption NULL per production spec)
+            if (isset($articleMap[$mIdx])) {
+                $this->db->table('mediaarticle')->insert([
+                    'mediaID'   => $mediaId,
+                    'articleID' => $articleMap[$mIdx],
+                    'position'  => $mIdx % 3, // 0, 1, 2
+                    'caption'   => null,
+                ]);
+            }
+        }
+
+        // 9. files (Dokumen & Riset Publikasi)
+        $docFiles = [
+            ['title' => 'Laporan Tahunan Emisi Obligasi Korporasi 2026', 'filename' => '/files/annual_report_bond_2026.pdf'],
+            ['title' => 'Panduan Edukasi Perpajakan Pasar Modal', 'filename' => '/files/guide_tax_capital_gain.pdf'],
+            ['title' => 'Prospektus Ringkas Penawaran Umum Perdana Saham', 'filename' => '/files/prospektus_ipo_emiten.pdf'],
+            ['title' => 'Kajian Makroekonomi & Suku Bunga Bank Sentral', 'filename' => '/files/macroeconomic_outlook_q3.pdf'],
+            ['title' => 'Statistik Nilai Aktiva Bersih Reksadana Nasional', 'filename' => '/files/nav_reksadana_stat.pdf'],
+            ['title' => 'Peta Jalan Transisi Energi dan Hilirisasi Mineral', 'filename' => '/files/roadmap_green_energy.pdf'],
+        ];
+        foreach ($docFiles as $fIdx => $f) {
+            $this->db->table('files')->insert([
+                'title'     => $f['title'],
+                'filename'  => $f['filename'],
+                'userID'    => 1,
+                'timestamp' => date('Y-m-d H:i:s', strtotime("-{$fIdx} days")),
+            ]);
+        }
+
+        // 10. chartdata (4 Template Bawaan di Atas + Custom Charts)
+        $defaultXAxis = json_encode(["D.I Yogyakarta","DKI Jakarta","Jambi","Jawa Barat","Bali","Kep. Bangka Belitung","Banten","Bengkulu","Riau","Kalimantan Tengah"]);
+        $templateCharts = [
+            [
+                'chartTitle' => 'Template Chart Bar Vertikal',
+                'xAxisTitle' => 'Wilayah / Indikator',
+                'xAxisData'  => $defaultXAxis,
+                'createdAt'  => date('Y-m-d H:i:s'),
+                'createdBy'  => 1,
+                'updateAt'   => date('Y-m-d H:i:s'),
+                'updateBy'   => 1,
+                'source'     => 'template',
+                'chartStyle' => 'bar-vertical',
+            ],
+            [
+                'chartTitle' => 'Template Chart Bar Horizontal',
+                'xAxisTitle' => 'Wilayah / Indikator',
+                'xAxisData'  => $defaultXAxis,
+                'createdAt'  => date('Y-m-d H:i:s'),
+                'createdBy'  => 1,
+                'updateAt'   => date('Y-m-d H:i:s'),
+                'updateBy'   => 1,
+                'source'     => 'template',
+                'chartStyle' => 'bar-horizontal',
+            ],
+            [
+                'chartTitle' => 'Template Chart Line',
+                'xAxisTitle' => 'Periode / Kuartal',
+                'xAxisData'  => $defaultXAxis,
+                'createdAt'  => date('Y-m-d H:i:s'),
+                'createdBy'  => 1,
+                'updateAt'   => date('Y-m-d H:i:s'),
+                'updateBy'   => 1,
+                'source'     => 'template',
+                'chartStyle' => 'line',
+            ],
+            [
+                'chartTitle' => 'Template Chart Pie',
+                'xAxisTitle' => 'Kategori Pasar',
+                'xAxisData'  => $defaultXAxis,
+                'createdAt'  => date('Y-m-d H:i:s'),
+                'createdBy'  => 1,
+                'updateAt'   => date('Y-m-d H:i:s'),
+                'updateBy'   => 1,
+                'source'     => 'template',
+                'chartStyle' => 'pie',
+            ],
+        ];
+        $this->db->table('chartdata')->insertBatch($templateCharts);
+
+        // Custom User Charts
+        $customCharts = [
+            [
+                'chartTitle' => 'Tren Pergerakan Laba Bersih Perbankan Big 4 (2024-2026)',
+                'xAxisTitle' => 'Bank Mandiri, BCA, BRI, BNI',
+                'xAxisData'  => json_encode(["Kuartal I 2025", "Kuartal II 2025", "Kuartal III 2025", "Kuartal IV 2025", "Kuartal I 2026", "Kuartal II 2026"]),
+                'createdAt'  => date('Y-m-d H:i:s', strtotime('-10 days')),
+                'createdBy'  => 1,
+                'updateAt'   => date('Y-m-d H:i:s'),
+                'updateBy'   => 1,
+                'source'     => 'Riset Mandiri Sekuritas',
+                'chartStyle' => 'bar-vertical',
+            ],
+            [
+                'chartTitle' => 'Komposisi Portofolio Transisi Energi Hijau (EBT vs Fosil)',
+                'xAxisTitle' => 'Sektor Pembangkit Listrik',
+                'xAxisData'  => json_encode(["PLTP Panas Bumi", "PLTS Tenaga Surya", "PLTB Bayu", "PLTA Hidro", "PLTU Batu Bara"]),
+                'createdAt'  => date('Y-m-d H:i:s', strtotime('-8 days')),
+                'createdBy'  => 1,
+                'updateAt'   => date('Y-m-d H:i:s'),
+                'updateBy'   => 1,
+                'source'     => 'Kementerian ESDM',
+                'chartStyle' => 'pie',
+            ],
+            [
+                'chartTitle' => 'Grafik Pertumbuhan Investor Saham Retail SID Nasional',
+                'xAxisTitle' => 'Tahun 2021 s.d 2026',
+                'xAxisData'  => json_encode(["2021", "2022", "2023", "2024", "2025", "2026"]),
+                'createdAt'  => date('Y-m-d H:i:s', strtotime('-5 days')),
+                'createdBy'  => 1,
+                'updateAt'   => date('Y-m-d H:i:s'),
+                'updateBy'   => 1,
+                'source'     => 'KSEI Indonesia',
+                'chartStyle' => 'line',
+            ],
+            [
+                'chartTitle' => 'Perbandingan Kapasitas Produksi Smelter Katoda Tembaga',
+                'xAxisTitle' => 'Perusahaan Tambang',
+                'xAxisData'  => json_encode(["Amman Mineral", "Freeport Indonesia", "Aneka Tambang"]),
+                'createdAt'  => date('Y-m-d H:i:s', strtotime('-3 days')),
+                'createdBy'  => 1,
+                'updateAt'   => date('Y-m-d H:i:s'),
+                'updateBy'   => 1,
+                'source'     => 'Investor Market Feed',
+                'chartStyle' => 'bar-horizontal',
+            ],
+        ];
+        $this->db->table('chartdata')->insertBatch($customCharts);
+
+        // 11. featurecontent (Tipe 'tag' dan 'banner')
+        $features = [
+            ['type' => 'tag',    'title' => 'Rekomendasi Saham Dividen Jumbo 2026', 'tag' => 'Dividen', 'setby' => 'raka_h', 'setdate' => date('Y-m-d H:i:s'), 'imageUrl' => '/img/article2.jpg', 'linkUrl' => '', 'position' => 'top', 'num' => 1],
+            ['type' => 'banner', 'title' => 'Laporan Khusus: Outlook Pasar Modal Semester II', 'tag' => '', 'setby' => 'raka_h', 'setdate' => date('Y-m-d H:i:s'), 'imageUrl' => '/img/article6.jpg', 'linkUrl' => '/artikel/outlook-perekonomian-nasional-semester-ii', 'position' => 'top', 'num' => 2],
+            ['type' => 'tag',    'title' => 'Arah Suku Bunga Acuan BI-Rate & Fed Fund Rate', 'tag' => 'BI-Rate', 'setby' => 'dewi_editor', 'setdate' => date('Y-m-d H:i:s'), 'imageUrl' => '/img/article5.jpg', 'linkUrl' => '', 'position' => 'middle', 'num' => 3],
+            ['type' => 'banner', 'title' => 'Panduan Investasi Reksa Dana untuk Pemula', 'tag' => '', 'setby' => 'admin', 'setdate' => date('Y-m-d H:i:s'), 'imageUrl' => '/img/article3.jpg', 'linkUrl' => '/artikel/membedah-perbedaan-investasi-reksadana', 'position' => 'middle', 'num' => 4],
+        ];
+        $this->db->table('featurecontent')->insertBatch($features);
+
+        // 12. pushnotif (Tipe: NewsLanding, TVShow, WebPage)
+        $pushes = [
+            ['postBy' => 1, 'pushDate' => date('Y-m-d H:i:s', strtotime('-1 hour')), 'pushType' => 'NewsLanding', 'pushUrl' => '/artikel/ihsg-tembus-level-psikologis-7450', 'urlTarget' => 'outbound', 'pushSlug' => 'ihsg-tembus-7450', 'pushTitle' => 'BREAKING: IHSG Melesat Tembus Level 7.450', 'pushBody' => 'Aksi borong saham bank besar mendorong indeks menyentuh rekor penutupan tertinggi.', 'pushImage' => '/img/investor_placeholder.jpg', 'fcm_message_id' => null, 'categoryName' => 'Market', 'status' => 'ready'],
+            ['postBy' => 1, 'pushDate' => date('Y-m-d H:i:s', strtotime('-3 hours')), 'pushType' => 'NewsLanding', 'pushUrl' => '/artikel/bank-central-asia-bbca-tebar-dividen-interim', 'urlTarget' => 'outbound', 'pushSlug' => 'bbca-dividen-interim', 'pushTitle' => 'DIVIDEN FLASH: BBCA Tebar Rp 6,16 Triliun', 'pushBody' => 'Bank Central Asia menetapkan dividen interim Rp 50 per lembar saham.', 'pushImage' => '/img/article2.jpg', 'fcm_message_id' => null, 'categoryName' => 'Finance', 'status' => 'ready'],
+            ['postBy' => 1, 'pushDate' => date('Y-m-d H:i:s', strtotime('-6 hours')), 'pushType' => 'WebPage', 'pushUrl' => 'https://investor.id/market/live-stream', 'urlTarget' => 'outbound', 'pushSlug' => 'live-market-closing', 'pushTitle' => 'LIVE: Ulasan Penutupan Pasar Saham Hari Ini', 'pushBody' => 'Saksikan rangkuman pergerakan saham teraktif bersama tim analis riset.', 'pushImage' => '/img/article4.jpg', 'fcm_message_id' => null, 'categoryName' => 'Market', 'status' => 'ready'],
+            ['postBy' => 1, 'pushDate' => date('Y-m-d H:i:s', strtotime('-12 hours')), 'pushType' => 'TVShow', 'pushUrl' => '/video/investor-daily-roundup', 'urlTarget' => 'outbound', 'pushSlug' => 'daily-roundup', 'pushTitle' => 'INVESTOR DAILY: Prospek Emiten Nikel & EBT', 'pushBody' => 'Ulasan mendalam ekspansi smelter dan hilirisasi rantai pasok baterai EV.', 'pushImage' => '/img/article6.jpg', 'fcm_message_id' => null, 'categoryName' => 'Business', 'status' => 'ready'],
+        ];
+        $this->db->table('pushnotif')->insertBatch($pushes);
+
+        // 13. editorlog (Aktivitas Login & Insert Foto dalam Format JSON)
+        $editorLogs = [
+            [
+                'editorId'  => 1,
+                'action'    => 'login',
+                'doaction'  => 'login',
+                'log'       => json_encode(['ip' => '127.0.0.1', 'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)']),
+                'timestamp' => date('Y-m-d H:i:s', strtotime('-2 hours')),
+            ],
+            [
+                'editorId'  => 1,
+                'action'    => 'insert',
+                'doaction'  => 'foto',
+                'log'       => json_encode([
+                    'mediaTitle' => 'Gedung Bursa Efek Indonesia Jakarta #1',
+                    'caption'    => 'Dokumentasi riset redaksi Investor.id terkait aktivitas perdagangan saham.'
+                ]),
+                'timestamp' => date('Y-m-d H:i:s', strtotime('-1 hour')),
+            ],
+            [
+                'editorId'  => 3,
+                'action'    => 'edit',
+                'doaction'  => 'foto',
+                'log'       => json_encode([
+                    'mediaTitle' => 'Fasilitas Smelter Tembaga dan Emas Sumbawa #3',
+                    'caption'    => 'Pembaruan takarir foto dokumentasi smelter PT Amman Mineral.'
+                ]),
+                'timestamp' => date('Y-m-d H:i:s', strtotime('-30 minutes')),
+            ],
+        ];
+        $this->db->table('editorlog')->insertBatch($editorLogs);
+
+        // 14. member & memberbackup (10 Akun Member Pembaca)
+        $members = [
+            ['name' => 'Budi Hartono Wijaya',     'email' => 'budi.hartono@djarumcapital.co.id',   'company' => 'PT Djarum Capital Investama (VIP)',         'status' => 'active', 'reg' => '2025-08-15 10:00:00', 'login' => date('Y-m-d H:i:s', strtotime('-2 hours'))],
+            ['name' => 'Sri Mulyani Handayani',   'email' => 'sri.mulyani@mandirisekuritas.co.id', 'company' => 'Mandiri Sekuritas Research (Institutional)', 'status' => 'active', 'reg' => '2025-09-01 09:30:00', 'login' => date('Y-m-d H:i:s', strtotime('-1 day'))],
+            ['name' => 'Anthony Salim Sutanto',   'email' => 'anthony.s@indofoodasset.com',        'company' => 'Salim Asset Management (Corporate VIP)',    'status' => 'active', 'reg' => '2025-10-12 14:15:00', 'login' => date('Y-m-d H:i:s', strtotime('-3 days'))],
+            ['name' => 'Felicia Gunawan',         'email' => 'felicia.gunawan@trimegah.com',       'company' => 'Trimegah Securities Equity Analyst',        'status' => 'active', 'reg' => '2026-01-10 11:20:00', 'login' => date('Y-m-d H:i:s', strtotime('-5 hours'))],
+            ['name' => 'Michael Bambang Pratama', 'email' => 'michael.pratama@sucorasset.com',     'company' => 'Sucor Asset Management (Priority)',         'status' => 'active', 'reg' => '2026-02-01 08:45:00', 'login' => date('Y-m-d H:i:s', strtotime('-12 hours'))],
+            ['name' => 'Denny Chandra Kusuma',    'email' => 'denny.kusuma@gmail.com',             'company' => 'Retail Trader Community (Retail)',          'status' => 'active', 'reg' => '2026-03-15 16:00:00', 'login' => date('Y-m-d H:i:s', strtotime('-1 week'))],
+            ['name' => 'Hendra Setiawan',         'email' => 'hendra.setiawan@bca.co.id',          'company' => 'PT Bank Central Asia Tbk Treasury',         'status' => 'active', 'reg' => '2025-11-20 13:10:00', 'login' => date('Y-m-d H:i:s', strtotime('-4 hours'))],
+            ['name' => 'Clarissa Tanoesoedibjo',  'email' => 'clarissa.t@mncgroup.com',            'company' => 'MNC Kapital Indonesia (Corporate VIP)',     'status' => 'inactive','reg' => date('Y-m-d H:i:s', strtotime('-2 days')), 'login' => null],
+            ['name' => 'Aditya Wardhana',         'email' => 'aditya.wardhana@indopremier.com',    'company' => 'Indo Premier Investment (Priority)',        'status' => 'banned', 'reg' => '2025-05-10 10:00:00', 'login' => date('Y-m-d H:i:s', strtotime('-20 days'))],
+            ['name' => 'Rina Wulandari Putri',    'email' => 'rina.wulandari@yahoo.com',           'company' => 'Universitas Indonesia Akademisi (Retail)',   'status' => 'active', 'reg' => '2026-04-01 14:00:00', 'login' => date('Y-m-d H:i:s', strtotime('-2 days'))],
+        ];
+
+        $memberIds = [];
         foreach ($members as $m) {
-            $exist = $this->db->table('client_account_entity')->where('attr_contact_val', $m['email'])->get()->getRow();
-            if (!$exist) {
-                $record = [
-                    'uniq_id'              => md5($m['email'] . 'salt_seed'),
-                    'attr_contact_val'     => $m['email'],
-                    'attr_full_name'       => $m['name'],
-                    'attr_slug_token'      => url_title($m['name'], '-', true),
-                    'attr_credential_hash' => md5('member123'),
-                    'attr_registration_at' => $m['reg'],
-                    'attr_last_access_at'  => $m['login'],
-                    'attr_status_code'     => $m['status'],
-                    'attr_profile_summary' => $m['company'],
-                    'attr_modified_at'     => date('Y-m-d H:i:s'),
-                ];
-                $this->db->table('client_account_entity')->insert($record);
-                $newId = $this->db->insertID();
-
-                // Sync into client_account_backup
-                $record['ref_entity_client_id'] = $newId;
-                $this->db->table('client_account_backup')->insert($record);
-            }
-        }
-
-        // 9. entity_registry (75+ Emiten Saham BEI)
-        if ($this->db->table('entity_registry')->countAllResults() == 0) {
-            $emitens = [
-                ['item_code' => 'BBCA', 'entity_name' => 'PT Bank Central Asia Tbk'],
-                ['item_code' => 'BBRI', 'entity_name' => 'PT Bank Rakyat Indonesia (Persero) Tbk'],
-                ['item_code' => 'BMRI', 'entity_name' => 'PT Bank Mandiri (Persero) Tbk'],
-                ['item_code' => 'BBNI', 'entity_name' => 'PT Bank Negara Indonesia (Persero) Tbk'],
-                ['item_code' => 'TLKM', 'entity_name' => 'PT Telkom Indonesia (Persero) Tbk'],
-                ['item_code' => 'ASII', 'entity_name' => 'PT Astra International Tbk'],
-                ['item_code' => 'AMMN', 'entity_name' => 'PT Amman Mineral Internasional Tbk'],
-                ['item_code' => 'BREN', 'entity_name' => 'PT Barito Renewables Energy Tbk'],
-                ['item_code' => 'GOTO', 'entity_name' => 'PT GoTo Gojek Tokopedia Tbk'],
-                ['item_code' => 'ICBP', 'entity_name' => 'PT Indofood CBP Sukses Makmur Tbk'],
-                ['item_code' => 'INDF', 'entity_name' => 'PT Indofood Sukses Makmur Tbk'],
-                ['item_code' => 'UNVR', 'entity_name' => 'PT Unilever Indonesia Tbk'],
-                ['item_code' => 'KLBF', 'entity_name' => 'PT Kalbe Farma Tbk'],
-                ['item_code' => 'ADRO', 'entity_name' => 'PT Adaro Energy Indonesia Tbk'],
-                ['item_code' => 'PTBA', 'entity_name' => 'PT Bukit Asam Tbk'],
-                ['item_code' => 'PGAS', 'entity_name' => 'PT Perusahaan Gas Negara Tbk'],
-                ['item_code' => 'ANTM', 'entity_name' => 'PT Aneka Tambang Tbk'],
-                ['item_code' => 'INCO', 'entity_name' => 'PT Vale Indonesia Tbk'],
-                ['item_code' => 'BRIS', 'entity_name' => 'PT Bank Syariah Indonesia Tbk'],
-                ['item_code' => 'CPIN', 'entity_name' => 'PT Charoen Pokphand Indonesia Tbk'],
-                ['item_code' => 'JPFA', 'entity_name' => 'PT Japfa Comfeed Indonesia Tbk'],
-                ['item_code' => 'SMGR', 'entity_name' => 'PT Semen Indonesia (Persero) Tbk'],
-                ['item_code' => 'INTP', 'entity_name' => 'PT Indocement Tunggal Prakarsa Tbk'],
-                ['item_code' => 'MDKA', 'entity_name' => 'PT Merdeka Copper Gold Tbk'],
-                ['item_code' => 'ARTO', 'entity_name' => 'PT Bank Jago Tbk'],
-                ['item_code' => 'ESSA', 'entity_name' => 'PT ESSA Industries Indonesia Tbk'],
-                ['item_code' => 'MEDC', 'entity_name' => 'PT Medco Energi Internasional Tbk'],
-                ['item_code' => 'TPIA', 'entity_name' => 'PT Chandra Asri Pacific Tbk'],
-                ['item_code' => 'BRPT', 'entity_name' => 'PT Barito Pacific Tbk'],
-                ['item_code' => 'CTRA', 'entity_name' => 'PT Ciputra Development Tbk'],
-                ['item_code' => 'BSDE', 'entity_name' => 'PT Bumi Serpong Damai Tbk'],
-                ['item_code' => 'PWON', 'entity_name' => 'PT Pakuwon Jati Tbk'],
-                ['item_code' => 'SMRA', 'entity_name' => 'PT Summarecon Agung Tbk'],
-                ['item_code' => 'ERAA', 'entity_name' => 'PT Erajaya Swasembada Tbk'],
-                ['item_code' => 'MYOR', 'entity_name' => 'PT Mayora Indah Tbk'],
-                ['item_code' => 'SIDO', 'entity_name' => 'PT Industri Jamu dan Farmasi Sido Muncul Tbk'],
-                ['item_code' => 'TBIG', 'entity_name' => 'PT Tower Bersama Infrastructure Tbk'],
-                ['item_code' => 'TOWR', 'entity_name' => 'PT Sarana Menara Nusantara Tbk'],
-                ['item_code' => 'EXCL', 'entity_name' => 'PT XL Axiata Tbk'],
-                ['item_code' => 'ISAT', 'entity_name' => 'PT Indosat Tbk'],
-                ['item_code' => 'JSMR', 'entity_name' => 'PT Jasa Marga (Persero) Tbk'],
-                ['item_code' => 'AKRA', 'entity_name' => 'PT AKR Corporindo Tbk'],
-                ['item_code' => 'UNTR', 'entity_name' => 'PT United Tractors Tbk'],
-                ['item_code' => 'ACES', 'entity_name' => 'PT Aspirasi Hidup Indonesia Tbk'],
-                ['item_code' => 'MAPI', 'entity_name' => 'PT Mitra Adiperkasa Tbk'],
-                ['item_code' => 'HEAL', 'entity_name' => 'PT Medikaloka Hermina Tbk'],
-                ['item_code' => 'MIKA', 'entity_name' => 'PT Mitra Keluarga Karyasehat Tbk'],
-                ['item_code' => 'SILO', 'entity_name' => 'PT Siloam International Hospitals Tbk'],
-                ['item_code' => 'CMRY', 'entity_name' => 'PT Cisarua Mountain Dairy Tbk'],
-                ['item_code' => 'BUMI', 'entity_name' => 'PT Bumi Resources Tbk'],
-                ['item_code' => 'DEWA', 'entity_name' => 'PT Darma Henwa Tbk'],
-                ['item_code' => 'ENRG', 'entity_name' => 'PT Energi Mega Persada Tbk'],
-                ['item_code' => 'ADMR', 'entity_name' => 'PT Adaro Minerals Indonesia Tbk'],
-                ['item_code' => 'MBMA', 'entity_name' => 'PT Merdeka Battery Materials Tbk'],
-                ['item_code' => 'NCKL', 'entity_name' => 'PT Trimegah Bangun Persada Tbk'],
-                ['item_code' => 'PGEO', 'entity_name' => 'PT Pertamina Geothermal Energy Tbk'],
-                ['item_code' => 'AVIA', 'entity_name' => 'PT Avia Avian Tbk'],
-                ['item_code' => 'BTPS', 'entity_name' => 'PT Bank BTPN Syariah Tbk'],
-                ['item_code' => 'BBTN', 'entity_name' => 'PT Bank Tabungan Negara (Persero) Tbk'],
-                ['item_code' => 'BDMN', 'entity_name' => 'PT Bank Danamon Indonesia Tbk'],
-                ['item_code' => 'BNGA', 'entity_name' => 'PT Bank CIMB Niaga Tbk'],
-                ['item_code' => 'BNII', 'entity_name' => 'PT Bank Maybank Indonesia Tbk'],
-                ['item_code' => 'PNBN', 'entity_name' => 'PT Bank Pan Indonesia Tbk'],
-                ['item_code' => 'BJBR', 'entity_name' => 'PT BPD Jawa Barat dan Banten Tbk'],
-                ['item_code' => 'BJTM', 'entity_name' => 'PT BPD Jawa Timur Tbk'],
-                ['item_code' => 'SRTG', 'entity_name' => 'PT Saratoga Investama Sedaya Tbk'],
-                ['item_code' => 'EMTK', 'entity_name' => 'PT Elang Mahkota Teknologi Tbk'],
-                ['item_code' => 'SCMA', 'entity_name' => 'PT Surya Citra Media Tbk'],
-                ['item_code' => 'MNCN', 'entity_name' => 'PT Media Nusantara Citra Tbk'],
-                ['item_code' => 'BMTR', 'entity_name' => 'PT Global Mediacom Tbk'],
-                ['item_code' => 'FILM', 'entity_name' => 'PT MD Pictures Tbk'],
-                ['item_code' => 'AMRT', 'entity_name' => 'PT Sumber Alfaria Trijaya Tbk'],
-                ['item_code' => 'MIDI', 'entity_name' => 'PT Midi Utama Indonesia Tbk'],
-                ['item_code' => 'MAPA', 'entity_name' => 'PT MAP Aktif Adiperkasa Tbk'],
+            $record = [
+                'uniq'       => md5($m['email'] . 'salt_seed_512'),
+                'email'      => $m['email'],
+                'fullname'   => $m['name'],
+                'slug'       => url_title($m['name'], '-', true),
+                'password'   => md5('member123'),
+                'signupdate' => $m['reg'],
+                'lastlogin'  => $m['login'],
+                'status'     => $m['status'],
+                'bio'        => $m['company'],
+                'lastupdate' => date('Y-m-d H:i:s'),
             ];
-            $this->db->table('entity_registry')->insertBatch($emitens);
+            $this->db->table('member')->insert($record);
+            $newMemId = $this->db->insertID();
+            $memberIds[] = $newMemId;
+
+            $record['memberID'] = $newMemId;
+            $this->db->table('memberbackup')->insert($record);
         }
 
-        // 10. Indices (entity_index_a, b, c, d)
-        if ($this->db->table('entity_index_a')->countAllResults() == 0) {
-            $indices = [
-                ['index_code' => 'IHSG', 'prev_val' => 7242.43, 'high_val' => 7295.12, 'low_val' => 7235.80, 'last_val' => 7284.55, 'chg_val' => 42.12, 'chg_pct' => 0.58, 'last_change_at' => date('Y-m-d H:i:s')],
-                ['index_code' => 'LQ45', 'prev_val' => 906.60, 'high_val' => 915.20, 'low_val' => 905.10, 'last_val' => 912.40, 'chg_val' => 5.80, 'chg_pct' => 0.64, 'last_change_at' => date('Y-m-d H:i:s')],
-                ['index_code' => 'IDX30', 'prev_val' => 469.40, 'high_val' => 471.10, 'low_val' => 467.50, 'last_val' => 468.25, 'chg_val' => -1.15, 'chg_pct' => -0.24, 'last_change_at' => date('Y-m-d H:i:s')],
-                ['index_code' => 'KOMPAS100', 'prev_val' => 1145.20, 'high_val' => 1152.80, 'low_val' => 1142.30, 'last_val' => 1150.15, 'chg_val' => 4.95, 'chg_pct' => 0.43, 'last_change_at' => date('Y-m-d H:i:s')],
-                ['index_code' => 'ISSI', 'prev_val' => 218.40, 'high_val' => 220.10, 'low_val' => 217.90, 'last_val' => 219.85, 'chg_val' => 1.45, 'chg_pct' => 0.66, 'last_change_at' => date('Y-m-d H:i:s')],
-                ['index_code' => 'JII', 'prev_val' => 524.10, 'high_val' => 528.30, 'low_val' => 523.50, 'last_val' => 527.20, 'chg_val' => 3.10, 'chg_pct' => 0.59, 'last_change_at' => date('Y-m-d H:i:s')],
-                ['index_code' => 'IDX80', 'prev_val' => 128.50, 'high_val' => 129.80, 'low_val' => 128.10, 'last_val' => 129.40, 'chg_val' => 0.90, 'chg_pct' => 0.70, 'last_change_at' => date('Y-m-d H:i:s')],
-                ['index_code' => 'SRI-KEHATI', 'prev_val' => 412.30, 'high_val' => 416.50, 'low_val' => 411.80, 'last_val' => 415.60, 'chg_val' => 3.30, 'chg_pct' => 0.80, 'last_change_at' => date('Y-m-d H:i:s')],
+        // 15. commentar (Komentar pada Artikel Publikasi)
+        $commentsList = [
+            'Paparan analisis yang sangat mendalam dan berbobot. Memberikan panduan jelas bagi keputusan alokasi investasi.',
+            'Analisis teknikal dan fundamentalnya sinkron. Patut masuk watchlist pekan ini.',
+            'Terima kasih atas riset eksklusif ini Tim Investor.id, sangat mencerahkan bagi investor institusi.',
+            'Apakah ada proyeksi capex untuk ekspansi fasilitas energi terbarukan di semester dua nanti?',
+            'Valuasi PE saat ini masih di bawah rata-rata historis 5 tahun, momen akumulasi yang bagus.',
+            'Kinerja ekspor komoditas tampaknya masih menjadi penopang utama pendapatan konsolidasi.',
+            'Sangat setuju dengan paparan analis di artikel ini. Risk-to-reward ratio terlihat menarik.',
+            'Pemberitaan yang lugas dan berimbang. Investor ritel sangat terbantu dengan ringkasan poin utamanya.'
+        ];
+        foreach ($memberIds as $cIdx => $mId) {
+            $targetArtId = $articleMap[$cIdx % 20] ?? 1;
+            $this->db->table('commentar')->insert([
+                'articleId' => $targetArtId,
+                'memberID'  => $mId,
+                'replyto'   => 0,
+                'posted'    => date('Y-m-d H:i:s', strtotime('-' . ($cIdx * 3) . ' hours')),
+                'status'    => '1',
+                'comment'   => $commentsList[$cIdx % count($commentsList)],
+                'replies'   => ($cIdx % 3 == 0) ? 2 : 0,
+                'likes'     => 12 + ($cIdx * 4),
+                'dislikes'  => $cIdx % 2,
+            ]);
+        }
+
+        // 16. memberfavarticle (Bookmark Favorit Member)
+        $favs = [];
+        foreach ($memberIds as $mIdx => $mId) {
+            $favs[] = [
+                'memberID'  => $mId,
+                'articleID' => $articleMap[($mIdx * 2) % count($articleMap)],
+                'timestamp' => date('Y-m-d H:i:s', strtotime('-' . ($mIdx + 1) . ' days')),
             ];
-            $this->db->table('entity_index_a')->insertBatch($indices);
-            $this->db->table('entity_index_b')->insertBatch($indices);
-            $this->db->table('entity_index_c')->insertBatch($indices);
-            $this->db->table('entity_index_d')->insertBatch($indices);
-        }
-
-        // 11. entity_metric_a, b, c (Top Emiten Metrics)
-        if ($this->db->table('entity_metric_a')->countAllResults() == 0) {
-            $metrics = [
-                ['item_code' => 'BBCA', 'price_val' => 10250, 'change_val' => 275, 'percent_val' => 276, 'volume_val' => 84250000, 'value_val' => 863562500000, 'freq_val' => 18450, 'last_update_at' => date('Y-m-d H:i:s')],
-                ['item_code' => 'BBRI', 'price_val' => 4850, 'change_val' => 90, 'percent_val' => 189, 'volume_val' => 124500000, 'value_val' => 603825000000, 'freq_val' => 22100, 'last_update_at' => date('Y-m-d H:i:s')],
-                ['item_code' => 'BMRI', 'price_val' => 6850, 'change_val' => 150, 'percent_val' => 224, 'volume_val' => 62100000, 'value_val' => 425385000000, 'freq_val' => 14320, 'last_update_at' => date('Y-m-d H:i:s')],
-                ['item_code' => 'BREN', 'price_val' => 8925, 'change_val' => 325, 'percent_val' => 378, 'volume_val' => 45200000, 'value_val' => 403410000000, 'freq_val' => 12400, 'last_update_at' => date('Y-m-d H:i:s')],
-                ['item_code' => 'TLKM', 'price_val' => 2920, 'change_val' => -70, 'percent_val' => -234, 'volume_val' => 95400000, 'value_val' => 278568000000, 'freq_val' => 16250, 'last_update_at' => date('Y-m-d H:i:s')],
-                ['item_code' => 'ASII', 'price_val' => 5100, 'change_val' => 90, 'percent_val' => 180, 'volume_val' => 38900000, 'value_val' => 198390000000, 'freq_val' => 9840, 'last_update_at' => date('Y-m-d H:i:s')],
-                ['item_code' => 'AMMN', 'price_val' => 9800, 'change_val' => 225, 'percent_val' => 235, 'volume_val' => 28400000, 'value_val' => 278320000000, 'freq_val' => 8920, 'last_update_at' => date('Y-m-d H:i:s')],
-                ['item_code' => 'GOTO', 'price_val' => 52, 'change_val' => -2, 'percent_val' => -370, 'volume_val' => 985000000, 'value_val' => 51220000000, 'freq_val' => 19500, 'last_update_at' => date('Y-m-d H:i:s')],
+            $favs[] = [
+                'memberID'  => $mId,
+                'articleID' => $articleMap[(($mIdx * 2) + 1) % count($articleMap)],
+                'timestamp' => date('Y-m-d H:i:s', strtotime('-' . ($mIdx + 2) . ' days')),
             ];
-            $this->db->table('entity_metric_a')->insertBatch($metrics);
-            $this->db->table('entity_metric_b')->insertBatch($metrics);
-            $this->db->table('entity_metric_c')->insertBatch($metrics);
         }
+        $this->db->table('memberfavarticle')->insertBatch($favs);
 
-        // 12. entity_summary (Realistic Market Daily Summary)
-        if ($this->db->table('entity_summary')->countAllResults() == 0) {
-            $summaries = [
-                [
-                    'record_date' => date('Y-m-d H:i:s'), 'item_code' => 'BBCA',
-                    'prev_price' => 10000, 'open_price' => 10050, 'first_trade_price' => 10050,
-                    'high_price' => 10300, 'low_price' => 9950, 'change_val' => 250,
-                    'volume_val' => 84250000, 'value_val' => 863562500000, 'freq_val' => 18450,
-                    'index_individual_val' => 12450, 'offer_price' => 10275, 'offer_volume' => 1250000,
-                    'bid_price' => 10250, 'bid_volume' => 1890000, 'listed_share_val' => 123275050000,
-                    'tradable_share_val' => 61637525000, 'weight_index_val' => 985000000,
-                    'foreign_sell_val' => 120500000000, 'foreign_buy_val' => 245800000000,
-                    'non_regular_volume' => 15000000, 'non_regular_value' => 153750000000,
-                    'non_regular_freq' => 45, 'percentage_val' => 3
-                ],
-                [
-                    'record_date' => date('Y-m-d H:i:s'), 'item_code' => 'BBRI',
-                    'prev_price' => 4760, 'open_price' => 4780, 'first_trade_price' => 4780,
-                    'high_price' => 4880, 'low_price' => 4750, 'change_val' => 90,
-                    'volume_val' => 124500000, 'value_val' => 603825000000, 'freq_val' => 22100,
-                    'index_individual_val' => 9820, 'offer_price' => 4860, 'offer_volume' => 3200000,
-                    'bid_price' => 4850, 'bid_volume' => 4100000, 'listed_share_val' => 151559000000,
-                    'tradable_share_val' => 75779500000, 'weight_index_val' => 745000000,
-                    'foreign_sell_val' => 95000000000, 'foreign_buy_val' => 182000000000,
-                    'non_regular_volume' => 8500000, 'non_regular_value' => 41225000000,
-                    'non_regular_freq' => 32, 'percentage_val' => 2
-                ],
-                [
-                    'record_date' => date('Y-m-d H:i:s'), 'item_code' => 'BMRI',
-                    'prev_price' => 6700, 'open_price' => 6725, 'first_trade_price' => 6725,
-                    'high_price' => 6900, 'low_price' => 6700, 'change_val' => 150,
-                    'volume_val' => 62100000, 'value_val' => 425385000000, 'freq_val' => 14320,
-                    'index_individual_val' => 8450, 'offer_price' => 6875, 'offer_volume' => 1850000,
-                    'bid_price' => 6850, 'bid_volume' => 2200000, 'listed_share_val' => 93333333333,
-                    'tradable_share_val' => 46666666666, 'weight_index_val' => 635000000,
-                    'foreign_sell_val' => 72000000000, 'foreign_buy_val' => 145000000000,
-                    'non_regular_volume' => 4500000, 'non_regular_value' => 30825000000,
-                    'non_regular_freq' => 21, 'percentage_val' => 2
-                ],
-            ];
-            $this->db->table('entity_summary')->insertBatch($summaries);
-        }
+        // 17. sahamemiten (75+ Emiten Saham BEI)
+        $emitens = [
+            ['StockCode' => 'BBCA', 'companyName' => 'PT Bank Central Asia Tbk'],
+            ['StockCode' => 'BBRI', 'companyName' => 'PT Bank Rakyat Indonesia (Persero) Tbk'],
+            ['StockCode' => 'BMRI', 'companyName' => 'PT Bank Mandiri (Persero) Tbk'],
+            ['StockCode' => 'BBNI', 'companyName' => 'PT Bank Negara Indonesia (Persero) Tbk'],
+            ['StockCode' => 'TLKM', 'companyName' => 'PT Telkom Indonesia (Persero) Tbk'],
+            ['StockCode' => 'ASII', 'companyName' => 'PT Astra International Tbk'],
+            ['StockCode' => 'AMMN', 'companyName' => 'PT Amman Mineral Internasional Tbk'],
+            ['StockCode' => 'BREN', 'companyName' => 'PT Barito Renewables Energy Tbk'],
+            ['StockCode' => 'GOTO', 'companyName' => 'PT GoTo Gojek Tokopedia Tbk'],
+            ['StockCode' => 'ICBP', 'companyName' => 'PT Indofood CBP Sukses Makmur Tbk'],
+            ['StockCode' => 'INDF', 'companyName' => 'PT Indofood Sukses Makmur Tbk'],
+            ['StockCode' => 'UNVR', 'companyName' => 'PT Unilever Indonesia Tbk'],
+            ['StockCode' => 'KLBF', 'companyName' => 'PT Kalbe Farma Tbk'],
+            ['StockCode' => 'ADRO', 'companyName' => 'PT Adaro Energy Indonesia Tbk'],
+            ['StockCode' => 'PTBA', 'companyName' => 'PT Bukit Asam Tbk'],
+            ['StockCode' => 'PGAS', 'companyName' => 'PT Perusahaan Gas Negara Tbk'],
+            ['StockCode' => 'ANTM', 'companyName' => 'PT Aneka Tambang Tbk'],
+            ['StockCode' => 'INCO', 'companyName' => 'PT Vale Indonesia Tbk'],
+            ['StockCode' => 'BRIS', 'companyName' => 'PT Bank Syariah Indonesia Tbk'],
+            ['StockCode' => 'CPIN', 'companyName' => 'PT Charoen Pokphand Indonesia Tbk'],
+            ['StockCode' => 'JPFA', 'companyName' => 'PT Japfa Comfeed Indonesia Tbk'],
+            ['StockCode' => 'SMGR', 'companyName' => 'PT Semen Indonesia (Persero) Tbk'],
+            ['StockCode' => 'INTP', 'companyName' => 'PT Indocement Tunggal Prakarsa Tbk'],
+            ['StockCode' => 'MDKA', 'companyName' => 'PT Merdeka Copper Gold Tbk'],
+            ['StockCode' => 'ARTO', 'companyName' => 'PT Bank Jago Tbk'],
+            ['StockCode' => 'ESSA', 'companyName' => 'PT ESSA Industries Indonesia Tbk'],
+            ['StockCode' => 'MEDC', 'companyName' => 'PT Medco Energi Internasional Tbk'],
+            ['StockCode' => 'TPIA', 'companyName' => 'PT Chandra Asri Pacific Tbk'],
+            ['StockCode' => 'BRPT', 'companyName' => 'PT Barito Pacific Tbk'],
+            ['StockCode' => 'CTRA', 'companyName' => 'PT Ciputra Development Tbk'],
+            ['StockCode' => 'BSDE', 'companyName' => 'PT Bumi Serpong Damai Tbk'],
+            ['StockCode' => 'PWON', 'companyName' => 'PT Pakuwon Jati Tbk'],
+            ['StockCode' => 'SMRA', 'companyName' => 'PT Summarecon Agung Tbk'],
+            ['StockCode' => 'ERAA', 'companyName' => 'PT Erajaya Swasembada Tbk'],
+            ['StockCode' => 'MYOR', 'companyName' => 'PT Mayora Indah Tbk'],
+            ['StockCode' => 'SIDO', 'companyName' => 'PT Industri Jamu dan Farmasi Sido Muncul Tbk'],
+            ['StockCode' => 'TBIG', 'companyName' => 'PT Tower Bersama Infrastructure Tbk'],
+            ['StockCode' => 'TOWR', 'companyName' => 'PT Sarana Menara Nusantara Tbk'],
+            ['StockCode' => 'EXCL', 'companyName' => 'PT XL Axiata Tbk'],
+            ['StockCode' => 'ISAT', 'companyName' => 'PT Indosat Tbk'],
+            ['StockCode' => 'JSMR', 'companyName' => 'PT Jasa Marga (Persero) Tbk'],
+            ['StockCode' => 'AKRA', 'companyName' => 'PT AKR Corporindo Tbk'],
+            ['StockCode' => 'UNTR', 'companyName' => 'PT United Tractors Tbk'],
+            ['StockCode' => 'ACES', 'companyName' => 'PT Aspirasi Hidup Indonesia Tbk'],
+            ['StockCode' => 'MAPI', 'companyName' => 'PT Mitra Adiperkasa Tbk'],
+            ['StockCode' => 'HEAL', 'companyName' => 'PT Medikaloka Hermina Tbk'],
+            ['StockCode' => 'MIKA', 'companyName' => 'PT Mitra Keluarga Karyasehat Tbk'],
+            ['StockCode' => 'SILO', 'companyName' => 'PT Siloam International Hospitals Tbk'],
+            ['StockCode' => 'CMRY', 'companyName' => 'PT Cisarua Mountain Dairy Tbk'],
+            ['StockCode' => 'BUMI', 'companyName' => 'PT Bumi Resources Tbk'],
+            ['StockCode' => 'DEWA', 'companyName' => 'PT Darma Henwa Tbk'],
+            ['StockCode' => 'ENRG', 'companyName' => 'PT Energi Mega Persada Tbk'],
+            ['StockCode' => 'ADMR', 'companyName' => 'PT Adaro Minerals Indonesia Tbk'],
+            ['StockCode' => 'MBMA', 'companyName' => 'PT Merdeka Battery Materials Tbk'],
+            ['StockCode' => 'NCKL', 'companyName' => 'PT Trimegah Bangun Persada Tbk'],
+            ['StockCode' => 'PGEO', 'companyName' => 'PT Pertamina Geothermal Energy Tbk'],
+            ['StockCode' => 'AVIA', 'companyName' => 'PT Avia Avian Tbk'],
+            ['StockCode' => 'BTPS', 'companyName' => 'PT Bank BTPN Syariah Tbk'],
+            ['StockCode' => 'BBTN', 'companyName' => 'PT Bank Tabungan Negara (Persero) Tbk'],
+            ['StockCode' => 'BDMN', 'companyName' => 'PT Bank Danamon Indonesia Tbk'],
+            ['StockCode' => 'BNGA', 'companyName' => 'PT Bank CIMB Niaga Tbk'],
+            ['StockCode' => 'BNII', 'companyName' => 'PT Bank Maybank Indonesia Tbk'],
+            ['StockCode' => 'PNBN', 'companyName' => 'PT Bank Pan Indonesia Tbk'],
+            ['StockCode' => 'BJBR', 'companyName' => 'PT BPD Jawa Barat dan Banten Tbk'],
+            ['StockCode' => 'BJTM', 'companyName' => 'PT BPD Jawa Timur Tbk'],
+            ['StockCode' => 'SRTG', 'companyName' => 'PT Saratoga Investama Sedaya Tbk'],
+            ['StockCode' => 'EMTK', 'companyName' => 'PT Elang Mahkota Teknologi Tbk'],
+            ['StockCode' => 'SCMA', 'companyName' => 'PT Surya Citra Media Tbk'],
+            ['StockCode' => 'MNCN', 'companyName' => 'PT Media Nusantara Citra Tbk'],
+            ['StockCode' => 'BMTR', 'companyName' => 'PT Global Mediacom Tbk'],
+            ['StockCode' => 'FILM', 'companyName' => 'PT MD Pictures Tbk'],
+            ['StockCode' => 'AMRT', 'companyName' => 'PT Sumber Alfaria Trijaya Tbk'],
+            ['StockCode' => 'MIDI', 'companyName' => 'PT Midi Utama Indonesia Tbk'],
+            ['StockCode' => 'MAPA', 'companyName' => 'PT MAP Aktif Adiperkasa Tbk'],
+        ];
+        $this->db->table('sahamemiten')->insertBatch($emitens);
 
-        // 13. index_identifier
-        if ($this->db->table('index_identifier')->countAllResults() == 0) {
-            $identifiers = [
-                ['search_index_name' => 'article_search_index', 'ref_entity_max_id' => 205, 'created_at' => date('Y-m-d H:i:s')],
-                ['search_index_name' => 'tag_search_index', 'ref_entity_max_id' => 85, 'created_at' => date('Y-m-d H:i:s')],
-                ['search_index_name' => 'author_search_index', 'ref_entity_max_id' => 12, 'created_at' => date('Y-m-d H:i:s')],
-                ['search_index_name' => 'company_search_index', 'ref_entity_max_id' => 75, 'created_at' => date('Y-m-d H:i:s')],
-                ['search_index_name' => 'portal_global_index', 'ref_entity_max_id' => 300, 'created_at' => date('Y-m-d H:i:s')],
-            ];
-            $this->db->table('index_identifier')->insertBatch($identifiers);
-        }
+        // 18. Indices (saham, saham_topvalue, saham_index, saham_sectoral)
+        $indices = [
+            ['IndexCode' => 'IHSG', 'PrevVal' => 7420.43, 'HighVal' => 7465.12, 'LowVal' => 7415.80, 'LastVal' => 7452.55, 'ChgVal' => 32.12, 'ChgPct' => 0.43, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'LQ45', 'PrevVal' => 932.60, 'HighVal' => 942.20, 'LowVal' => 931.10, 'LastVal' => 938.40, 'ChgVal' => 5.80, 'ChgPct' => 0.62, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'IDX30', 'PrevVal' => 480.15, 'HighVal' => 486.30, 'LowVal' => 479.50, 'LastVal' => 483.90, 'ChgVal' => 3.75, 'ChgPct' => 0.78, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'KOMPAS100', 'PrevVal' => 1180.20, 'HighVal' => 1192.40, 'LowVal' => 1179.10, 'LastVal' => 1188.60, 'ChgVal' => 8.40, 'ChgPct' => 0.71, 'LastChange' => date('Y-m-d H:i:s')],
+        ];
+        $this->db->table('saham')->insertBatch($indices);
 
-        // 14. entity_kilo & entity_nano_keyword_link (SEO Dictionary)
-        if ($this->db->table('entity_kilo')->countAllResults() == 0) {
-            $keywords = [
-                ['kilo_text_a' => 'Dividen Saham Big Banks', 'slug_value' => 'dividen-saham-big-banks'],
-                ['kilo_text_a' => 'Rekomendasi Saham Hari Ini', 'slug_value' => 'rekomendasi-saham-hari-ini'],
-                ['kilo_text_a' => 'Kinerja Laporan Keuangan Q2 2026', 'slug_value' => 'kinerja-laporan-keuangan-q2-2026'],
-                ['kilo_text_a' => 'Analisa IHSG & Prediksi Pasar', 'slug_value' => 'analisa-ihsg-prediksi-pasar'],
-                ['kilo_text_a' => 'Suku Bunga Bank Indonesia BI-Rate', 'slug_value' => 'suku-bunga-bank-indonesia-bi-rate'],
-                ['kilo_text_a' => 'Stock Split & Right Issue BEI', 'slug_value' => 'stock-split-right-issue-bei'],
-                ['kilo_text_a' => 'Emiten Emas & Komoditas Tambang', 'slug_value' => 'emiten-emas-komoditas-tambang'],
-                ['kilo_text_a' => 'Valuasi PE Ratio Saham Murah', 'slug_value' => 'valuasi-pe-ratio-saham-murah'],
-                ['kilo_text_a' => 'Obligasi Ritel Negara SBR ORI', 'slug_value' => 'obligasi-ritel-negara-sbr-ori'],
-                ['kilo_text_a' => 'IPO Saham Baru IDX 2026', 'slug_value' => 'ipo-saham-baru-idx-2026'],
-            ];
-            $this->db->table('entity_kilo')->insertBatch($keywords);
+        $topValues = [
+            ['IndexCode' => 'BBCA', 'PrevVal' => 10100, 'HighVal' => 10300, 'LowVal' => 10050, 'LastVal' => 10250, 'ChgVal' => 150, 'ChgPct' => 1.48, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'BBRI', 'PrevVal' => 5125,  'HighVal' => 5225,  'LowVal' => 5100,  'LastVal' => 5200,  'ChgVal' => 75,  'ChgPct' => 1.46, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'BMRI', 'PrevVal' => 7025,  'HighVal' => 7200,  'LowVal' => 7000,  'LastVal' => 7150,  'ChgVal' => 125, 'ChgPct' => 1.78, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'BREN', 'PrevVal' => 9100,  'HighVal' => 9500,  'LowVal' => 9050,  'LastVal' => 9400,  'ChgVal' => 300, 'ChgPct' => 3.30, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'AMMN', 'PrevVal' => 9750,  'HighVal' => 10050, 'LowVal' => 9700,  'LastVal' => 9950,  'ChgVal' => 200, 'ChgPct' => 2.05, 'LastChange' => date('Y-m-d H:i:s')],
+        ];
+        $this->db->table('saham_topvalue')->insertBatch($topValues);
 
-            $kiloRows = $this->db->table('entity_kilo')->get()->getResultArray();
-            $articles = $this->db->table('entity_nano')->limit(20)->get()->getResultArray();
-            $links = [];
-            foreach ($articles as $aIdx => $art) {
-                $kItem = $kiloRows[$aIdx % count($kiloRows)];
-                $links[] = [
-                    'ref_entity_nano_id' => (int)$art['ref_entity_nano_id'],
-                    'ref_entity_kilo_id' => (int)$kItem['record_id'],
-                ];
-            }
-            if (!empty($links)) {
-                $this->db->table('entity_nano_keyword_link')->insertBatch($links);
-            }
-        }
+        // 19. apps (Konfigurasi Versi Aplikasi)
+        $configs = [
+            ['key' => 'version', 'value' => '1.2.0'],
+            ['key' => 'version', 'value' => '1.2.5'],
+        ];
+        $this->db->table('apps')->insertBatch($configs);
 
-        // 15. trend_record & trend_exclude_link (Trending Topics)
-        if ($this->db->table('trend_record')->countAllResults() == 0) {
-            $trends = [
-                ['label_name' => 'Dividen Jumbo BBCA & BBRI', 'slug_value' => 'dividen-jumbo-bbca-bbri', 'tag_text' => 'BBCA, BBRI, Dividen, Perbankan', 'publish_date' => date('Y-m-d'), 'min_entity_a_publish_date' => date('Y-m-d', strtotime('-30 days')), 'create_date' => date('Y-m-d H:i:s'), 'modified_at' => date('Y-m-d H:i:s'), 'status_code' => '1'],
-                ['label_name' => 'Rekor All-Time High IHSG 7.300', 'slug_value' => 'rekor-all-time-high-ihsg-7300', 'tag_text' => 'IHSG, Rekor, BEI, Pasar Modal', 'publish_date' => date('Y-m-d'), 'min_entity_a_publish_date' => date('Y-m-d', strtotime('-30 days')), 'create_date' => date('Y-m-d H:i:s'), 'modified_at' => date('Y-m-d H:i:s'), 'status_code' => '1'],
-                ['label_name' => 'Laba Bersih Emiten Komoditas Tambang', 'slug_value' => 'laba-bersih-emiten-tambang', 'tag_text' => 'AMMN, ADRO, ANTM, MDKA', 'publish_date' => date('Y-m-d'), 'min_entity_a_publish_date' => date('Y-m-d', strtotime('-30 days')), 'create_date' => date('Y-m-d H:i:s'), 'modified_at' => date('Y-m-d H:i:s'), 'status_code' => '1'],
-                ['label_name' => 'Transisi Energi & Saham Hijau BREN', 'slug_value' => 'transisi-energi-saham-hijau-bren', 'tag_text' => 'BREN, PGEO, EBT, Energi Hijau', 'publish_date' => date('Y-m-d'), 'min_entity_a_publish_date' => date('Y-m-d', strtotime('-30 days')), 'create_date' => date('Y-m-d H:i:s'), 'modified_at' => date('Y-m-d H:i:s'), 'status_code' => '1'],
-                ['label_name' => 'Kebijakan Suku Bunga BI & The Fed', 'slug_value' => 'kebijakan-suku-bunga-bi-the-fed', 'tag_text' => 'Bank Indonesia, BI-Rate, The Fed, Rupiah', 'publish_date' => date('Y-m-d'), 'min_entity_a_publish_date' => date('Y-m-d', strtotime('-30 days')), 'create_date' => date('Y-m-d H:i:s'), 'modified_at' => date('Y-m-d H:i:s'), 'status_code' => '1'],
-            ];
-            $this->db->table('trend_record')->insertBatch($trends);
+        // 20. googledocs (Spreadsheet & Datawrapper Embed)
+        $resources = [
+            ['title' => 'IDX Financial Feed Realtime API', 'url' => 'https://api.idx.co.id/feed/v1', 'userID' => 1, 'timestamp' => date('Y-m-d H:i:s'), 'source' => 'googledocs'],
+            ['title' => 'TradingView Interactive Chart Widget CDN', 'url' => 'https://s.tradingview.com/widgetembed/', 'userID' => 1, 'timestamp' => date('Y-m-d H:i:s'), 'source' => 'googledocs'],
+            ['title' => 'Bank Indonesia BI-Rate Official Data', 'url' => 'https://www.bi.go.id/bi-rate', 'userID' => 1, 'timestamp' => date('Y-m-d H:i:s'), 'source' => 'datawrapper'],
+        ];
+        $this->db->table('googledocs')->insertBatch($resources);
 
-        }
+        // 21. pushregistered & pushtodevice (Hashed UDID & Device Token dengan SHA-512)
+        $devices = [
+            ['udid' => hash('sha512', 'dev-ios-a1b2c3d4'), 'fcm_token' => hash('sha512', 'fcm_token_ios_vip_001'), 'os' => 'ios', 'os_version' => '17.5', 'app_version' => '2.4.1', 'notif' => 'true', 'registered' => date('Y-m-d H:i:s', strtotime('-1 month')), 'lastactive' => date('Y-m-d H:i:s'), 'owner' => 'VIP'],
+            ['udid' => hash('sha512', 'dev-android-e5f6g7h8'), 'fcm_token' => hash('sha512', 'fcm_token_android_vip_002'), 'os' => 'android', 'os_version' => '14.0', 'app_version' => '2.4.5', 'notif' => 'true', 'registered' => date('Y-m-d H:i:s', strtotime('-2 weeks')), 'lastactive' => date('Y-m-d H:i:s'), 'owner' => 'PRIORITY'],
+            ['udid' => hash('sha512', 'dev-android-i9j0k1l2'), 'fcm_token' => hash('sha512', 'fcm_token_android_ret_003'), 'os' => 'android', 'os_version' => '13.0', 'app_version' => '2.4.5', 'notif' => 'true', 'registered' => date('Y-m-d H:i:s', strtotime('-5 days')), 'lastactive' => date('Y-m-d H:i:s'), 'owner' => 'RETAIL'],
+        ];
+        $this->db->table('pushregistered')->insertBatch($devices);
 
-        if ($this->db->table('trend_exclude_link')->countAllResults() == 0) {
-            $trendRow = $this->db->table('trend_record')->get()->getRowArray();
-            $firstNano = $this->db->table('entity_nano')->get()->getRowArray();
-            if ($trendRow && $firstNano) {
-                $this->db->table('trend_exclude_link')->insert([
-                    'ref_entity_nano_id'  => (int)$firstNano['ref_entity_nano_id'],
-                    'ref_entity_trend_id' => (int)$trendRow['record_id'],
-                ]);
-            }
-        }
+        $dispatches = [
+            [
+                'idPush' => 1, 'deviceID' => 1, 'deviceToken' => hash('sha512', 'fcm_token_ios_vip_001'),
+                'pushType' => 'NewsLanding', 'pushUrl' => '/artikel/ihsg-tembus-level-psikologis-7450',
+                'url_target' => 'outbound', 'pushTitle' => 'BREAKING NEWS: IHSG Menembus Level 7.450',
+                'pushBody' => 'IHSG melesat ditopang akumulasi beli asing pada saham perbankan dan tambang.',
+                'pushImage' => '/img/investor_placeholder.jpg', 'status' => 'success',
+                'log_message' => 'Delivered to APNs successfully in 45ms', 'articleID' => 1,
+                'categoryName' => 'Market', 'pushTime' => date('Y-m-d H:i:s', strtotime('-1 hour')), 'push_instance' => 1
+            ],
+            [
+                'idPush' => 2, 'deviceID' => 2, 'deviceToken' => hash('sha512', 'fcm_token_android_vip_002'),
+                'pushType' => 'NewsLanding', 'pushUrl' => '/artikel/bank-central-asia-bbca-tebar-dividen-interim',
+                'url_target' => 'outbound', 'pushTitle' => 'MARKET FLASH: BBCA Tebar Dividen Rp 6,16 Triliun',
+                'pushBody' => 'Bank Central Asia menetapkan dividen interim Rp 50 per saham.',
+                'pushImage' => '/img/article2.jpg', 'status' => 'success',
+                'log_message' => 'Delivered to FCM gateway successfully in 38ms', 'articleID' => 2,
+                'categoryName' => 'Finance', 'pushTime' => date('Y-m-d H:i:s', strtotime('-3 hours')), 'push_instance' => 1
+            ],
+        ];
+        $this->db->table('pushtodevice')->insertBatch($dispatches);
 
-        // 16. comment_record (Reader Comments from Members)
-        if ($this->db->table('comment_record')->countAllResults() == 0) {
-            $clients = $this->db->table('client_account_entity')->limit(12)->get()->getResultArray();
-            $articles = $this->db->table('entity_nano')->limit(10)->get()->getResultArray();
-            
-            $commentsList = [
-                'Ulasan yang sangat mendalam dan berbobot. Prospek laba bersih kuartal ini terbukti solid.',
-                'Menarik sekali melihat pertumbuhan kredit perbankan yang tetap ekspansif di tengah volatilitas global.',
-                'Target yield dividen tahun ini sangat menjanjikan untuk portofolio jangka panjang.',
-                'Bagaimana pengaruh pergerakan nilai tukar rupiah terhadap beban operasional emiten ini?',
-                'Analisis teknikal dan fundamentalnya sinkron. Patut masuk watchlist pekan ini.',
-                'Terima kasih atas riset eksklusif ini Tim Investor.id, sangat mencerahkan bagi investor institusi.',
-                'Apakah ada proyeksi capex untuk ekspansi fasilitas energi terbarukan di semester dua nanti?',
-                'Valuasi PE saat ini masih di bawah rata-rata historis 5 tahun, momen akumulasi yang bagus.',
-                'Kinerja ekspor komoditas tampaknya masih menjadi penopang utama pendapatan konsolidasi.',
-                'Sangat setuju dengan paparan analis di artikel ini. Risk-to-reward ratio terlihat menarik.',
-                'Pemberitaan yang lugas dan berimbang. Investor ritel sangat terbantu dengan ringkasan poin utamanya.',
-                'Menantikan kelanjutan liputan khusus untuk emiten sektor infrastruktur dan menara telekomunikasi.'
-            ];
+        $crons = [
+            ['status' => 1, 'start_push' => date('Y-m-d 08:30:00'), 'end_push' => date('Y-m-d 08:30:05'), 'start_id' => 1, 'end_id' => 150],
+            ['status' => 1, 'start_push' => date('Y-m-d 16:30:00'), 'end_push' => date('Y-m-d 16:30:08'), 'start_id' => 151, 'end_id' => 300],
+        ];
+        $this->db->table('pushtodevicescron')->insertBatch($crons);
 
-            foreach ($clients as $cIdx => $cl) {
-                $art = $articles[$cIdx % count($articles)];
-                $this->db->table('comment_record')->insert([
-                    'ref_entity_nano_id'   => (int)$art['ref_entity_nano_id'],
-                    'ref_entity_client_id' => (int)$cl['ref_entity_client_id'],
-                    'reply_to_id'          => 0,
-                    'posted_at'            => date('Y-m-d H:i:s', strtotime('-' . ($cIdx * 3) . ' hours')),
-                    'status_code'          => '1',
-                    'comment_text'         => $commentsList[$cIdx % count($commentsList)],
-                    'reply_count'          => ($cIdx % 3 == 0) ? 2 : 0,
-                    'like_count'           => 12 + ($cIdx * 5),
-                    'dislike_count'        => $cIdx % 2,
-                ]);
-            }
-        }
+        // 22. user2fauth
+        $tokens = [
+            ['iduser' => 1, 'code' => 849201, 'expired' => date('Y-m-d H:i:s', strtotime('+30 days')), 'isUsed' => '1'],
+            ['iduser' => 2, 'code' => 610394, 'expired' => date('Y-m-d H:i:s', strtotime('+15 days')), 'isUsed' => '0'],
+            ['iduser' => 3, 'code' => 459128, 'expired' => date('Y-m-d H:i:s', strtotime('+7 days')),  'isUsed' => '1'],
+        ];
+        $this->db->table('user2fauth')->insertBatch($tokens);
 
-        // 17. client_favorite_entity_nano (Bookmarks / Favorites)
-        if ($this->db->table('client_favorite_entity_nano')->countAllResults() == 0) {
-            $clients = $this->db->table('client_account_entity')->limit(8)->get()->getResultArray();
-            $articles = $this->db->table('entity_nano')->limit(15)->get()->getResultArray();
-
-            $favs = [];
-            foreach ($clients as $cIdx => $cl) {
-                $art1 = $articles[($cIdx * 2) % count($articles)];
-                $art2 = $articles[(($cIdx * 2) + 1) % count($articles)];
-
-                $favs[] = [
-                    'ref_entity_client_id' => (int)$cl['ref_entity_client_id'],
-                    'ref_entity_nano_id'   => (int)$art1['ref_entity_nano_id'],
-                    'event_timestamp'      => date('Y-m-d H:i:s', strtotime('-' . ($cIdx + 1) . ' days')),
-                ];
-                $favs[] = [
-                    'ref_entity_client_id' => (int)$cl['ref_entity_client_id'],
-                    'ref_entity_nano_id'   => (int)$art2['ref_entity_nano_id'],
-                    'event_timestamp'      => date('Y-m-d H:i:s', strtotime('-' . ($cIdx + 2) . ' days')),
-                ];
-            }
-            if (!empty($favs)) {
-                $this->db->table('client_favorite_entity_nano')->insertBatch($favs);
-            }
-        }
-
-        // 18. config_store (Apps & System Configs)
-        if ($this->db->table('config_store')->countAllResults() == 0) {
-            $configs = [
-                ['config_key' => 'portal_site_name', 'config_value' => 'INVESTOR.ID — Portal Berita Pasar Modal & Investasi Terpercaya'],
-                ['config_key' => 'portal_site_tagline', 'config_value' => 'Cerdas, Akurat, dan Terpercaya Mengawal Portofolio Investasi Anda'],
-                ['config_key' => 'portal_contact_email', 'config_value' => 'redaksi@investor.id'],
-                ['config_key' => 'portal_hotline', 'config_value' => '+62-21-2995-7500'],
-                ['config_key' => 'portal_meta_keywords', 'config_value' => 'pasar modal, saham ihsg, bursa efek indonesia, reksadana, dividen, obligasi, investasi'],
-                ['config_key' => 'ai_gemini_default_model', 'config_value' => 'gemini-3.5-flash-lite'],
-                ['config_key' => 'app_version_ios', 'config_value' => '2.4.1'],
-                ['config_key' => 'app_version_android', 'config_value' => '2.4.5'],
-                ['config_key' => 'maintenance_mode', 'config_value' => '0'],
-                ['config_key' => 'editor_max_title_chars', 'config_value' => '70'],
-                ['config_key' => 'editor_min_summary_chars', 'config_value' => '110'],
-                ['config_key' => 'editor_max_summary_chars', 'config_value' => '160'],
-            ];
-            $this->db->table('config_store')->insertBatch($configs);
-        }
-
-        // 19. entity_aubert_current
-        if ($this->db->table('entity_aubert_current')->countAllResults() == 0) {
-            $auberts = $this->db->table('entity_aubert')->get()->getResultArray();
-            $currAuberts = [];
-            foreach ($auberts as $ab) {
-                $currAuberts[] = [
-                    'ref_entity_aubert_id' => (int)$ab['ref_entity_aubert_id'],
-                    'aubert_name_a'        => $ab['aubert_name_a'],
-                    'slug_value'           => $ab['slug_value'] ?? url_title($ab['aubert_name_a'], '-', true),
-                ];
-            }
-            if (!empty($currAuberts)) {
-                $this->db->table('entity_aubert_current')->insertBatch($currAuberts);
-            }
-        }
-
-        // 20. entity_charlie_meta
-        if ($this->db->table('entity_charlie_meta')->countAllResults() == 0) {
-            $charlies = $this->db->table('entity_charlie')->limit(10)->get()->getResultArray();
-            $chMeta = [];
-            foreach ($charlies as $idx => $ch) {
-                $chMeta[] = [
-                    'ref_entity_charlie_id' => (int)$ch['ref_entity_charlie_id'],
-                    'numeric_val'           => $idx + 1,
-                    'asset_path_a'          => '/img/icons/' . ($ch['field_label_a'] ?? 'market') . '.svg',
-                    'asset_path_b'          => '/img/banners/' . ($ch['field_label_a'] ?? 'market') . '.jpg',
-                    'asset_path_c'          => '/img/og/' . ($ch['field_label_a'] ?? 'market') . '-og.jpg',
-                ];
-            }
-            if (!empty($chMeta)) {
-                $this->db->table('entity_charlie_meta')->insertBatch($chMeta);
-            }
-        }
-
-        // 21. ext_resource_record
-        if ($this->db->table('ext_resource_record')->countAllResults() == 0) {
-            $resources = [
-                ['attr_header_title' => 'IDX Financial Feed Realtime API', 'attr_link_locator' => 'https://api.idx.co.id/feed/v1', 'ref_entity_principal_id' => 1, 'attr_recorded_at' => date('Y-m-d H:i:s'), 'attr_origin_source' => 'SOURCE_1'],
-                ['attr_header_title' => 'TradingView Interactive Chart Widget CDN', 'attr_link_locator' => 'https://s.tradingview.com/widgetembed/', 'ref_entity_principal_id' => 1, 'attr_recorded_at' => date('Y-m-d H:i:s'), 'attr_origin_source' => 'SOURCE_1'],
-                ['attr_header_title' => 'Bank Indonesia BI-Rate Official Data', 'attr_link_locator' => 'https://www.bi.go.id/bi-rate', 'ref_entity_principal_id' => 1, 'attr_recorded_at' => date('Y-m-d H:i:s'), 'attr_origin_source' => 'SOURCE_2'],
-            ];
-            $this->db->table('ext_resource_record')->insertBatch($resources);
-        }
-
-        // 22. media_entity_nano_link
-        if ($this->db->table('media_entity_nano_link')->countAllResults() == 0) {
-            $articles = $this->db->table('entity_nano')->limit(10)->get()->getResultArray();
-            $mediaLinks = [];
-            foreach ($articles as $mIdx => $art) {
-                $mediaLinks[] = [
-                    'ref_entity_media_id' => ($mIdx % 24) + 1,
-                    'ref_entity_nano_id'  => (int)$art['ref_entity_nano_id'],
-                    'display_position'    => 1,
-                    'caption_text'        => 'Dokumentasi riset redaksi Investor.id terkait ' . $art['headline_text'],
-                ];
-            }
-            if (!empty($mediaLinks)) {
-                $this->db->table('media_entity_nano_link')->insertBatch($mediaLinks);
-            }
-        }
-
-        // 23. notif_device_registry
-        if ($this->db->table('notif_device_registry')->countAllResults() == 0) {
-            $devices = [
-                ['device_uid' => 'dev-ios-a1b2c3d4', 'push_token' => 'fcm_token_ios_vip_001', 'os_type' => 'type_a', 'os_version_val' => '17.5', 'app_version_val' => '2.4.1', 'notif_flag' => 'true', 'registered_at' => date('Y-m-d H:i:s', strtotime('-1 month')), 'last_active_at' => date('Y-m-d H:i:s'), 'owner_tag' => 'VIP'],
-                ['device_uid' => 'dev-android-e5f6g7h8', 'push_token' => 'fcm_token_android_vip_002', 'os_type' => 'type_b', 'os_version_val' => '14.0', 'app_version_val' => '2.4.5', 'notif_flag' => 'true', 'registered_at' => date('Y-m-d H:i:s', strtotime('-2 weeks')), 'last_active_at' => date('Y-m-d H:i:s'), 'owner_tag' => 'PRIORITY'],
-                ['device_uid' => 'dev-android-i9j0k1l2', 'push_token' => 'fcm_token_android_ret_003', 'os_type' => 'type_b', 'os_version_val' => '13.0', 'app_version_val' => '2.4.5', 'notif_flag' => 'true', 'registered_at' => date('Y-m-d H:i:s', strtotime('-5 days')), 'last_active_at' => date('Y-m-d H:i:s'), 'owner_tag' => 'RETAIL'],
-            ];
-            $this->db->table('notif_device_registry')->insertBatch($devices);
-        }
-
-        // 24. notif_device_dispatch
-        if ($this->db->table('notif_device_dispatch')->countAllResults() == 0) {
-            $dispatches = [
-                [
-                    'ref_push_id' => 1, 'ref_entity_device_id' => 1, 'device_token' => 'fcm_token_ios_vip_001',
-                    'push_type' => 'breaking', 'push_url' => '/artikel/ihsg-menguat-tajam-menembus-7300',
-                    'target_direction' => 'outbound', 'push_title' => 'BREAKING NEWS: IHSG Menembus Level 7.300',
-                    'push_body' => 'IHSG melesat ditopang akumulasi beli asing pada saham perbankan dan tambang.',
-                    'push_image' => '/img/investor_placeholder.jpg', 'status_code' => 'success',
-                    'log_message_text' => 'Delivered to APNs successfully in 45ms', 'ref_entity_nano_id' => 1,
-                    'category_name' => 'Market', 'push_time' => date('Y-m-d H:i:s', strtotime('-1 hour')), 'push_instance_num' => 1
-                ],
-                [
-                    'ref_push_id' => 2, 'ref_entity_device_id' => 2, 'device_token' => 'fcm_token_android_vip_002',
-                    'push_type' => 'market_flash', 'push_url' => '/artikel/bbca-umumkan-jadwal-dividen-jumbo',
-                    'target_direction' => 'outbound', 'push_title' => 'MARKET FLASH: BBCA Jadwalkan Cum Dividen',
-                    'push_body' => 'Bank Central Asia menetapkan cum dividen tunai per saham dengan total Rp 33,2 triliun.',
-                    'push_image' => '/img/article2.jpg', 'status_code' => 'success',
-                    'log_message_text' => 'Delivered to FCM gateway successfully in 38ms', 'ref_entity_nano_id' => 2,
-                    'category_name' => 'Market', 'push_time' => date('Y-m-d H:i:s', strtotime('-3 hours')), 'push_instance_num' => 1
-                ],
-            ];
-            $this->db->table('notif_device_dispatch')->insertBatch($dispatches);
-        }
-
-        // 25. notif_dispatch_cron
-        if ($this->db->table('notif_dispatch_cron')->countAllResults() == 0) {
-            $crons = [
-                ['status_code' => 1, 'push_start_at' => date('Y-m-d 08:30:00'), 'push_end_at' => date('Y-m-d 08:30:05'), 'range_start_id' => 1, 'range_end_id' => 150],
-                ['status_code' => 1, 'push_start_at' => date('Y-m-d 16:30:00'), 'push_end_at' => date('Y-m-d 16:30:08'), 'range_start_id' => 151, 'range_end_id' => 300],
-            ];
-            $this->db->table('notif_dispatch_cron')->insertBatch($crons);
-        }
-
-        // 26. sub_content_record & sys_auth_token_entity
-        if ($this->db->table('sub_content_record')->countAllResults() == 0) {
-            $subContents = [
-                [
-                    'uniq_id'              => md5('sub_ch1_vip_report'),
-                    'ref_entity_client_id' => 1,
-                    'attr_header_title'    => 'Bagian 1: Analisis Rasio Permodalan Bank Mandiri & BRI',
-                    'attr_preview_asset'   => 'chart_preview_1',
-                    'attr_slug_token'      => 'bagian-1-analisis-rasio-permodalan',
-                    'attr_brief_summary'   => 'Tinjauan mendalam permodalan CAR dan likuiditas LDR bank BUMN.',
-                    'attr_content_body'    => '<p>Pertumbuhan aset produktif perbankan nasional mencatat pertumbuhan dua digit sepanjang semester ini didukung stabilitas marjin bunga bersih (NIM)...</p>',
-                    'attr_created_at'      => date('Y-m-d H:i:s', strtotime('-10 days')),
-                    'attr_released_at'     => date('Y-m-d H:i:s', strtotime('-9 days')),
-                    'attr_released_by_id'  => 1,
-                    'attr_status_code'     => 'STATE_1',
-                    'attr_metric_counter'  => 450,
-                    'attr_compact_locator' => '/reports/banking-q2-p1',
-                ],
-                [
-                    'uniq_id'              => md5('sub_ch2_vip_report'),
-                    'ref_entity_client_id' => 2,
-                    'attr_header_title'    => 'Bagian 2: Stress-Test Penyaluran Kredit Sektor Riil',
-                    'attr_preview_asset'   => 'chart_preview_2',
-                    'attr_slug_token'      => 'bagian-2-stress-test-kredit-riil',
-                    'attr_brief_summary'   => 'Dampak tren suku bunga terhadap kualitas aset NPL dan LAR perbankan.',
-                    'attr_content_body'    => '<p>Sektor manufaktur dan konsumsi domestik menunjukkan ketahanan yang kuat menghadapi penyesuaian biaya dana (cost of funds)...</p>',
-                    'attr_created_at'      => date('Y-m-d H:i:s', strtotime('-8 days')),
-                    'attr_released_at'     => date('Y-m-d H:i:s', strtotime('-7 days')),
-                    'attr_released_by_id'  => 1,
-                    'attr_status_code'     => 'STATE_1',
-                    'attr_metric_counter'  => 380,
-                    'attr_compact_locator' => '/reports/banking-q2-p2',
-                ]
-            ];
-            $this->db->table('sub_content_record')->insertBatch($subContents);
-        }
-
-        if ($this->db->table('sys_auth_token_entity')->countAllResults() == 0) {
-            $tokens = [
-                ['ref_entity_auth_token_id' => 1, 'attr_verification_code' => 849201, 'attr_expiry_at' => date('Y-m-d H:i:s', strtotime('+30 days')), 'attr_usage_flag' => 'VAL_1'],
-                ['ref_entity_auth_token_id' => 2, 'attr_verification_code' => 610394, 'attr_expiry_at' => date('Y-m-d H:i:s', strtotime('+15 days')), 'attr_usage_flag' => 'VAL_0'],
-                ['ref_entity_auth_token_id' => 3, 'attr_verification_code' => 459128, 'attr_expiry_at' => date('Y-m-d H:i:s', strtotime('+7 days')),  'attr_usage_flag' => 'VAL_1'],
-            ];
-            $this->db->table('sys_auth_token_entity')->insertBatch($tokens);
-        }
-
-        echo "CmsDataSeeder finished successfully!\n";
+        echo "CmsDataSeeder with 100 Fresh Articles finished successfully!\n";
     }
 }

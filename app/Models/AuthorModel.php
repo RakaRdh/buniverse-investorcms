@@ -6,13 +6,13 @@ use CodeIgniter\Model;
 
 class AuthorModel extends Model
 {
-    protected $table = 'entity_aubert';
-    protected $primaryKey = 'ref_entity_aubert_id';
+    protected $table = 'authors';
+    protected $primaryKey = 'authorID';
     protected $allowedFields = [
-        'aubert_name_a',
-        'contact_val',
-        'slug_value',
-        'status_flag'
+        'authorName',
+        'email',
+        'slug',
+        'valid'
     ];
     protected $useTimestamps = false;
 
@@ -21,17 +21,17 @@ class AuthorModel extends Model
      */
     public function getAuthorsWithCount(): array
     {
-        return $this->db->table('entity_aubert a')
+        return $this->db->table('authors a')
             ->select('
-                a.ref_entity_aubert_id AS id,
-                a.aubert_name_a AS name,
-                a.slug_value AS slug,
-                a.contact_val AS contact,
-                a.status_flag AS status,
-                COUNT(DISTINCT nal.ref_entity_nano_id) AS article_count
+                a.authorID AS id,
+                a.authorName AS name,
+                a.slug AS slug,
+                a.email AS contact,
+                a.valid AS status,
+                COUNT(DISTINCT nal.articleID) AS article_count
             ')
-            ->join('entity_nano_aubert_link nal', 'nal.ref_entity_aubert_id = a.ref_entity_aubert_id', 'left')
-            ->groupBy('a.ref_entity_aubert_id')
+            ->join('articleauthor nal', 'nal.authorID = a.authorID', 'left')
+            ->groupBy('a.authorID')
             ->orderBy('article_count', 'DESC')
             ->get()->getResultArray();
     }
@@ -46,18 +46,36 @@ class AuthorModel extends Model
             $name = 'Redaksi Investor';
         }
 
-        $row = $this->where('aubert_name_a', $name)->first();
+        // Clean name for slug, and format name with *)
+        $cleanName = trim(rtrim(trim($name), '*)'));
+        $formattedName = !empty($cleanName) ? $cleanName . '*)' : 'Redaksi Investor*)';
+
+        $row = $this->where('authorName', $formattedName)
+            ->orWhere('authorName', $name)
+            ->first();
         if ($row) {
-            return (int)$row['ref_entity_aubert_id'];
+            return (int)$row['authorID'];
         }
 
-        $this->insert([
-            'aubert_name_a' => $name,
-            'contact_val'   => '',
-            'slug_value'    => url_title($name, '-', true) ?: 'author-' . uniqid(),
-            'status_flag'   => 'STATE_1',
-        ]);
+        $slug = url_title($cleanName, '-', true) ?: 'author-' . uniqid();
 
-        return (int)$this->insertID();
+        $this->insert([
+            'authorName' => $formattedName,
+            'email'      => null,
+            'slug'       => $slug,
+            'valid'      => '1',
+        ]);
+        $newId = (int)$this->insertID();
+
+        // Keep authors_current in sync if table exists
+        if ($this->db->tableExists('authors_current')) {
+            $this->db->table('authors_current')->insert([
+                'authorID'   => $newId,
+                'authorName' => $formattedName,
+                'slug'       => null,
+            ]);
+        }
+
+        return $newId;
     }
 }

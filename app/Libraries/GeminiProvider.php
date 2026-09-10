@@ -319,6 +319,12 @@ class GeminiProvider
         }
 
         $host = strtolower($parsed['host']);
+
+        // Strict SSRF Defense: Block private & internal IP addresses (including legacy IPs 10.0.4.16, 172.*, 192.168.*)
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            throw new \InvalidArgumentException("Akses IP address secara langsung diblokir demi keamanan.");
+        }
+
         $allowed = false;
         foreach ($this->allowedDomains as $domain) {
             if ($host === $domain || str_ends_with($host, '.' . $domain)) {

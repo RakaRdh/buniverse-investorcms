@@ -189,7 +189,7 @@
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-foreground mb-1">Email Kontak (attr_contact_val) <span class="text-destructive">*</span></label>
+                <label class="block text-xs font-bold text-foreground mb-1">Email Kontak <span class="text-destructive">*</span></label>
                 <input type="email" name="email" id="modalEmail" required class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary" placeholder="email@perusahaan.com">
             </div>
 
@@ -201,9 +201,9 @@
             <div>
                 <label class="block text-xs font-bold text-foreground mb-1">Status Akun</label>
                 <select name="status" id="modalStatus" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
-                    <option value="Active">Active (STATUS_1)</option>
-                    <option value="Pending">Pending (STATUS_2)</option>
-                    <option value="Suspended">Suspended (STATUS_3)</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Suspended">Suspended</option>
                 </select>
             </div>
 

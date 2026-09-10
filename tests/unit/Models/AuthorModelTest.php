@@ -28,8 +28,8 @@ final class AuthorModelTest extends CIUnitTestCase
     {
         $existing = $this->model->first();
         if ($existing) {
-            $id = $this->model->findOrCreate($existing['aubert_name_a']);
-            $this->assertSame((int)$existing['ref_entity_aubert_id'], $id);
+            $id = $this->model->findOrCreate($existing['authorName']);
+            $this->assertSame((int)$existing['authorID'], $id);
         }
     }
 
@@ -41,7 +41,7 @@ final class AuthorModelTest extends CIUnitTestCase
 
         $saved = $this->model->find($id);
         $this->assertNotNull($saved);
-        $this->assertSame($uniqueName, $saved['aubert_name_a']);
+        $this->assertSame($uniqueName . '*)', $saved['authorName']);
 
         // Clean up
         $this->model->delete($id);

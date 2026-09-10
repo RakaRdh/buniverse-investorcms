@@ -163,6 +163,33 @@ class CmsControllersTest extends CIUnitTestCase
         $this->assertStringContainsString('Financial Embed Charts', $result->response()->getBody());
     }
 
+    public function testEmbedChartTemplateAndCustomList(): void
+    {
+        $tmplResult = $this->withURI('http://localhost:8080/embed-chart/template')
+            ->controller(EmbedChart::class)
+            ->execute('template');
+        $this->assertTrue($tmplResult->isOK());
+        $this->assertStringContainsString('Master Templates', $tmplResult->response()->getBody());
+
+        $customResult = $this->withURI('http://localhost:8080/embed-chart/custom')
+            ->controller(EmbedChart::class)
+            ->execute('custom');
+        $this->assertTrue($customResult->isOK());
+        $this->assertStringContainsString('Custom Data Charts', $customResult->response()->getBody());
+
+        $createResult = $this->withURI('http://localhost:8080/embed-chart/custom/create')
+            ->controller(EmbedChart::class)
+            ->execute('createCustom');
+        $this->assertTrue($createResult->isOK());
+        $this->assertStringContainsString('Create Custom Chart', $createResult->response()->getBody());
+
+        $editResult = $this->withURI('http://localhost:8080/embed-chart/custom/edit/5')
+            ->controller(EmbedChart::class)
+            ->execute('editCustom', 5);
+        $this->assertTrue($editResult->isOK());
+        $this->assertStringContainsString('Edit Custom Chart', $editResult->response()->getBody());
+    }
+
     public function testStatisticIndexAndReport(): void
     {
         $statResult = $this->withURI('http://localhost:8080/statistic')
@@ -188,11 +215,11 @@ class CmsControllersTest extends CIUnitTestCase
 
         // 2. Valid article id renders preview
         $db = \Config\Database::connect();
-        $sample = $db->table('entity_nano')->where('status_code', 'Published')->get()->getRowArray();
+        $sample = $db->table('article')->where('status', 'Published')->get()->getRowArray();
         if ($sample) {
-            $validResult = $this->withURI('http://localhost:8080/post/preview/' . $sample['ref_entity_nano_id'])
+            $validResult = $this->withURI('http://localhost:8080/post/preview/' . $sample['articleID'])
                 ->controller(PostPreview::class)
-                ->execute('show', (int)$sample['ref_entity_nano_id']);
+                ->execute('show', (int)$sample['articleID']);
             $this->assertTrue($validResult->isOK());
         }
     }

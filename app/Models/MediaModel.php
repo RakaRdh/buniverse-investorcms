@@ -6,17 +6,17 @@ use CodeIgniter\Model;
 
 class MediaModel extends Model
 {
-    protected $table = 'asset_item_record';
-    protected $primaryKey = 'ref_entity_media_id';
+    protected $table = 'media';
+    protected $primaryKey = 'mediaID';
     protected $allowedFields = [
-        'attr_short_description',
-        'attr_full_description',
-        'attr_resource_name',
-        'attr_recorded_at',
-        'attr_resource_title',
-        'attr_origin_source',
-        'attr_aubert_name',
-        'ref_entity_principal_id'
+        'caption',
+        'description',
+        'filename',
+        'timestamp',
+        'mediaTitle',
+        'source',
+        'author',
+        'userID'
     ];
     protected $useTimestamps = false;
 
@@ -25,28 +25,28 @@ class MediaModel extends Model
      */
     public function getMediaWithRelations(int $page = 1, int $perPage = 6, ?string $keyword = null): array
     {
-        $builder = $this->db->table('asset_item_record m')
+        $builder = $this->db->table('media m')
             ->select('
-                m.ref_entity_media_id AS id,
-                m.attr_resource_title AS title,
-                m.attr_resource_name AS image,
-                m.attr_short_description AS caption,
-                m.attr_origin_source AS source,
-                m.attr_recorded_at AS date,
-                p.attr_identifier AS user,
-                p.attr_display_name AS user_name,
-                COUNT(DISTINCT mnl.ref_entity_nano_id) AS usage_count
+                m.mediaID AS id,
+                m.mediaTitle AS title,
+                m.filename AS image,
+                m.caption AS caption,
+                m.source AS source,
+                m.timestamp AS date,
+                p.username AS user,
+                p.name AS user_name,
+                COUNT(DISTINCT mnl.articleID) AS usage_count
             ')
-            ->join('sys_principal_entity p', 'p.ref_entity_principal_id = m.ref_entity_principal_id', 'left')
-            ->join('media_entity_nano_link mnl', 'mnl.ref_entity_media_id = m.ref_entity_media_id', 'left')
-            ->groupBy('m.ref_entity_media_id')
-            ->orderBy('m.attr_recorded_at', 'DESC');
+            ->join('useradministrator p', 'p.userID = m.userID', 'left')
+            ->join('mediaarticle mnl', 'mnl.mediaID = m.mediaID', 'left')
+            ->groupBy('m.mediaID')
+            ->orderBy('m.timestamp', 'DESC');
 
         if (!empty($keyword)) {
             $builder->groupStart()
-                ->like('m.attr_resource_title', $keyword)
-                ->orLike('m.attr_short_description', $keyword)
-                ->orLike('p.attr_identifier', $keyword)
+                ->like('m.mediaTitle', $keyword)
+                ->orLike('m.caption', $keyword)
+                ->orLike('p.username', $keyword)
             ->groupEnd();
         }
 
@@ -60,5 +60,26 @@ class MediaModel extends Model
             'data'  => $data,
             'total' => $totalItems,
         ];
+    }
+
+    /**
+     * Replika legacy: Media::GetMediaToArticle()
+     * Mengambil daftar artikel yang menggunakan foto/media ini
+     * Tabel: mediaarticle (R), article (R)
+     */
+    public function getArticlesUsingMedia(int $mediaId): array
+    {
+        return $this->db->table('mediaarticle ma')
+            ->select('
+                a.articleID AS id,
+                a.headline AS title,
+                a.slug AS slug,
+                a.status AS status,
+                a.articleDate AS publish_date
+            ')
+            ->join('article a', 'a.articleID = ma.articleID')
+            ->where('ma.mediaID', $mediaId)
+            ->orderBy('a.articleDate', 'DESC')
+            ->get()->getResultArray();
     }
 }

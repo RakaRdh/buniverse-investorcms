@@ -71,9 +71,9 @@ class PostControllerTest extends CIUnitTestCase
     {
         $sample = $this->articleModel->first();
         if ($sample) {
-            $result = $this->withURI('http://localhost:8080/post/edit/' . $sample['ref_entity_nano_id'])
+            $result = $this->withURI('http://localhost:8080/post/edit/' . $sample['articleID'])
                 ->controller(Post::class)
-                ->execute('edit', (int)$sample['ref_entity_nano_id']);
+                ->execute('edit', (int)$sample['articleID']);
 
             $this->assertTrue($result->isOK());
             $this->assertStringContainsString('Edit Post', $result->response()->getBody());
@@ -110,9 +110,9 @@ class PostControllerTest extends CIUnitTestCase
         $this->assertTrue($saveResult->isRedirect());
 
         // Find created article
-        $created = $this->articleModel->where('headline_text', $uniqueTitle)->first();
+        $created = $this->articleModel->where('headline', $uniqueTitle)->first();
         $this->assertNotNull($created);
-        $createdId = (int)$created['ref_entity_nano_id'];
+        $createdId = (int)$created['articleID'];
 
         // 2. Update Article via Update action
         $updateData = $postData;
@@ -131,7 +131,7 @@ class PostControllerTest extends CIUnitTestCase
 
         // Verify updated
         $updated = $this->articleModel->find($createdId);
-        $this->assertSame($uniqueTitle . ' [Updated]', $updated['headline_text']);
+        $this->assertSame($uniqueTitle . ' [Updated]', $updated['headline']);
 
         // 3. Delete Article as Admin
         $deleteResult = $this->withURI('http://localhost:8080/post/delete/' . $createdId)
@@ -148,13 +148,17 @@ class PostControllerTest extends CIUnitTestCase
         $_SESSION['user_role'] = 'Author';
         $_SESSION['user_id'] = 3;
 
-        $deleteResult = $this->withURI('http://localhost:8080/post/delete/1')
+        // Dynamically find an active article to test RBAC protection
+        $existing = $this->articleModel->where('status !=', 'Deleted')->first();
+        $targetId = $existing ? (int)$existing['articleID'] : 1;
+
+        $deleteResult = $this->withURI('http://localhost:8080/post/delete/' . $targetId)
             ->controller(Post::class)
-            ->execute('delete', 1);
+            ->execute('delete', $targetId);
 
         $this->assertTrue($deleteResult->isRedirect());
-        // Verify flashdata or redirected without deleting article 1
-        $sample = $this->articleModel->find(1);
+        // Verify flashdata or redirected without deleting article
+        $sample = $this->articleModel->find($targetId);
         $this->assertNotNull($sample);
     }
 }

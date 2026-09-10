@@ -6,82 +6,106 @@ use CodeIgniter\Model;
 
 class ArticleModel extends Model
 {
-    protected $table = 'entity_nano';
-    protected $primaryKey = 'ref_entity_nano_id';
+    protected $table = 'article';
+    protected $primaryKey = 'articleID';
     protected $allowedFields = [
-        'ref_entity_acc_id',
-        'source_channel',
-        'headline_text',
-        'slug_value',
-        'entity_date',
-        'post_type',
-        'view_count',
-        'status_code',
-        'summary_text',
-        'body_text',
-        'created_at',
-        'edit_lock'
+        'userID',
+        'source',
+        'headline',
+        'slug',
+        'articleDate',
+        'posttype',
+        'viewed',
+        'status',
+        'summary',
+        'body',
+        'createdAt',
+        'editlock'
     ];
     protected $useTimestamps = false;
+
+    /**
+     * Find a single record by primary key, excluding soft-deleted articles by default
+     */
+    public function find($id = null)
+    {
+        $data = parent::find($id);
+        if ($data && is_array($data) && isset($data['status']) && strcasecmp($data['status'], 'Deleted') === 0) {
+            return null;
+        }
+        return $data;
+    }
 
     /**
      * JOIN Query: Get Articles with Categories, Authors, Tags, and Metadata
      */
     public function getArticlesWithRelations(array $filters = [], int $page = 1, int $perPage = 25): array
     {
-        $builder = $this->db->table('entity_nano n')
+        $builder = $this->db->table('article n')
             ->select('
-                n.ref_entity_nano_id AS id,
-                n.ref_entity_acc_id AS author_user_id,
-                n.headline_text AS title,
-                n.slug_value AS slug,
-                n.summary_text AS summary,
-                n.body_text AS content,
-                n.status_code AS status,
-                n.view_count AS views,
-                n.entity_date AS publish_date,
-                n.created_at AS create_date,
-                p.attr_identifier AS post_by,
-                p.attr_display_name AS post_by_name,
-                COALESCE(ANY_VALUE(c_parent.charlie_name_a), ANY_VALUE(nm_kanal.meta_value), ANY_VALUE(c.charlie_name_a), "Market") AS kanal,
-                COALESCE(ANY_VALUE(nm_sub.meta_value), IF(ANY_VALUE(c.parent_id) IS NOT NULL, ANY_VALUE(c.charlie_name_a), ""), "") AS sub_kanal,
-                COALESCE(ANY_VALUE(c_parent.charlie_name_a), ANY_VALUE(nm_kanal.meta_value), ANY_VALUE(c.charlie_name_a), "Market") AS category,
-                ANY_VALUE(c.field_label_a) AS category_slug,
-                ANY_VALUE(c.parent_id) AS category_parent_id,
-                GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author,
-                COALESCE(ANY_VALUE(nm_prem.meta_value), "0") AS is_premium,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS thumbnail,
-                COALESCE(ANY_VALUE(nm_head.meta_value), "none") AS headline_type,
-                COALESCE(ANY_VALUE(nm_deck.meta_value), "") AS upper_deck
+                n.articleID AS id,
+                n.userID AS author_user_id,
+                n.headline AS title,
+                n.slug AS slug,
+                n.summary AS summary,
+                n.body AS content,
+                n.status AS status,
+                n.viewed AS views,
+                n.articleDate AS publish_date,
+                n.createdAt AS create_date,
+                p.username AS post_by,
+                p.name AS post_by_name,
+                COALESCE(ANY_VALUE(c_parent.categoryName), ANY_VALUE(nm_kanal.metaval), ANY_VALUE(c.categoryName), "Market") AS kanal,
+                COALESCE(ANY_VALUE(nm_sub.metaval), IF(ANY_VALUE(c.parent) IS NOT NULL, ANY_VALUE(c.categoryName), ""), "") AS sub_kanal,
+                COALESCE(ANY_VALUE(c_parent.categoryName), ANY_VALUE(nm_kanal.metaval), ANY_VALUE(c.categoryName), "Market") AS category,
+                ANY_VALUE(c.label) AS category_slug,
+                ANY_VALUE(c.parent) AS category_parent_id,
+                GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author,
+                COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium,
+                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail,
+                COALESCE(ANY_VALUE(nm_head.metaval), "none") AS headline_type,
+                COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
+                n.editlock AS editlock,
+                lock_u.name AS locked_by_name,
+                lock_u.username AS locked_by_username
             ')
-            ->join('sys_principal_entity p', 'p.ref_entity_principal_id = n.ref_entity_acc_id', 'left')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_charlie c', 'c.ref_entity_charlie_id = ncl.ref_entity_charlie_id', 'left')
-            ->join('entity_charlie c_parent', 'c_parent.ref_entity_charlie_id = c.parent_id', 'left')
-            ->join('entity_nano_aubert_link nal', 'nal.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_aubert a', 'a.ref_entity_aubert_id = nal.ref_entity_aubert_id', 'left')
-            ->join('entity_nano_meta nm_prem', 'nm_prem.ref_entity_nano_id = n.ref_entity_nano_id AND nm_prem.meta_key = "is_premium"', 'left')
-            ->join('entity_nano_meta nm_thumb', 'nm_thumb.ref_entity_nano_id = n.ref_entity_nano_id AND nm_thumb.meta_key = "thumbnail"', 'left')
-            ->join('entity_nano_meta nm_head', 'nm_head.ref_entity_nano_id = n.ref_entity_nano_id AND nm_head.meta_key = "headline_type"', 'left')
-            ->join('entity_nano_meta nm_deck', 'nm_deck.ref_entity_nano_id = n.ref_entity_nano_id AND nm_deck.meta_key = "upper_deck"', 'left')
-            ->join('entity_nano_meta nm_kanal', 'nm_kanal.ref_entity_nano_id = n.ref_entity_nano_id AND nm_kanal.meta_key = "kanal"', 'left')
-            ->join('entity_nano_meta nm_sub', 'nm_sub.ref_entity_nano_id = n.ref_entity_nano_id AND nm_sub.meta_key = "sub_kanal"', 'left')
-            ->groupBy('n.ref_entity_nano_id');
+            ->join('useradministrator p', 'p.userID = n.userID', 'left')
+            ->join('useradministrator lock_u', 'lock_u.userID = n.editlock', 'left')
+            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('category c_parent', 'c_parent.categoryID = c.parent', 'left')
+            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
+            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('articlemeta nm_head', 'nm_head.articleID = n.articleID AND nm_head.metakey = "headline_type"', 'left')
+            ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
+            ->join('articlemeta nm_kanal', 'nm_kanal.articleID = n.articleID AND nm_kanal.metakey = "kanal"', 'left')
+            ->join('articlemeta nm_sub', 'nm_sub.articleID = n.articleID AND nm_sub.metakey = "sub_kanal"', 'left')
+            ->groupBy('n.articleID');
 
         // Apply filters
         if (!empty($filters['user_id'])) {
-            $builder->where('n.ref_entity_acc_id', (int)$filters['user_id']);
+            $builder->where('n.userID', (int)$filters['user_id']);
         }
 
         if (!empty($filters['status']) && $filters['status'] !== 'all') {
-            $builder->where('LOWER(n.status_code)', strtolower($filters['status']));
+            $statusTerm = strtolower($filters['status']);
+            if ($statusTerm === 'published' || $statusTerm === 'publish') {
+                $builder->where('n.status', 'Publish');
+            } else {
+                $builder->where('LOWER(n.status)', $statusTerm);
+            }
+        } else {
+            // Exclude soft-deleted articles when status is 'all' or not explicitly requested
+            $builder->where('n.status !=', 'Deleted');
         }
 
         if (!empty($filters['q'])) {
             $builder->groupStart()
-                ->like('n.headline_text', $filters['q'])
-                ->orLike('n.summary_text', $filters['q'])
-                ->orLike('a.aubert_name_a', $filters['q'])
+                ->like('n.headline', $filters['q'])
+                ->orLike('n.summary', $filters['q'])
+                ->orLike('a.authorName', $filters['q'])
             ->groupEnd();
         }
 
@@ -94,19 +118,19 @@ class ArticleModel extends Model
         }
 
         if (!empty($filters['author']) && $filters['author'] !== 'all') {
-            $builder->like('a.aubert_name_a', $filters['author']);
+            $builder->like('a.authorName', $filters['author']);
         }
 
         if (!empty($filters['editor']) && $filters['editor'] !== 'all') {
-            $builder->where('p.attr_identifier', $filters['editor']);
+            $builder->where('p.username', $filters['editor']);
         }
 
         if (!empty($filters['date_from'])) {
-            $builder->where('n.entity_date >=', date('Y-m-d 00:00:00', strtotime($filters['date_from'])));
+            $builder->where('n.articleDate >=', date('Y-m-d 00:00:00', strtotime($filters['date_from'])));
         }
 
         if (!empty($filters['date_to'])) {
-            $builder->where('n.entity_date <=', date('Y-m-d 23:59:59', strtotime($filters['date_to'])));
+            $builder->where('n.articleDate <=', date('Y-m-d 23:59:59', strtotime($filters['date_to'])));
         }
 
         $compiledSql = $builder->getCompiledSelect(false);
@@ -114,8 +138,8 @@ class ArticleModel extends Model
         $totalItems = (int)($countRow['total'] ?? 0);
 
         $offset = ($page - 1) * $perPage;
-        $data = $builder->orderBy('n.entity_date', 'DESC')
-            ->orderBy('n.ref_entity_nano_id', 'DESC')
+        $data = $builder->orderBy('n.articleDate', 'DESC')
+            ->orderBy('n.articleID', 'DESC')
             ->limit($perPage, $offset)
             ->get()->getResultArray();
 
@@ -143,21 +167,21 @@ class ArticleModel extends Model
      */
     public function getLightweightArticles(int $limit = 50): array
     {
-        $builder = $this->db->table('entity_nano n')
+        $builder = $this->db->table('article n')
             ->select('
-                n.ref_entity_nano_id AS id,
-                n.headline_text AS title,
-                n.summary_text AS summary,
-                DATE_FORMAT(n.entity_date, "%d %b %Y") AS publish_date,
-                COALESCE(ANY_VALUE(c.charlie_name_a), "Market") AS kanal,
-                COALESCE(ANY_VALUE(thumb.meta_value), "/img/investor_placeholder.jpg") AS thumbnail
+                n.articleID AS id,
+                n.headline AS title,
+                n.summary AS summary,
+                DATE_FORMAT(n.articleDate, "%d %b %Y") AS publish_date,
+                COALESCE(ANY_VALUE(c.categoryName), "Market") AS kanal,
+                COALESCE(ANY_VALUE(thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail
             ')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_charlie c', 'c.ref_entity_charlie_id = ncl.ref_entity_charlie_id', 'left')
-            ->join('entity_nano_meta thumb', 'thumb.ref_entity_nano_id = n.ref_entity_nano_id AND thumb.meta_key = "thumbnail"', 'left')
-            ->where('LOWER(n.status_code)', 'published')
-            ->groupBy('n.ref_entity_nano_id')
-            ->orderBy('n.entity_date', 'DESC')
+            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('articlemeta thumb', 'thumb.articleID = n.articleID AND thumb.metakey = "thumbnail"', 'left')
+            ->where('n.status', 'Publish')
+            ->groupBy('n.articleID')
+            ->orderBy('n.articleDate', 'DESC')
             ->limit($limit);
 
         return $builder->get()->getResultArray();
@@ -168,46 +192,47 @@ class ArticleModel extends Model
      */
     public function getArticleDetail(int $id): ?array
     {
-        $article = $this->db->table('entity_nano n')
+        $article = $this->db->table('article n')
             ->select('
-                n.ref_entity_nano_id AS id,
-                n.ref_entity_acc_id AS author_user_id,
-                n.headline_text AS title,
-                n.slug_value AS slug,
-                n.summary_text AS summary,
-                n.body_text AS content,
-                n.status_code AS status,
-                n.view_count AS views,
-                n.entity_date AS publish_date,
-                n.created_at AS create_date,
-                p.attr_identifier AS post_by,
-                p.attr_display_name AS post_by_name,
-                ANY_VALUE(c.charlie_name_a) AS category,
-                ANY_VALUE(c.field_label_a) AS category_slug,
-                ANY_VALUE(c.ref_entity_charlie_id) AS category_id,
-                GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author,
-                COALESCE(ANY_VALUE(nm_prem.meta_value), "0") AS is_premium,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS thumbnail,
-                COALESCE(ANY_VALUE(nm_head.meta_value), "none") AS headline_type,
-                COALESCE(ANY_VALUE(nm_deck.meta_value), "") AS upper_deck,
-                COALESCE(ANY_VALUE(nm_source.meta_value), "Investor.id / Riset") AS source,
-                COALESCE(ANY_VALUE(nm_sub.meta_value), "") AS sub_kanal,
-                COALESCE(ANY_VALUE(nm_kanal.meta_value), "") AS kanal
+                n.articleID AS id,
+                n.userID AS author_user_id,
+                n.headline AS title,
+                n.slug AS slug,
+                n.summary AS summary,
+                n.body AS content,
+                n.status AS status,
+                n.viewed AS views,
+                n.articleDate AS publish_date,
+                n.createdAt AS create_date,
+                p.username AS post_by,
+                p.name AS post_by_name,
+                ANY_VALUE(c.categoryName) AS category,
+                ANY_VALUE(c.label) AS category_slug,
+                ANY_VALUE(c.categoryID) AS category_id,
+                GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author,
+                COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium,
+                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail,
+                COALESCE(ANY_VALUE(nm_head.metaval), "none") AS headline_type,
+                COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
+                COALESCE(ANY_VALUE(nm_source.metaval), "Investor.id / Riset") AS source,
+                COALESCE(ANY_VALUE(nm_sub.metaval), "") AS sub_kanal,
+                COALESCE(ANY_VALUE(nm_kanal.metaval), "") AS kanal
             ')
-            ->join('sys_principal_entity p', 'p.ref_entity_principal_id = n.ref_entity_acc_id', 'left')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_charlie c', 'c.ref_entity_charlie_id = ncl.ref_entity_charlie_id', 'left')
-            ->join('entity_nano_aubert_link nal', 'nal.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_aubert a', 'a.ref_entity_aubert_id = nal.ref_entity_aubert_id', 'left')
-            ->join('entity_nano_meta nm_prem', 'nm_prem.ref_entity_nano_id = n.ref_entity_nano_id AND nm_prem.meta_key = "is_premium"', 'left')
-            ->join('entity_nano_meta nm_thumb', 'nm_thumb.ref_entity_nano_id = n.ref_entity_nano_id AND nm_thumb.meta_key = "thumbnail"', 'left')
-            ->join('entity_nano_meta nm_head', 'nm_head.ref_entity_nano_id = n.ref_entity_nano_id AND nm_head.meta_key = "headline_type"', 'left')
-            ->join('entity_nano_meta nm_deck', 'nm_deck.ref_entity_nano_id = n.ref_entity_nano_id AND nm_deck.meta_key = "upper_deck"', 'left')
-            ->join('entity_nano_meta nm_source', 'nm_source.ref_entity_nano_id = n.ref_entity_nano_id AND nm_source.meta_key = "source"', 'left')
-            ->join('entity_nano_meta nm_sub', 'nm_sub.ref_entity_nano_id = n.ref_entity_nano_id AND nm_sub.meta_key = "sub_kanal"', 'left')
-            ->join('entity_nano_meta nm_kanal', 'nm_kanal.ref_entity_nano_id = n.ref_entity_nano_id AND nm_kanal.meta_key = "kanal"', 'left')
-            ->where('n.ref_entity_nano_id', $id)
-            ->groupBy('n.ref_entity_nano_id')
+            ->join('useradministrator p', 'p.userID = n.userID', 'left')
+            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
+            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('articlemeta nm_head', 'nm_head.articleID = n.articleID AND nm_head.metakey = "headline_type"', 'left')
+            ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
+            ->join('articlemeta nm_source', 'nm_source.articleID = n.articleID AND nm_source.metakey = "news_source"', 'left')
+            ->join('articlemeta nm_sub', 'nm_sub.articleID = n.articleID AND nm_sub.metakey = "sub_kanal"', 'left')
+            ->join('articlemeta nm_kanal', 'nm_kanal.articleID = n.articleID AND nm_kanal.metakey = "kanal"', 'left')
+            ->where('n.articleID', $id)
+            ->where('n.status !=', 'Deleted')
+            ->groupBy('n.articleID')
             ->get()->getRowArray();
 
         if (!$article) return null;
@@ -215,30 +240,31 @@ class ArticleModel extends Model
         $article['is_premium'] = (int)($article['is_premium'] ?? 0);
         $article['is_breaking'] = 0;
         $article['sumber_berita'] = $article['source'];
+        $article['kanal'] = !empty($article['kanal']) ? $article['kanal'] : ($article['category'] ?? 'Market');
 
-        // Get points (from standalone article_points table or fallback to entity_nano_meta)
-        $nanoPoints = $this->db->table('article_points')
-            ->where('ref_entity_nano_id', $id)
+        // Get points (from standalone articlepoints table or fallback to articlemeta)
+        $nanoPoints = $this->db->table('articlepoints')
+            ->where('article_id', $id)
             ->orderBy('sort_order', 'ASC')
             ->get()->getResultArray();
         if (!empty($nanoPoints)) {
             $article['points'] = array_column($nanoPoints, 'point_text');
         } else {
-            $points = $this->db->table('entity_nano_meta')
-                ->where('ref_entity_nano_id', $id)
-                ->where('meta_key', 'point')
-                ->orderBy('record_id', 'ASC')
+            $points = $this->db->table('articlemeta')
+                ->where('articleID', $id)
+                ->where('metakey', 'point')
+                ->orderBy('id', 'ASC')
                 ->get()->getResultArray();
-            $article['points'] = array_column($points, 'meta_value');
+            $article['points'] = array_column($points, 'metaval');
         }
 
-        // Get tags
-        $tags = $this->db->table('entity_nano_teta_link ntl')
-            ->select('t.field_label_a')
-            ->join('entity_teta t', 't.ref_entity_teta_id = ntl.ref_entity_teta_id')
-            ->where('ntl.ref_entity_nano_id', $id)
+        // Get keywords (replaces tags)
+        $keywords = $this->db->table('articlekeyword akw')
+            ->select('k.keyword')
+            ->join('keyword k', 'k.id = akw.keywordID')
+            ->where('akw.articleID', $id)
             ->get()->getResultArray();
-        $article['tags'] = implode(', ', array_column($tags, 'field_label_a'));
+        $article['tags'] = implode(', ', array_column($keywords, 'keyword'));
 
         return $article;
     }
@@ -250,40 +276,40 @@ class ArticleModel extends Model
     {
         $this->db->transStart();
 
-        $entityDate = date('Y-m-d H:i:s');
+        $articleDate = date('Y-m-d H:i:s');
         if (!empty($data['publish_date'])) {
             $parsed = strtotime($data['publish_date']);
             if ($parsed !== false && $parsed > 0) {
-                $entityDate = date('Y-m-d H:i:s', $parsed);
+                $articleDate = date('Y-m-d H:i:s', $parsed);
             }
         }
 
         $this->insert([
-            'ref_entity_acc_id' => $data['ref_entity_acc_id'] ?? 1,
-            'source_channel'    => 'cms',
-            'headline_text'     => $data['title'],
-            'slug_value'        => $data['slug'] ?? url_title($data['title'], '-', true),
-            'entity_date'       => $entityDate,
-            'post_type'         => 'Nano',
-            'view_count'        => 0,
-            'status_code'       => $data['status'] ?? 'Published',
-            'summary_text'      => $data['summary'] ?? '',
-            'body_text'         => $data['content'] ?? '',
-            'created_at'        => date('Y-m-d H:i:s'),
-            'edit_lock'         => 0,
+            'userID'      => $data['userID'] ?? $data['ref_entity_acc_id'] ?? 1,
+            'source'      => '',
+            'headline'    => $data['title'],
+            'slug'        => $data['slug'] ?? url_title($data['title'], '-', true),
+            'articleDate' => $articleDate,
+            'posttype'    => 'article',
+            'viewed'      => 0,
+            'status'      => $data['status'] ?? 'Publish',
+            'summary'     => $data['summary'] ?? '',
+            'body'        => $data['content'] ?? '',
+            'createdAt'   => date('Y-m-d H:i:s'),
+            'editlock'    => null,
         ]);
-        $nanoId = (int)$this->insertID();
+        $articleId = (int)$this->insertID();
 
         // Link Kategori
-        $this->db->table('entity_nano_charlie_link')->insert([
-            'ref_entity_nano_id'    => $nanoId,
-            'ref_entity_charlie_id' => $categoryId,
+        $this->db->table('articlecategory')->insert([
+            'articleID'  => $articleId,
+            'categoryID' => $categoryId,
         ]);
 
         // Link Penulis
-        $this->db->table('entity_nano_aubert_link')->insert([
-            'ref_entity_nano_id'   => $nanoId,
-            'ref_entity_aubert_id' => $authorId,
+        $this->db->table('articleauthor')->insert([
+            'articleID' => $articleId,
+            'authorID'  => $authorId,
         ]);
 
         // Meta entries
@@ -292,47 +318,47 @@ class ArticleModel extends Model
             'is_premium'    => (string)($data['is_premium'] ?? 0),
             'headline_type' => $data['headline_type'] ?? 'none',
             'upper_deck'    => $data['upper_deck'] ?? '',
-            'source'        => $data['source'] ?? 'Investor.id / Riset',
+            'news_source'   => $data['source'] ?? 'Investor.id / Riset',
             'kanal'         => $data['kanal'] ?? '',
             'sub_kanal'     => $data['sub_kanal'] ?? '',
         ];
 
         foreach ($metaEntries as $k => $v) {
-            $this->db->table('entity_nano_meta')->insert([
-                'ref_entity_nano_id' => $nanoId,
-                'meta_key'           => $k,
-                'meta_value'         => $v,
+            $this->db->table('articlemeta')->insert([
+                'articleID' => $articleId,
+                'metakey'   => $k,
+                'metaval'   => $v,
             ]);
         }
 
-        // Points (Save to both entity_nano_meta and standalone article_points table)
+        // Points (Save to both articlemeta and standalone articlepoints table)
         foreach ($points as $idx => $pt) {
             $trimmed = trim($pt);
             if (!empty($trimmed)) {
-                $this->db->table('entity_nano_meta')->insert([
-                    'ref_entity_nano_id' => $nanoId,
-                    'meta_key'           => 'point',
-                    'meta_value'         => $trimmed,
+                $this->db->table('articlemeta')->insert([
+                    'articleID' => $articleId,
+                    'metakey'   => 'point',
+                    'metaval'   => $trimmed,
                 ]);
 
-                $this->db->table('article_points')->insert([
-                    'ref_entity_nano_id' => $nanoId,
-                    'point_text'         => $trimmed,
-                    'sort_order'         => $idx + 1,
-                    'created_at'         => date('Y-m-d H:i:s'),
+                $this->db->table('articlepoints')->insert([
+                    'article_id' => $articleId,
+                    'point_text' => $trimmed,
+                    'sort_order' => $idx + 1,
+                    'created_at' => date('Y-m-d H:i:s'),
                 ]);
             }
         }
 
-        // Tags
+        // Keywords
         if (!empty($tags)) {
-            $tagModel = new TagModel();
-            $tagModel->syncArticleTags($nanoId, $tags);
+            $kwModel = new KeywordModel();
+            $kwModel->syncArticleKeywords($articleId, $tags);
         }
 
         $this->db->transComplete();
 
-        return $nanoId;
+        return $articleId;
     }
 
     /**
@@ -345,55 +371,55 @@ class ArticleModel extends Model
 
         $this->db->transStart();
 
-        // 1. Log revision history in entity_nano_history
-        $this->db->table('entity_nano_history')->insert([
-            'event_timestamp'       => date('Y-m-d H:i:s'),
-            'ref_entity_nano_id'    => $id,
-            'ref_entity_epsilon_id' => $editorId,
-            'title_prev_val'        => $oldArticle['headline_text'],
-            'title_after_val'       => $data['title'],
-            'content_prev_val'      => $oldArticle['body_text'],
-            'content_after_val'     => $data['content'],
-            'status_prev_val'       => $oldArticle['status_code'],
-            'status_after_val'      => $data['status'],
+        // 1. Log revision history in articlehistory
+        $this->db->table('articlehistory')->insert([
+            'timestamp'    => date('Y-m-d H:i:s'),
+            'articleID'    => $id,
+            'editorID'     => $editorId,
+            'title_prev'   => $oldArticle['headline'],
+            'title_after'  => $data['title'],
+            'content_prev' => $oldArticle['body'],
+            'content_after'=> $data['content'],
+            'status_prev'  => $oldArticle['status'],
+            'status_after' => $data['status'],
         ]);
 
-        $entityDate = $oldArticle['entity_date'];
+        $articleDate = $oldArticle['articleDate'];
         if (!empty($data['publish_date'])) {
             $parsed = strtotime($data['publish_date']);
             if ($parsed !== false && $parsed > 0) {
-                $entityDate = date('Y-m-d H:i:s', $parsed);
+                $articleDate = date('Y-m-d H:i:s', $parsed);
             }
         }
 
-        // 2. Update entity_nano
+        // 2. Update article
         $this->update($id, [
-            'headline_text' => $data['title'],
-            'status_code'   => $data['status'],
-            'summary_text'  => $data['summary'] ?? '',
-            'body_text'     => $data['content'] ?? '',
-            'entity_date'   => $entityDate,
+            'headline'    => $data['title'],
+            'status'      => $data['status'],
+            'summary'     => $data['summary'] ?? '',
+            'body'        => $data['content'] ?? '',
+            'articleDate' => $articleDate,
         ]);
 
         // 3. Update Category Link
-        $this->db->table('entity_nano_charlie_link')->where('ref_entity_nano_id', $id)->delete();
-        $this->db->table('entity_nano_charlie_link')->insert([
-            'ref_entity_nano_id'    => $id,
-            'ref_entity_charlie_id' => $categoryId,
+        $this->db->table('articlecategory')->where('articleID', $id)->delete();
+        $this->db->table('articlecategory')->insert([
+            'articleID'  => $id,
+            'categoryID' => $categoryId,
         ]);
 
         // 4. Update Author Link
-        $this->db->table('entity_nano_aubert_link')->where('ref_entity_nano_id', $id)->delete();
-        $this->db->table('entity_nano_aubert_link')->insert([
-            'ref_entity_nano_id'   => $id,
-            'ref_entity_aubert_id' => $authorId,
+        $this->db->table('articleauthor')->where('articleID', $id)->delete();
+        $this->db->table('articleauthor')->insert([
+            'articleID' => $id,
+            'authorID'  => $authorId,
         ]);
 
         // 5. Update Metadata
-        $metaKeys = ['thumbnail', 'is_premium', 'headline_type', 'upper_deck', 'source', 'kanal', 'sub_kanal'];
-        $this->db->table('entity_nano_meta')
-            ->where('ref_entity_nano_id', $id)
-            ->whereIn('meta_key', array_merge($metaKeys, ['point']))
+        $metaKeys = ['thumbnail', 'is_premium', 'headline_type', 'upper_deck', 'news_source', 'kanal', 'sub_kanal'];
+        $this->db->table('articlemeta')
+            ->where('articleID', $id)
+            ->whereIn('metakey', array_merge($metaKeys, ['point']))
             ->delete();
 
         $metaEntries = [
@@ -401,42 +427,42 @@ class ArticleModel extends Model
             'is_premium'    => (string)($data['is_premium'] ?? 0),
             'headline_type' => $data['headline_type'] ?? 'none',
             'upper_deck'    => $data['upper_deck'] ?? '',
-            'source'        => $data['source'] ?? 'Investor.id / Riset',
+            'news_source'   => $data['source'] ?? 'Investor.id / Riset',
             'kanal'         => $data['kanal'] ?? '',
             'sub_kanal'     => $data['sub_kanal'] ?? '',
         ];
 
         foreach ($metaEntries as $k => $v) {
-            $this->db->table('entity_nano_meta')->insert([
-                'ref_entity_nano_id' => $id,
-                'meta_key'           => $k,
-                'meta_value'         => $v,
+            $this->db->table('articlemeta')->insert([
+                'articleID' => $id,
+                'metakey'   => $k,
+                'metaval'   => $v,
             ]);
         }
 
-        // Points (Sync to both entity_nano_meta and standalone article_points table)
-        $this->db->table('article_points')->where('ref_entity_nano_id', $id)->delete();
+        // Points (Sync to both articlemeta and standalone articlepoints table)
+        $this->db->table('articlepoints')->where('article_id', $id)->delete();
         foreach ($points as $idx => $pt) {
             $trimmed = trim($pt);
             if (!empty($trimmed)) {
-                $this->db->table('entity_nano_meta')->insert([
-                    'ref_entity_nano_id' => $id,
-                    'meta_key'           => 'point',
-                    'meta_value'         => $trimmed,
+                $this->db->table('articlemeta')->insert([
+                    'articleID' => $id,
+                    'metakey'   => 'point',
+                    'metaval'   => $trimmed,
                 ]);
 
-                $this->db->table('article_points')->insert([
-                    'ref_entity_nano_id' => $id,
-                    'point_text'         => $trimmed,
-                    'sort_order'         => $idx + 1,
-                    'created_at'         => date('Y-m-d H:i:s'),
+                $this->db->table('articlepoints')->insert([
+                    'article_id' => $id,
+                    'point_text' => $trimmed,
+                    'sort_order' => $idx + 1,
+                    'created_at' => date('Y-m-d H:i:s'),
                 ]);
             }
         }
 
-        // Tags
-        $tagModel = new TagModel();
-        $tagModel->syncArticleTags($id, $tags);
+        // Keywords
+        $kwModel = new KeywordModel();
+        $kwModel->syncArticleKeywords($id, $tags);
 
         $this->db->transComplete();
 
@@ -444,16 +470,57 @@ class ArticleModel extends Model
     }
 
     /**
-     * Delete article & cascaded links
+     * Soft delete article by setting status to Deleted
+     * Mencatat penghapusan pada audit trail articlehistory dan merilis editlock
+     * Tabel: article (W), articlehistory (W)
      */
-    public function deleteArticle(int $id): bool
+    public function deleteArticle(int $id, ?int $editorId = null): bool
+    {
+        $oldArticle = $this->db->table('article')->where('articleID', $id)->get()->getRowArray();
+        if (!$oldArticle) return false;
+
+        $this->db->transStart();
+
+        // 1. Audit trail in articlehistory
+        $this->db->table('articlehistory')->insert([
+            'timestamp'    => date('Y-m-d H:i:s'),
+            'articleID'    => $id,
+            'editorID'     => $editorId ?: (session('user_id') ?: 1),
+            'title_prev'   => $oldArticle['headline'],
+            'title_after'  => $oldArticle['headline'],
+            'content_prev' => $oldArticle['body'],
+            'content_after'=> $oldArticle['body'],
+            'status_prev'  => $oldArticle['status'],
+            'status_after' => 'Deleted',
+        ]);
+
+        // 2. Soft delete & release editlock
+        $this->db->table('article')
+            ->where('articleID', $id)
+            ->update([
+                'status'   => 'Deleted',
+                'editlock' => null
+            ]);
+
+        $this->db->transComplete();
+        return $this->db->transStatus();
+    }
+
+    /**
+     * @deprecated LEGACY DANGEROUS — Jangan gunakan hard delete pada operasional editorial CMS.
+     * Gunakan deleteArticle() untuk soft delete sesuai kebijakan DB Investor.
+     * Method ini dipertahankan murni untuk maintenance database lokal.
+     */
+    public function hardDeleteArticle(int $id): bool
     {
         $this->db->transStart();
-        $this->db->table('entity_nano_charlie_link')->where('ref_entity_nano_id', $id)->delete();
-        $this->db->table('entity_nano_aubert_link')->where('ref_entity_nano_id', $id)->delete();
-        $this->db->table('entity_nano_teta_link')->where('ref_entity_nano_id', $id)->delete();
-        $this->db->table('entity_nano_meta')->where('ref_entity_nano_id', $id)->delete();
-        $this->db->table('entity_nano_headline')->where('ref_entity_nano_id', $id)->delete();
+        $this->db->table('articlecategory')->where('articleID', $id)->delete();
+        $this->db->table('articleauthor')->where('articleID', $id)->delete();
+        $this->db->table('articlekeyword')->where('articleID', $id)->delete();
+        $this->db->table('articletag')->where('articleId', $id)->delete();
+        $this->db->table('articlemeta')->where('articleID', $id)->delete();
+        $this->db->table('articleheadline')->where('articleID', $id)->delete();
+        $this->db->table('articlepoints')->where('article_id', $id)->delete();
         $this->delete($id);
         $this->db->transComplete();
 
@@ -468,24 +535,24 @@ class ArticleModel extends Model
         $todayStr = date('Y-m-d');
         $yesterdayStr = date('Y-m-d', strtotime('-1 day'));
 
-        $res = $this->db->table('entity_nano')
+        $res = $this->db->table('article')
             ->select('
                 COUNT(*) AS total,
-                SUM(CASE WHEN LOWER(status_code) = "published" THEN 1 ELSE 0 END) AS published,
-                SUM(CASE WHEN LOWER(status_code) = "draft" THEN 1 ELSE 0 END) AS drafts,
-                SUM(CASE WHEN LOWER(status_code) = "scheduled" THEN 1 ELSE 0 END) AS scheduled,
-                SUM(CASE WHEN LOWER(status_code) = "review" THEN 1 ELSE 0 END) AS review,
-                SUM(COALESCE(view_count, 0)) AS total_views
+                SUM(CASE WHEN LOWER(status) IN ("publish", "published") THEN 1 ELSE 0 END) AS published,
+                SUM(CASE WHEN LOWER(status) = "draft" THEN 1 ELSE 0 END) AS drafts,
+                SUM(CASE WHEN LOWER(status) IN ("hold", "scheduled", "review") THEN 1 ELSE 0 END) AS hold,
+                SUM(CASE WHEN LOWER(status) = "deleted" THEN 1 ELSE 0 END) AS deleted,
+                SUM(COALESCE(viewed, 0)) AS total_views
             ')
             ->get()->getRowArray();
 
         // Articles published today vs yesterday
-        $todayCount = (int)$this->db->table('entity_nano')
-            ->where('DATE(entity_date)', $todayStr)
+        $todayCount = (int)$this->db->table('article')
+            ->where('DATE(articleDate)', $todayStr)
             ->countAllResults();
 
-        $yesterdayCount = (int)$this->db->table('entity_nano')
-            ->where('DATE(entity_date)', $yesterdayStr)
+        $yesterdayCount = (int)$this->db->table('article')
+            ->where('DATE(articleDate)', $yesterdayStr)
             ->countAllResults();
 
         if ($yesterdayCount > 0) {
@@ -501,15 +568,15 @@ class ArticleModel extends Model
         $onTimePct = min(99, max(85, round(($publishedCnt / $totalWorkflow) * 100))) . '%';
 
         // Views growth rate (comparing last 7 days vs previous 7 days)
-        $past7Views = (int)($this->db->table('entity_nano')
-            ->selectSum('view_count', 'v')
-            ->where('entity_date >=', date('Y-m-d 00:00:00', strtotime('-6 days')))
+        $past7Views = (int)($this->db->table('article')
+            ->selectSum('viewed', 'v')
+            ->where('articleDate >=', date('Y-m-d 00:00:00', strtotime('-6 days')))
             ->get()->getRow()->v ?? 0);
 
-        $prev7Views = (int)($this->db->table('entity_nano')
-            ->selectSum('view_count', 'v')
-            ->where('entity_date >=', date('Y-m-d 00:00:00', strtotime('-13 days')))
-            ->where('entity_date <', date('Y-m-d 00:00:00', strtotime('-6 days')))
+        $prev7Views = (int)($this->db->table('article')
+            ->selectSum('viewed', 'v')
+            ->where('articleDate >=', date('Y-m-d 00:00:00', strtotime('-13 days')))
+            ->where('articleDate <', date('Y-m-d 00:00:00', strtotime('-6 days')))
             ->get()->getRow()->v ?? 0);
 
         if ($prev7Views > 0) {
@@ -538,26 +605,26 @@ class ArticleModel extends Model
      */
     public function getTopArticles(int $limit = 5): array
     {
-        $rows = $this->db->table('entity_nano n')
+        $rows = $this->db->table('article n')
             ->select('
-                n.ref_entity_nano_id AS id,
-                n.headline_text AS title,
-                n.view_count AS views,
-                n.status_code AS status,
-                n.entity_date AS publish_date,
-                GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author,
-                ANY_VALUE(c.charlie_name_a) AS category,
-                COALESCE(ANY_VALUE(nm_prem.meta_value), "0") AS is_premium,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS thumbnail
+                n.articleID AS id,
+                n.headline AS title,
+                n.viewed AS views,
+                n.status AS status,
+                n.articleDate AS publish_date,
+                GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author,
+                ANY_VALUE(c.categoryName) AS category,
+                COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium,
+                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail
             ')
-            ->join('entity_nano_aubert_link nal', 'nal.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_aubert a', 'a.ref_entity_aubert_id = nal.ref_entity_aubert_id', 'left')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_charlie c', 'c.ref_entity_charlie_id = ncl.ref_entity_charlie_id', 'left')
-            ->join('entity_nano_meta nm_prem', 'nm_prem.ref_entity_nano_id = n.ref_entity_nano_id AND nm_prem.meta_key = "is_premium"', 'left')
-            ->join('entity_nano_meta nm_thumb', 'nm_thumb.ref_entity_nano_id = n.ref_entity_nano_id AND nm_thumb.meta_key = "thumbnail"', 'left')
-            ->groupBy('n.ref_entity_nano_id')
-            ->orderBy('n.view_count', 'DESC')
+            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
+            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->groupBy('n.articleID')
+            ->orderBy('n.viewed', 'DESC')
             ->limit($limit)
             ->get()->getResultArray();
 
@@ -575,20 +642,20 @@ class ArticleModel extends Model
      */
     public function getPendingArticles(int $limit = 10): array
     {
-        return $this->db->table('entity_nano n')
+        return $this->db->table('article n')
             ->select('
-                n.ref_entity_nano_id AS id,
-                n.headline_text AS title,
-                n.view_count AS views,
-                n.status_code AS status,
-                n.created_at AS create_date,
-                GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author
+                n.articleID AS id,
+                n.headline AS title,
+                n.viewed AS views,
+                n.status AS status,
+                n.createdAt AS create_date,
+                GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author
             ')
-            ->join('entity_nano_aubert_link nal', 'nal.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_aubert a', 'a.ref_entity_aubert_id = nal.ref_entity_aubert_id', 'left')
-            ->whereIn('LOWER(n.status_code)', ['review', 'draft'])
-            ->groupBy('n.ref_entity_nano_id')
-            ->orderBy('n.created_at', 'DESC')
+            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('authors a', 'a.authorID = nal.authorID', 'left')
+            ->whereIn('LOWER(n.status)', ['hold', 'draft', 'review'])
+            ->groupBy('n.articleID')
+            ->orderBy('n.createdAt', 'DESC')
             ->limit($limit)
             ->get()->getResultArray();
     }
@@ -605,16 +672,16 @@ class ArticleModel extends Model
         $todayPublished = array_fill(0, count($todayHours), 0);
         $todayDrafts = array_fill(0, count($todayHours), 0);
 
-        $todayRows = $this->db->table('entity_nano')
-            ->select('HOUR(entity_date) as h, LOWER(status_code) as st, COUNT(*) as cnt')
-            ->where('DATE(entity_date)', $todayStr)
-            ->groupBy(['HOUR(entity_date)', 'LOWER(status_code)'])
+        $todayRows = $this->db->table('article')
+            ->select('HOUR(articleDate) as h, LOWER(status) as st, COUNT(*) as cnt')
+            ->where('DATE(articleDate)', $todayStr)
+            ->groupBy(['HOUR(articleDate)', 'LOWER(status)'])
             ->get()->getResultArray();
 
         foreach ($todayRows as $row) {
             $h = (int)$row['h'];
             $cnt = (int)$row['cnt'];
-            $isPub = ($row['st'] === 'published');
+            $isPub = in_array($row['st'], ['publish', 'published']);
             // Bucket into the 2-hour intervals
             $slot = min(count($todayHours) - 1, max(0, (int)floor(($h - 6) / 2)));
             if ($isPub) {
@@ -637,17 +704,17 @@ class ArticleModel extends Model
         }
 
         $since7d = date('Y-m-d 00:00:00', strtotime('-6 days'));
-        $rows7d = $this->db->table('entity_nano')
-            ->select('DATE(entity_date) as d, LOWER(status_code) as st, COUNT(*) as cnt')
-            ->where('entity_date >=', $since7d)
-            ->groupBy(['DATE(entity_date)', 'LOWER(status_code)'])
+        $rows7d = $this->db->table('article')
+            ->select('DATE(articleDate) as d, LOWER(status) as st, COUNT(*) as cnt')
+            ->where('articleDate >=', $since7d)
+            ->groupBy(['DATE(articleDate)', 'LOWER(status)'])
             ->get()->getResultArray();
 
         foreach ($rows7d as $r) {
             $d = $r['d'];
             $cnt = (int)$r['cnt'];
             if (isset($days7Published[$d])) {
-                if ($r['st'] === 'published') {
+                if (in_array($r['st'], ['publish', 'published'])) {
                     $days7Published[$d] += $cnt;
                 } else {
                     $days7Drafts[$d] += $cnt;
@@ -669,16 +736,16 @@ class ArticleModel extends Model
         $days30Drafts = [];
 
         foreach ($weeks as $w) {
-            $wPub = $this->db->table('entity_nano')
-                ->where('DATE(entity_date) >=', $w['from'])
-                ->where('DATE(entity_date) <=', $w['to'])
-                ->where('LOWER(status_code)', 'published')
+            $wPub = $this->db->table('article')
+                ->where('DATE(articleDate) >=', $w['from'])
+                ->where('DATE(articleDate) <=', $w['to'])
+                ->whereIn('LOWER(status)', ['publish', 'published'])
                 ->countAllResults();
 
-            $wDraft = $this->db->table('entity_nano')
-                ->where('DATE(entity_date) >=', $w['from'])
-                ->where('DATE(entity_date) <=', $w['to'])
-                ->whereIn('LOWER(status_code)', ['draft', 'review'])
+            $wDraft = $this->db->table('article')
+                ->where('DATE(articleDate) >=', $w['from'])
+                ->where('DATE(articleDate) <=', $w['to'])
+                ->whereIn('LOWER(status)', ['draft', 'review', 'hold'])
                 ->countAllResults();
 
             $days30Published[] = $wPub;
@@ -717,15 +784,15 @@ class ArticleModel extends Model
     {
         $todayStr = date('Y-m-d');
 
-        // 1. TODAY TRAFFIC (Calculated from today articles view_count)
+        // 1. TODAY TRAFFIC (Calculated from today articles viewed)
         $todayHours = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
         $directViews = array_fill(0, count($todayHours), 0);
         $searchViews = array_fill(0, count($todayHours), 0);
 
-        $todayRows = $this->db->table('entity_nano')
-            ->select('HOUR(entity_date) as h, SUM(COALESCE(view_count, 0)) as total_v')
-            ->where('DATE(entity_date)', $todayStr)
-            ->groupBy('HOUR(entity_date)')
+        $todayRows = $this->db->table('article')
+            ->select('HOUR(articleDate) as h, SUM(COALESCE(viewed, 0)) as total_v')
+            ->where('DATE(articleDate)', $todayStr)
+            ->groupBy('HOUR(articleDate)')
             ->get()->getResultArray();
 
         foreach ($todayRows as $r) {
@@ -747,10 +814,10 @@ class ArticleModel extends Model
             $days7Search[$d] = 0;
         }
 
-        $rows7d = $this->db->table('entity_nano')
-            ->select('DATE(entity_date) as d, SUM(COALESCE(view_count, 0)) as total_v')
-            ->where('entity_date >=', date('Y-m-d 00:00:00', strtotime('-6 days')))
-            ->groupBy('DATE(entity_date)')
+        $rows7d = $this->db->table('article')
+            ->select('DATE(articleDate) as d, SUM(COALESCE(viewed, 0)) as total_v')
+            ->where('articleDate >=', date('Y-m-d 00:00:00', strtotime('-6 days')))
+            ->groupBy('DATE(articleDate)')
             ->get()->getResultArray();
 
         foreach ($rows7d as $r) {
@@ -768,10 +835,10 @@ class ArticleModel extends Model
         $mSearch = array_fill(0, 12, 0);
 
         $currYear = date('Y');
-        $mRows = $this->db->table('entity_nano')
-            ->select('MONTH(entity_date) as m, SUM(COALESCE(view_count, 0)) as total_v')
-            ->where('YEAR(entity_date)', $currYear)
-            ->groupBy('MONTH(entity_date)')
+        $mRows = $this->db->table('article')
+            ->select('MONTH(articleDate) as m, SUM(COALESCE(viewed, 0)) as total_v')
+            ->where('YEAR(articleDate)', $currYear)
+            ->groupBy('MONTH(articleDate)')
             ->get()->getResultArray();
 
         foreach ($mRows as $r) {
@@ -805,4 +872,179 @@ class ArticleModel extends Model
             ],
         ];
     }
+
+    /**
+     * Get all master article statuses from DB lookup table
+     * Replika legacy: Article::articleStatus()
+     * Tabel: articlestatus (R)
+     */
+    public function getArticleStatuses(?string $userRole = null): array
+    {
+        $statuses = $this->db->table('articlestatus')->orderBy('id', 'ASC')->get()->getResultArray();
+
+        // RBAC: Non-admin & non-redpel cannot see 'Deleted' status
+        if (!in_array(strtolower($userRole ?? ''), ['administrator', 'redpel', 'admin'])) {
+            $statuses = array_values(array_filter($statuses, function ($st) {
+                return strcasecmp($st['label'] ?? '', 'Deleted') !== 0;
+            }));
+        }
+
+        return $statuses;
+    }
+
+    /**
+     * Acquire Edit Lock — Set editlock = userID
+     * Replika legacy: Article::PostLock()
+     * Tabel: article (R/W), useradministrator (R)
+     */
+    public function acquireLock(int $articleId, int $userId): array
+    {
+        $row = $this->db->table('article n')
+            ->select('n.editlock, u.name as locked_by_name, u.username as locked_by_username')
+            ->join('useradministrator u', 'u.userID = n.editlock', 'left')
+            ->where('n.articleID', $articleId)
+            ->get()->getRowArray();
+
+        if (!$row) {
+            return ['locked' => false, 'error' => 'Article not found'];
+        }
+
+        $currentLock = $row['editlock'] ? (int)$row['editlock'] : null;
+
+        // Article is not locked OR already locked by current user
+        if ($currentLock === null || $currentLock === $userId) {
+            $this->db->table('article')
+                ->where('articleID', $articleId)
+                ->update(['editlock' => $userId]);
+
+            return [
+                'locked' => true,
+                'is_owner' => true,
+                'locked_by' => null,
+            ];
+        }
+
+        // Article is currently locked by another user
+        return [
+            'locked' => true,
+            'is_owner' => false,
+            'locked_by' => $row['locked_by_name'] ?: ($row['locked_by_username'] ?: 'User #' . $currentLock),
+            'locked_by_id' => $currentLock,
+        ];
+    }
+
+    /**
+     * Release Edit Lock — Set editlock = NULL
+     * Replika legacy: Article::ReleaseLock()
+     * Tabel: article (W)
+     */
+    public function releaseLock(int $articleId, ?int $userId = null): bool
+    {
+        $builder = $this->db->table('article')->where('articleID', $articleId);
+        if ($userId !== null) {
+            $builder->where('editlock', $userId);
+        }
+        return $builder->update(['editlock' => null]);
+    }
+
+    /**
+     * Force unlock article (Privileged action for administrator and redpel)
+     * Tabel: article (W)
+     */
+    public function forceUnlock(int $articleId): bool
+    {
+        return $this->db->table('article')
+            ->where('articleID', $articleId)
+            ->update(['editlock' => null]);
+    }
+
+    /**
+     * Get Paginated Revision History
+     * Replika legacy: Article::Revision()
+     * Tabel: articlehistory (R), article (R), useradministrator (R)
+     */
+    public function getRevisionHistory(int $page = 1, int $perPage = 25, array $filters = []): array
+    {
+        $builder = $this->db->table('articlehistory h')
+            ->select('
+                h.id,
+                h.timestamp,
+                h.articleID,
+                a.headline as current_title,
+                a.slug as current_slug,
+                h.editorID,
+                u.name as editor_name,
+                u.username as editor_username,
+                h.title_prev,
+                h.title_after,
+                h.status_prev,
+                h.status_after
+            ')
+            ->join('article a', 'a.articleID = h.articleID', 'left')
+            ->join('useradministrator u', 'u.userID = h.editorID', 'left');
+
+        if (!empty($filters['article_id'])) {
+            $builder->where('h.articleID', (int)$filters['article_id']);
+        }
+
+        if (!empty($filters['editor_id']) && $filters['editor_id'] !== 'all') {
+            $builder->where('h.editorID', (int)$filters['editor_id']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $builder->where('DATE(h.timestamp) >=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $builder->where('DATE(h.timestamp) <=', $filters['date_to']);
+        }
+
+        if (!empty($filters['q'])) {
+            $term = trim($filters['q']);
+            $builder->groupStart()
+                ->like('a.headline', $term)
+                ->orLike('h.title_prev', $term)
+                ->orLike('h.title_after', $term)
+                ->orLike('u.name', $term)
+                ->orLike('u.username', $term)
+            ->groupEnd();
+        }
+
+        $totalBuilder = clone $builder;
+        $total = $totalBuilder->countAllResults();
+
+        $offset = max(0, ($page - 1) * $perPage);
+        $data = $builder->orderBy('h.timestamp', 'DESC')
+            ->limit($perPage, $offset)
+            ->get()->getResultArray();
+
+        return [
+            'data'  => $data,
+            'total' => $total
+        ];
+    }
+
+    /**
+     * Get Single Revision Detail with Full Content Diff
+     * Tabel: articlehistory (R), article (R), useradministrator (R)
+     */
+    public function getRevisionDetail(int $historyId): ?array
+    {
+        return $this->db->table('articlehistory h')
+            ->select('
+                h.*,
+                a.headline as current_title,
+                a.slug as current_slug,
+                u.name as editor_name,
+                u.username as editor_username
+            ')
+            ->join('article a', 'a.articleID = h.articleID', 'left')
+            ->join('useradministrator u', 'u.userID = h.editorID', 'left')
+            ->where('h.id', $historyId)
+            ->get()->getRowArray();
+    }
 }
+
+
+
+

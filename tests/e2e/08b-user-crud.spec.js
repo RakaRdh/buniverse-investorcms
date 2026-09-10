@@ -43,7 +43,7 @@ test.describe('08b - Staff User & RBAC Permissions CRUD', () => {
         name: `Test Staff ${Date.now()}`,
         email: userEmail,
         username: createdUsername,
-        role: 'Author'
+        role: 'editor'
       }
     });
     expect([200, 302, 303]).toContain(res.status());

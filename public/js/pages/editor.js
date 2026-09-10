@@ -73,6 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('input', () => {
             markEditorDirty();
         });
+        form.addEventListener('change', () => {
+            markEditorDirty();
+        });
         form.addEventListener('submit', (e) => {
             if (isFormSubmitting) {
                 e.preventDefault();
@@ -93,17 +96,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Restore cached scrape cover if thumbnail input is empty
-    const thumbInput = document.getElementById('thumbnailInput');
-    const imagePreview = document.getElementById('imagePreview');
-    const currentArtId = document.getElementById('articleIdInput')?.value || 'new';
-    if (thumbInput && (!thumbInput.value || thumbInput.value.includes('placeholder'))) {
-        const cachedCover = localStorage.getItem('cms_cover_cache_' + currentArtId);
-        if (cachedCover) {
-            thumbInput.value = cachedCover;
-            if (imagePreview) imagePreview.src = cachedCover;
-        }
-    }
+    // Clean up any legacy or stale scrape cover cache from localStorage
+    try {
+        localStorage.removeItem('cms_cover_cache_new');
+        Object.keys(localStorage).forEach(k => {
+            if (k && k.startsWith('cms_cover_cache_')) {
+                localStorage.removeItem(k);
+            }
+        });
+    } catch (e) {}
 
     // 5. Initialize Cascading Kanal -> Sub-Kanal
     const kanalSelect = document.getElementById('kanalSelect');
@@ -370,12 +371,13 @@ function insertEmbedTool(type) {
         const index = range ? range.index : quill.getLength();
         const embedHtml = `
             <div class="article-page-break my-6 py-2.5 px-4 rounded-lg bg-amber-500/10 border border-dashed border-amber-500/40 text-center text-xs font-mono font-bold text-amber-700 dark:text-amber-300" data-page-break="true">
-                ✂ --- HALAMAN BERIKUTNYA (PAGE BREAK) --- ✂
+                --- HALAMAN BERIKUTNYA (PAGE BREAK) ---
             </div>
             <p><br></p>
         `;
         quill.clipboard.dangerouslyPasteHTML(index, embedHtml);
         quill.setSelection(index + 1);
+        markEditorDirty();
         if (typeof showToast === 'function') {
             showToast('Page break (halaman berikutnya) berhasil disisipkan.', 'success');
         }
@@ -414,22 +416,16 @@ function insertSelectedChart(title, symbol, type, source) {
     const range = quill.getSelection(true);
     const index = range ? range.index : quill.getLength();
     
-    const embedHtml = `
-        <div class="cms-embed-placeholder my-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-xs text-primary font-sans flex items-center justify-between" data-embed-type="financial_chart" data-symbol="${escapeHtml(symbol)}" data-title="${escapeHtml(title)}" data-type="${escapeHtml(type)}" data-source="${escapeHtml(source)}">
-            <div class="flex items-center gap-2">
-                <span class="rounded bg-primary text-white px-2 py-0.5 text-[10px] font-bold uppercase">${escapeHtml(type)}</span>
-                <span class="font-semibold">${escapeHtml(title)} (IDX:${escapeHtml(symbol)})</span>
-            </div>
-            <span class="text-[10px] font-mono text-primary/80">::Embed Chart: ${escapeHtml(symbol)}::</span>
-        </div>
-        <p><br></p>
-    `;
+    // Output clean user-requested shortcode: ::(keterangan chart)::
+    const chartLabel = title ? title.trim() : (symbol ? ('Grafik ' + symbol) : 'Grafik Finansial');
+    const embedCode = `::(${chartLabel})::`;
 
-    quill.clipboard.dangerouslyPasteHTML(index, embedHtml);
-    quill.setSelection(index + 1);
+    quill.insertText(index, `\n${embedCode}\n`);
+    quill.setSelection(index + embedCode.length + 2);
+    markEditorDirty();
     closeEmbedChartModal();
     if (typeof showToast === 'function') {
-        showToast(`Chart "${title}" berhasil disisipkan.`, 'success');
+        showToast(`Chart "${chartLabel}" berhasil disisipkan.`, 'success');
     }
 }
 
@@ -480,6 +476,55 @@ function submitSocmedEmbed() {
     closeEmbedSocmedModal();
     if (typeof showToast === 'function') {
         showToast(`Embed ${platform} berhasil disisipkan.`, 'success');
+    }
+}
+
+// 7B2. Embed Google Docs / Sheets Handlers
+function openEmbedGoogleDocModal() {
+    const modal = document.getElementById('embedGoogleDocModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        const urlInput = document.getElementById('googleDocUrlInput');
+        if (urlInput) urlInput.value = '';
+        const titleInput = document.getElementById('googleDocTitleInput');
+        if (titleInput) titleInput.value = '';
+    }
+}
+
+function closeEmbedGoogleDocModal() {
+    const modal = document.getElementById('embedGoogleDocModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function submitGoogleDocEmbed() {
+    if (!quill) return;
+    const docType = document.getElementById('googleDocTypeSelect')?.value || 'Doc';
+    const url = document.getElementById('googleDocUrlInput')?.value?.trim();
+    const title = document.getElementById('googleDocTitleInput')?.value?.trim() || '';
+
+    if (!url) {
+        alert('Silakan masukkan link/URL Google Doc atau Google Sheet terlebih dahulu.');
+        return;
+    }
+
+    if (!url.includes('docs.google.com')) {
+        alert('URL harus berasal dari docs.google.com.');
+        return;
+    }
+
+    const range = quill.getSelection(true);
+    const index = range ? range.index : quill.getLength();
+
+    // Shortcode format: ::Google Doc: URL | Title:: or ::Google Sheet: URL | Title::
+    const titlePart = title ? ` | ${title}` : '';
+    const shortcode = `::Google ${docType}: ${url}${titlePart}::`;
+
+    quill.insertText(index, `\n${shortcode}\n`);
+    quill.setSelection(index + shortcode.length + 2);
+    markEditorDirty();
+    closeEmbedGoogleDocModal();
+    if (typeof showToast === 'function') {
+        showToast(`Embed Google ${docType} berhasil disisipkan.`, 'success');
     }
 }
 
@@ -673,25 +718,32 @@ function filterMediaModalCards(query) {
     if (countEl) countEl.textContent = visibleCount;
 }
 
-function selectMediaImage(url) {
+function selectMediaImage(url, caption = '') {
     if (mediaChooserTarget === 'quill') {
         if (quill) {
             const range = quill.getSelection(true);
             const index = range ? range.index : quill.getLength();
-            const html = `<figure class="my-4"><img src="${url}" class="rounded-lg max-w-full h-auto mx-auto shadow-sm" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';"><figcaption class="text-xs italic text-slate-500 mt-2 text-center border-b border-border/50 pb-1.5 font-sans">Dokumentasi Investor.id / Riset</figcaption></figure><p><br></p>`;
+            const capText = (caption && caption.trim()) ? caption.trim() : 'Dokumentasi Investor.id / Riset';
+            const html = `
+                <p class="ql-align-center my-3"><img src="${url}" class="rounded-lg max-w-full h-auto mx-auto shadow-sm" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';"></p>
+                <p class="ql-align-center" style="margin-top: -4px;"><em style="font-size: 11px; color: #64748b; font-style: italic; display: inline-block;">${escapeHtml(capText)}</em></p>
+                <p><br></p>
+            `;
             quill.clipboard.dangerouslyPasteHTML(index, html);
-            quill.setSelection(index + 1);
+            quill.setSelection(index + 2);
+            markEditorDirty();
         }
     } else {
         const input = document.getElementById('thumbnailInput');
         const preview = document.getElementById('imagePreview');
         if (input) input.value = url;
         if (preview) preview.src = url;
+        markEditorDirty();
     }
 
     closeMediaChooserModal();
     if (typeof showToast === 'function') {
-        showToast('Gambar berhasil dipilih dari Media Library', 'success');
+        showToast('Gambar berhasil disisipkan ke artikel.', 'success');
     }
 }
 
@@ -1038,12 +1090,6 @@ async function executeScrapeArticle() {
                     coverPreview.src = data.thumbnail_url;
                 }
 
-                // Cache to localStorage so scraped cover is sticky even if not yet submitted
-                try {
-                    const artId = document.getElementById('articleIdInput')?.value || 'new';
-                    localStorage.setItem('cms_cover_cache_' + artId, data.thumbnail_url);
-                } catch (e) {}
-
                 markEditorDirty();
             }
 
@@ -1319,7 +1365,7 @@ async function performAutoSave() {
     const kanalSelect = document.getElementById('kanalSelect');
     const thumbInput = document.getElementById('thumbnailInput');
     const tagsInput = document.getElementById('articleTagsInput');
-    const authorInput = document.getElementById('authorSelect');
+    const authorInput = document.getElementById('authorInput') || document.getElementById('authorSelect');
 
     const dot = document.getElementById('autosaveStatusDot');
     const text = document.getElementById('autosaveStatusText');
@@ -1373,7 +1419,130 @@ async function performAutoSave() {
 }
 
 // =========================================================================
-// 10. Cover Image Drag & Drop & Device Upload Engine (ImageProcessor)
+// 10. Author Combobox / Autosuggest Engine
+// =========================================================================
+function openAuthorDropdown() {
+    const dd = document.getElementById('authorSuggestionsDropdown');
+    const arrow = document.getElementById('authorDropdownArrow');
+    if (dd) dd.classList.remove('hidden');
+    if (arrow) arrow.classList.add('rotate-180');
+}
+
+function closeAuthorDropdown() {
+    const dd = document.getElementById('authorSuggestionsDropdown');
+    const arrow = document.getElementById('authorDropdownArrow');
+    if (dd) dd.classList.add('hidden');
+    if (arrow) arrow.classList.remove('rotate-180');
+}
+
+function toggleAuthorDropdown() {
+    const dd = document.getElementById('authorSuggestionsDropdown');
+    if (dd && dd.classList.contains('hidden')) {
+        openAuthorDropdown();
+        const input = document.getElementById('authorInput');
+        if (input) input.focus();
+    } else {
+        closeAuthorDropdown();
+    }
+}
+
+function filterAuthorDropdown(val) {
+    const q = (val || '').toLowerCase().trim();
+    const items = document.querySelectorAll('.author-option-item');
+    let hasMatch = false;
+
+    items.forEach(item => {
+        const name = (item.getAttribute('data-author') || '').toLowerCase();
+        if (!q || name.includes(q)) {
+            item.classList.remove('hidden');
+            hasMatch = true;
+        } else {
+            item.classList.add('hidden');
+        }
+    });
+
+    const noResult = document.getElementById('authorNoResults');
+    if (noResult) {
+        noResult.classList.toggle('hidden', hasMatch);
+    }
+    openAuthorDropdown();
+    markEditorDirty();
+}
+
+function selectAuthorName(name) {
+    const input = document.getElementById('authorInput');
+    if (input) {
+        input.value = name;
+        markEditorDirty();
+    }
+
+    const items = document.querySelectorAll('.author-option-item');
+    items.forEach(item => {
+        const icon = item.querySelector('.author-check-icon');
+        const itemAuthor = item.getAttribute('data-author') || '';
+        if (icon) {
+            icon.classList.toggle('opacity-0', itemAuthor !== name.toLowerCase());
+        }
+    });
+
+    closeAuthorDropdown();
+}
+
+// Click outside author dropdown to dismiss
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('authorInput')?.closest('.relative');
+    if (container && !container.contains(e.target)) {
+        closeAuthorDropdown();
+    }
+});
+
+// =========================================================================
+// 11. Unsaved Changes Guard Modal
+// =========================================================================
+let pendingNavigationUrl = null;
+
+function openUnsavedChangesModal(url) {
+    pendingNavigationUrl = url;
+    const modal = document.getElementById('unsavedChangesModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeUnsavedChangesModal() {
+    pendingNavigationUrl = null;
+    const modal = document.getElementById('unsavedChangesModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Confirm leave button handler
+document.addEventListener('DOMContentLoaded', () => {
+    const confirmBtn = document.getElementById('confirmLeavePageBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+            isEditorDirty = false;
+            closeUnsavedChangesModal();
+            if (pendingNavigationUrl) {
+                window.location.href = pendingNavigationUrl;
+            }
+        });
+    }
+
+    // Intercept navigation links across sidebar & topbar if editor is dirty
+    document.querySelectorAll('a[href]').forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || link.target === '_blank') return;
+
+        link.addEventListener('click', (e) => {
+            if (isEditorDirty && !isFormSubmitting) {
+                e.preventDefault();
+                e.stopPropagation();
+                openUnsavedChangesModal(href);
+            }
+        });
+    });
+});
+
+// =========================================================================
+// 12. Cover Image Drag & Drop & Device Upload Engine (ImageProcessor)
 // =========================================================================
 function initCoverDropzone() {
     const dropzone = document.getElementById('coverDropzone');
@@ -1486,6 +1655,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.ModalUtils.register('mediaChooserModal', { onClose: () => closeMediaChooserModal() });
         window.ModalUtils.register('articleLinkModal', { onClose: () => closeArticleLinkModal() });
         window.ModalUtils.register('embedChartModal', { onClose: () => closeEmbedChartModal() });
+        window.ModalUtils.register('embedGoogleDocModal', { onClose: () => closeEmbedGoogleDocModal() });
+        window.ModalUtils.register('unsavedChangesModal', { onClose: () => closeUnsavedChangesModal() });
         window.ModalUtils.register('embedSocmedModal', { onClose: () => closeEmbedSocmedModal() });
         window.ModalUtils.register('embedStockModal', { onClose: () => closeEmbedStockModal() });
     }

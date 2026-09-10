@@ -38,66 +38,66 @@ class ArticleApi extends BaseController
         $sort = $this->request->getGet('sort') ?: 'latest';
 
         $db = \Config\Database::connect();
-        $builder = $db->table('entity_nano n')
+        $builder = $db->table('article n')
             ->select('
-                n.ref_entity_nano_id AS id,
-                n.headline_text AS title,
-                n.slug_value AS slug,
-                n.summary_text AS summary,
-                n.view_count AS views_count,
-                n.entity_date AS published_at,
-                n.status_code AS status,
-                ANY_VALUE(c.charlie_name_a) AS category_name,
-                ANY_VALUE(c.field_label_a) AS category_slug,
-                ANY_VALUE(c.ref_entity_charlie_id) AS category_id,
-                GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author_name,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS featured_image,
-                COALESCE(ANY_VALUE(nm_deck.meta_value), "") AS upper_deck,
-                COALESCE(ANY_VALUE(nm_prem.meta_value), "0") AS is_premium
+                n.articleID AS id,
+                n.headline AS title,
+                n.slug AS slug,
+                n.summary AS summary,
+                n.viewed AS views_count,
+                n.articleDate AS published_at,
+                n.status AS status,
+                ANY_VALUE(c.categoryName) AS category_name,
+                ANY_VALUE(c.label) AS category_slug,
+                ANY_VALUE(c.categoryID) AS category_id,
+                GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author_name,
+                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS featured_image,
+                COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
+                COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium
             ')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_charlie c', 'c.ref_entity_charlie_id = ncl.ref_entity_charlie_id', 'left')
-            ->join('entity_nano_aubert_link nal', 'nal.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_aubert a', 'a.ref_entity_aubert_id = nal.ref_entity_aubert_id', 'left')
-            ->join('entity_nano_meta nm_thumb', 'nm_thumb.ref_entity_nano_id = n.ref_entity_nano_id AND nm_thumb.meta_key = "thumbnail"', 'left')
-            ->join('entity_nano_meta nm_deck', 'nm_deck.ref_entity_nano_id = n.ref_entity_nano_id AND nm_deck.meta_key = "upper_deck"', 'left')
-            ->join('entity_nano_meta nm_prem', 'nm_prem.ref_entity_nano_id = n.ref_entity_nano_id AND nm_prem.meta_key = "is_premium"', 'left')
-            ->where('LOWER(n.status_code)', 'published');
+            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
+            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
+            ->whereIn('LOWER(n.status)', ['publish', 'published']);
 
         if (!empty($category) && $category !== 'all') {
             $builder->groupStart()
-                ->where('c.charlie_name_a', $category)
-                ->orWhere('c.field_label_a', $category)
-                ->orLike('c.charlie_name_a', $category, 'after')
+                ->where('c.categoryName', $category)
+                ->orWhere('c.label', $category)
+                ->orLike('c.categoryName', $category, 'after')
                 ->groupEnd();
         }
 
         if (!empty($tag)) {
-            $builder->join('entity_nano_teta_link ntl', 'ntl.ref_entity_nano_id = n.ref_entity_nano_id', 'inner')
-                    ->join('entity_teta t', 't.ref_entity_teta_id = ntl.ref_entity_teta_id', 'inner')
+            $builder->join('articletag ntl', 'ntl.articleId = n.articleID', 'inner')
+                    ->join('tag t', 't.tagID = ntl.tagID', 'inner')
                     ->groupStart()
-                    ->where('t.slug_value', $tag)
-                    ->orWhere('t.field_label_a', $tag)
+                    ->where('t.slug', $tag)
+                    ->orWhere('t.label', $tag)
                     ->groupEnd();
         }
 
         if (!empty($q)) {
             $builder->groupStart()
-                ->like('n.headline_text', $q)
-                ->orLike('n.summary_text', $q)
-                ->orLike('a.aubert_name_a', $q)
+                ->like('n.headline', $q)
+                ->orLike('n.summary', $q)
+                ->orLike('a.authorName', $q)
                 ->groupEnd();
         }
 
-        $builder->groupBy('n.ref_entity_nano_id');
+        $builder->groupBy('n.articleID');
 
         $countBuilder = clone $builder;
         $total = count($countBuilder->get()->getResultArray());
 
         if ($sort === 'popular') {
-            $builder->orderBy('n.view_count', 'DESC')->orderBy('n.entity_date', 'DESC');
+            $builder->orderBy('n.viewed', 'DESC')->orderBy('n.articleDate', 'DESC');
         } else {
-            $builder->orderBy('n.entity_date', 'DESC')->orderBy('n.ref_entity_nano_id', 'DESC');
+            $builder->orderBy('n.articleDate', 'DESC')->orderBy('n.articleID', 'DESC');
         }
 
         $articles = $builder->limit($limit, $offset)->get()->getResultArray();
@@ -138,40 +138,40 @@ class ArticleApi extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $builder = $db->table('entity_nano n')
+        $builder = $db->table('article n')
             ->select('
-                n.ref_entity_nano_id AS id,
-                n.headline_text AS title,
-                n.slug_value AS slug,
-                n.summary_text AS summary,
-                n.body_text AS body,
-                n.body_text AS content,
-                n.view_count AS views_count,
-                n.entity_date AS published_at,
-                n.status_code AS status,
-                ANY_VALUE(c.charlie_name_a) AS category_name,
-                ANY_VALUE(c.field_label_a) AS category_slug,
-                ANY_VALUE(c.ref_entity_charlie_id) AS category_id,
-                GROUP_CONCAT(DISTINCT a.aubert_name_a SEPARATOR ", ") AS author_name,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS featured_image,
-                COALESCE(ANY_VALUE(nm_deck.meta_value), "") AS upper_deck,
-                COALESCE(ANY_VALUE(nm_prem.meta_value), "0") AS is_premium,
-                COALESCE(ANY_VALUE(nm_source.meta_value), "Investor.id / Riset") AS source
+                n.articleID AS id,
+                n.headline AS title,
+                n.slug AS slug,
+                n.summary AS summary,
+                n.body AS body,
+                n.body AS content,
+                n.viewed AS views_count,
+                n.articleDate AS published_at,
+                n.status AS status,
+                ANY_VALUE(c.categoryName) AS category_name,
+                ANY_VALUE(c.label) AS category_slug,
+                ANY_VALUE(c.categoryID) AS category_id,
+                GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author_name,
+                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS featured_image,
+                COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
+                COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium,
+                COALESCE(ANY_VALUE(nm_source.metaval), "Investor.id / Riset") AS source
             ')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_charlie c', 'c.ref_entity_charlie_id = ncl.ref_entity_charlie_id', 'left')
-            ->join('entity_nano_aubert_link nal', 'nal.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_aubert a', 'a.ref_entity_aubert_id = nal.ref_entity_aubert_id', 'left')
-            ->join('entity_nano_meta nm_thumb', 'nm_thumb.ref_entity_nano_id = n.ref_entity_nano_id AND nm_thumb.meta_key = "thumbnail"', 'left')
-            ->join('entity_nano_meta nm_deck', 'nm_deck.ref_entity_nano_id = n.ref_entity_nano_id AND nm_deck.meta_key = "upper_deck"', 'left')
-            ->join('entity_nano_meta nm_prem', 'nm_prem.ref_entity_nano_id = n.ref_entity_nano_id AND nm_prem.meta_key = "is_premium"', 'left')
-            ->join('entity_nano_meta nm_source', 'nm_source.ref_entity_nano_id = n.ref_entity_nano_id AND nm_source.meta_key = "source"', 'left')
-            ->groupBy('n.ref_entity_nano_id');
+            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
+            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
+            ->join('articlemeta nm_source', 'nm_source.articleID = n.articleID AND nm_source.metakey = "source"', 'left')
+            ->groupBy('n.articleID');
 
         if (is_numeric($identifier)) {
-            $builder->where('n.ref_entity_nano_id', (int)$identifier);
+            $builder->where('n.articleID', (int)$identifier);
         } else {
-            $builder->where('n.slug_value', $identifier);
+            $builder->where('n.slug', $identifier);
         }
 
         $article = $builder->get()->getRowArray();
@@ -184,9 +184,9 @@ class ArticleApi extends BaseController
         }
 
         // Increment views count
-        $db->table('entity_nano')
-            ->where('ref_entity_nano_id', $article['id'])
-            ->increment('view_count', 1);
+        $db->table('article')
+            ->where('articleID', $article['id'])
+            ->increment('viewed', 1);
 
         $article['id'] = (int)$article['id'];
         $article['is_premium'] = (int)$article['is_premium'];
@@ -198,25 +198,25 @@ class ArticleApi extends BaseController
 
         // Fetch Points (Singkatnya)
         $pointsList = $db->table('article_points')
-            ->where('ref_entity_nano_id', $article['id'])
+            ->where('article_id', $article['id'])
             ->orderBy('sort_order', 'ASC')
             ->get()->getResultArray();
         if (!empty($pointsList)) {
             $article['points'] = array_column($pointsList, 'point_text');
         } else {
-            $pointsMeta = $db->table('entity_nano_meta')
-                ->where('ref_entity_nano_id', $article['id'])
-                ->where('meta_key', 'point')
-                ->orderBy('record_id', 'ASC')
+            $pointsMeta = $db->table('articlemeta')
+                ->where('articleID', $article['id'])
+                ->where('metakey', 'point')
+                ->orderBy('metaID', 'ASC')
                 ->get()->getResultArray();
-            $article['points'] = array_column($pointsMeta, 'meta_value');
+            $article['points'] = array_column($pointsMeta, 'metaval');
         }
 
         // Fetch Tags
-        $tags = $db->table('entity_nano_teta_link ntl')
-            ->select('t.ref_entity_teta_id AS id, t.field_label_a AS name, t.slug_value AS slug')
-            ->join('entity_teta t', 't.ref_entity_teta_id = ntl.ref_entity_teta_id')
-            ->where('ntl.ref_entity_nano_id', $article['id'])
+        $tags = $db->table('articletag ntl')
+            ->select('t.tagID AS id, t.label AS name, t.slug AS slug')
+            ->join('tag t', 't.tagID = ntl.tagID')
+            ->where('ntl.articleId', $article['id'])
             ->get()->getResultArray();
         $article['tags'] = $tags;
 
@@ -241,11 +241,11 @@ class ArticleApi extends BaseController
     {
         $db = \Config\Database::connect();
         
-        $article = $db->table('entity_nano n')
-            ->select('n.ref_entity_nano_id AS id, ANY_VALUE(ncl.ref_entity_charlie_id) AS category_id')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->where(is_numeric($identifier) ? 'n.ref_entity_nano_id' : 'n.slug_value', $identifier)
-            ->groupBy('n.ref_entity_nano_id')
+        $article = $db->table('article n')
+            ->select('n.articleID AS id, ANY_VALUE(ncl.categoryID) AS category_id')
+            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->where(is_numeric($identifier) ? 'n.articleID' : 'n.slug', $identifier)
+            ->groupBy('n.articleID')
             ->get()->getRowArray();
 
         if (!$article) {
@@ -256,30 +256,30 @@ class ArticleApi extends BaseController
         }
 
         $categoryId = (int)($article['category_id'] ?? 0);
-        $builder = $db->table('entity_nano n')
+        $builder = $db->table('article n')
             ->select('
-                n.ref_entity_nano_id AS id,
-                n.headline_text AS title,
-                n.slug_value AS slug,
-                n.summary_text AS summary,
-                n.entity_date AS published_at,
-                n.view_count AS views_count,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS featured_image,
-                ANY_VALUE(c.charlie_name_a) AS category_name,
-                ANY_VALUE(c.field_label_a) AS category_slug
+                n.articleID AS id,
+                n.headline AS title,
+                n.slug AS slug,
+                n.summary AS summary,
+                n.articleDate AS published_at,
+                n.viewed AS views_count,
+                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS featured_image,
+                ANY_VALUE(c.categoryName) AS category_name,
+                ANY_VALUE(c.label) AS category_slug
             ')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_charlie c', 'c.ref_entity_charlie_id = ncl.ref_entity_charlie_id', 'left')
-            ->join('entity_nano_meta nm_thumb', 'nm_thumb.ref_entity_nano_id = n.ref_entity_nano_id AND nm_thumb.meta_key = "thumbnail"', 'left')
-            ->where('n.ref_entity_nano_id !=', $article['id'])
-            ->where('LOWER(n.status_code)', 'published');
+            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->where('n.articleID !=', $article['id'])
+            ->where('LOWER(n.status)', 'published');
 
         if ($categoryId > 0) {
-            $builder->where('ncl.ref_entity_charlie_id', $categoryId);
+            $builder->where('ncl.categoryID', $categoryId);
         }
 
-        $related = $builder->groupBy('n.ref_entity_nano_id')
-            ->orderBy('n.entity_date', 'DESC')
+        $related = $builder->groupBy('n.articleID')
+            ->orderBy('n.articleDate', 'DESC')
             ->limit(5)
             ->get()->getResultArray();
 
@@ -335,29 +335,29 @@ class ArticleApi extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $articles = $db->table('entity_nano n')
+        $articles = $db->table('article n')
             ->select('
-                n.ref_entity_nano_id AS id,
-                n.headline_text AS title,
-                n.slug_value AS slug,
-                n.summary_text AS summary,
-                n.view_count AS views_count,
-                n.entity_date AS published_at,
-                ANY_VALUE(c.charlie_name_a) AS category_name,
-                ANY_VALUE(c.field_label_a) AS category_slug,
-                COALESCE(ANY_VALUE(nm_thumb.meta_value), "/img/investor_placeholder.jpg") AS featured_image
+                n.articleID AS id,
+                n.headline AS title,
+                n.slug AS slug,
+                n.summary AS summary,
+                n.viewed AS views_count,
+                n.articleDate AS published_at,
+                ANY_VALUE(c.categoryName) AS category_name,
+                ANY_VALUE(c.label) AS category_slug,
+                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS featured_image
             ')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_nano_id = n.ref_entity_nano_id', 'left')
-            ->join('entity_charlie c', 'c.ref_entity_charlie_id = ncl.ref_entity_charlie_id', 'left')
-            ->join('entity_nano_meta nm_thumb', 'nm_thumb.ref_entity_nano_id = n.ref_entity_nano_id AND nm_thumb.meta_key = "thumbnail"', 'left')
-            ->where('LOWER(n.status_code)', 'published')
+            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->whereIn('LOWER(n.status)', ['publish', 'published'])
             ->groupStart()
-                ->like('n.headline_text', $q)
-                ->orLike('n.summary_text', $q)
-                ->orLike('n.body_text', $q)
+                ->like('n.headline', $q)
+                ->orLike('n.summary', $q)
+                ->orLike('n.body', $q)
             ->groupEnd()
-            ->groupBy('n.ref_entity_nano_id')
-            ->orderBy('n.entity_date', 'DESC')
+            ->groupBy('n.articleID')
+            ->orderBy('n.articleDate', 'DESC')
             ->limit(20)
             ->get()->getResultArray();
 

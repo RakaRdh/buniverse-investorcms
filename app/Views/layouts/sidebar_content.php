@@ -7,7 +7,17 @@ $navGroups = [
         'label' => 'Content',
         'items' => [
             ['label' => 'Dashboard', 'to' => 'dashboard', 'icon' => 'layout-dashboard'],
-            ['label' => 'Post', 'to' => 'post', 'icon' => 'file-text'],
+            [
+                'label' => 'Post',
+                'type' => 'dropdown',
+                'icon' => 'file-text',
+                'children' => [
+                    ['label' => 'Daftar Artikel', 'to' => 'post'],
+                    ['label' => 'Tambah Naskah', 'to' => 'post/new'],
+                    ['label' => 'Riwayat Revisi', 'to' => 'post/history'],
+                    ['label' => 'Master Keyword', 'to' => 'keyword'],
+                ]
+            ],
             ['label' => 'Headline', 'to' => 'headline', 'icon' => 'newspaper'],
             ['label' => 'Media', 'to' => 'media', 'icon' => 'image'],
             ['label' => 'Files', 'to' => 'files', 'icon' => 'folder-open'],
@@ -16,7 +26,15 @@ $navGroups = [
     [
         'label' => 'Insights',
         'items' => [
-            ['label' => 'Embed Chart', 'to' => 'embed-chart', 'icon' => 'line-chart'],
+            [
+                'label' => 'Embed Chart',
+                'type' => 'dropdown',
+                'icon' => 'line-chart',
+                'children' => [
+                    ['label' => 'Template', 'to' => 'embed-chart/template'],
+                    ['label' => 'Custom Data', 'to' => 'embed-chart/custom'],
+                ]
+            ],
             [
                 'label' => 'Statistic',
                 'type' => 'dropdown',
@@ -65,7 +83,16 @@ if (in_array($userRole, ['author', 'contributor'])) {
             'label' => 'Content',
             'items' => [
                 ['label' => 'Dashboard', 'to' => 'dashboard', 'icon' => 'layout-dashboard'],
-                ['label' => 'Post', 'to' => 'post', 'icon' => 'file-text'],
+                [
+                    'label' => 'Post',
+                    'type' => 'dropdown',
+                    'icon' => 'file-text',
+                    'children' => [
+                        ['label' => 'Daftar Artikel', 'to' => 'post'],
+                        ['label' => 'Tambah Naskah', 'to' => 'post/new'],
+                        ['label' => 'Riwayat Revisi', 'to' => 'post/history'],
+                    ]
+                ],
                 ['label' => 'Media', 'to' => 'media', 'icon' => 'image'],
                 ['label' => 'Files', 'to' => 'files', 'icon' => 'folder-open'],
             ]
@@ -92,7 +119,16 @@ if (in_array($userRole, ['author', 'contributor'])) {
             'label' => 'Content',
             'items' => [
                 ['label' => 'Dashboard', 'to' => 'dashboard', 'icon' => 'layout-dashboard'],
-                ['label' => 'Post', 'to' => 'post', 'icon' => 'file-text'],
+                [
+                    'label' => 'Post',
+                    'type' => 'dropdown',
+                    'icon' => 'file-text',
+                    'children' => [
+                        ['label' => 'Daftar Artikel', 'to' => 'post'],
+                        ['label' => 'Tambah Naskah', 'to' => 'post/new'],
+                        ['label' => 'Riwayat Revisi', 'to' => 'post/history'],
+                    ]
+                ],
                 ['label' => 'Headline', 'to' => 'headline', 'icon' => 'newspaper'],
                 ['label' => 'Media', 'to' => 'media', 'icon' => 'image'],
                 ['label' => 'Files', 'to' => 'files', 'icon' => 'folder-open'],
@@ -101,7 +137,15 @@ if (in_array($userRole, ['author', 'contributor'])) {
         [
             'label' => 'Insights',
             'items' => [
-                ['label' => 'Embed Chart', 'to' => 'embed-chart', 'icon' => 'line-chart'],
+                [
+                    'label' => 'Embed Chart',
+                    'type' => 'dropdown',
+                    'icon' => 'line-chart',
+                    'children' => [
+                        ['label' => 'Template', 'to' => 'embed-chart/template'],
+                        ['label' => 'Custom Data', 'to' => 'embed-chart/custom'],
+                    ]
+                ],
                 [
                     'label' => 'Statistic',
                     'type' => 'dropdown',
@@ -159,7 +203,10 @@ if (in_array($userRole, ['author', 'contributor'])) {
                             <?php
                                 $isChildActive = false;
                                 foreach ($item['children'] as $child) {
-                                    if (str_starts_with($currentUri, $child['to'])) {
+                                    if (($child['to'] === 'post' && ($currentUri === 'post' || str_starts_with($currentUri, 'post/')))
+                                        || ($child['to'] !== 'post' && str_starts_with($currentUri, $child['to']))
+                                        || ($child['to'] === 'embed-chart/template' && ($currentUri === 'embed-chart' || str_starts_with($currentUri, 'embed-chart/template')))
+                                        || ($child['to'] === 'embed-chart/custom' && str_starts_with($currentUri, 'embed-chart/custom'))) {
                                         $isChildActive = true;
                                         break;
                                     }
@@ -177,21 +224,28 @@ if (in_array($userRole, ['author', 'contributor'])) {
                                     <i data-lucide="chevron-down" class="size-3.5 shrink-0 transition-transform duration-200 text-sidebar-foreground/50 dropdown-arrow <?= $isChildActive ? 'rotate-180' : '' ?>" aria-hidden="true"></i>
                                 </button>
                                 
-                                <ul class="pl-7 pr-1 py-1 space-y-1 <?= $isChildActive ? '' : 'hidden' ?> dropdown-menu">
-                                    <?php foreach ($item['children'] as $child): ?>
-                                        <?php 
-                                            $isSubActive = ($child['to'] === 'statistic' && $currentUri === 'statistic')
-                                                || ($child['to'] !== 'statistic' && ($currentUri === $child['to'] || str_starts_with($currentUri, $child['to'] . '/')));
-                                        ?>
-                                        <li>
-                                            <a href="<?= base_url($child['to']) ?>"
-                                               class="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs transition-colors <?= $isSubActive ? 'font-bold text-sidebar-primary bg-sidebar-accent/50 shadow-2xs' : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/30' ?>">
-                                                <span class="size-1.5 rounded-full <?= $isSubActive ? 'bg-sidebar-primary' : 'bg-sidebar-foreground/40' ?>"></span>
-                                                <span><?= esc($child['label']) ?></span>
-                                            </a>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
+                                <div class="dropdown-menu <?= $isChildActive ? 'dropdown-open' : '' ?>">
+                                    <ul class="dropdown-menu-inner pl-7 pr-1 py-1 space-y-1">
+                                        <?php foreach ($item['children'] as $child): ?>
+                                            <?php 
+                                                $isSubActive = ($child['to'] === 'post' && ($currentUri === 'post' || str_starts_with($currentUri, 'post/edit') || str_starts_with($currentUri, 'post/preview')))
+                                                    || ($child['to'] === 'post/new' && $currentUri === 'post/new')
+                                                    || ($child['to'] === 'post/history' && str_starts_with($currentUri, 'post/history'))
+                                                    || ($child['to'] === 'statistic' && $currentUri === 'statistic')
+                                                    || ($child['to'] === 'embed-chart/template' && ($currentUri === 'embed-chart' || $currentUri === 'embed-chart/template'))
+                                                    || ($child['to'] === 'embed-chart/custom' && str_starts_with($currentUri, 'embed-chart/custom'))
+                                                    || ($child['to'] !== 'post' && $child['to'] !== 'post/new' && $child['to'] !== 'post/history' && $child['to'] !== 'statistic' && $child['to'] !== 'embed-chart/template' && $child['to'] !== 'embed-chart/custom' && ($currentUri === $child['to'] || str_starts_with($currentUri, $child['to'] . '/')));
+                                            ?>
+                                            <li>
+                                                <a href="<?= base_url($child['to']) ?>"
+                                                   class="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs transition-colors <?= $isSubActive ? 'font-bold text-sidebar-primary bg-sidebar-accent/50 shadow-2xs' : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/30' ?>">
+                                                    <span class="size-1.5 rounded-full <?= $isSubActive ? 'bg-sidebar-primary' : 'bg-sidebar-foreground/40' ?>"></span>
+                                                    <span><?= esc($child['label']) ?></span>
+                                                </a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
                             </li>
                         <?php else: ?>
                             <?php 

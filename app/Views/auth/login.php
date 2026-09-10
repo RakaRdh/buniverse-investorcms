@@ -128,9 +128,9 @@
                         <!-- Password Input -->
                         <div>
                             <label class="block text-xs font-semibold text-[#334155] mb-1.5">Kata sandi</label>
-                            <div class="relative">
-                                <input type="password" name="password" id="passwordInput" required value="" placeholder="••••••••••••" class="flex h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3.5 pr-10 text-sm text-[#0F172A] shadow-xs placeholder:text-[#94A3B8] focus:border-[#0077CC] focus:outline-none focus:ring-2 focus:ring-[#0077CC]/20 transition-all font-mono">
-                                <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#475569] p-1 transition-colors" title="Toggle password visibility">
+                            <div class="relative flex items-center">
+                                <input type="password" name="password" id="passwordInput" required value="" placeholder="••••••••••••" class="flex h-11 w-full rounded-lg border border-[#CBD5E1] bg-white pl-3.5 pr-12 text-sm text-[#0F172A] shadow-xs placeholder:text-[#94A3B8] focus:border-[#0077CC] focus:outline-none focus:ring-2 focus:ring-[#0077CC]/20 transition-all font-mono">
+                                <button type="button" onclick="togglePasswordVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 text-[#94A3B8] hover:text-[#475569] p-1.5 rounded-md transition-colors" title="Lihat/Sembunyikan Kata Sandi">
                                     <i data-lucide="eye" id="passwordEyeIcon" class="size-4"></i>
                                 </button>
                             </div>
@@ -142,27 +142,67 @@
                         </button>
                     </form>
 
-                    <!-- Demo Accounts Quick Fill -->
-                    <div class="mt-6 pt-5 border-t border-[#F1F5F9] space-y-2">
-                        <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
-                            Akun Demo Cepat (Klik untuk Isi):
-                        </p>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <button type="button" onclick="fillDemo('raka_h', 'password123')" class="flex flex-col text-left p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
+                    <!-- Demo Accounts Quick Fill (All 6 Authentic Roles) -->
+                    <div class="mt-6 pt-5 border-t border-[#F1F5F9] space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
+                                Akun Demo per Role (Klik untuk Isi):
+                            </p>
+                            <span class="text-[10px] text-muted-foreground font-mono">pwd: password123</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                            <!-- 1. Administrator -->
+                            <button type="button" onclick="fillDemo('raka_h', 'password123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
                                 <div class="flex items-center justify-between">
-                                    <span class="font-bold text-[#0F172A]">Raka</span>
-                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Admin</span>
+                                    <span class="font-bold text-[#0F172A] text-xs">Raka H.</span>
+                                    <span class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-blue-100 text-blue-700 uppercase">Admin</span>
                                 </div>
-                                <span class="text-[11px] text-blue-600 font-medium mt-0.5">@raka_h</span>
-                                <span class="text-[10px] text-slate-500 font-mono mt-0.5">password123</span>
+                                <span class="text-[10px] text-blue-600 font-mono mt-0.5">@raka_h</span>
                             </button>
-                            <button type="button" onclick="fillDemo('natasha_k', 'editor123')" class="flex flex-col text-left p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 transition-colors">
+
+                            <!-- 2. Redpel -->
+                            <button type="button" onclick="fillDemo('budi_redpel', 'password123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-purple-50 hover:border-purple-300 transition-colors">
                                 <div class="flex items-center justify-between">
-                                    <span class="font-bold text-[#0F172A]">Natasha</span>
-                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Editor</span>
+                                    <span class="font-bold text-[#0F172A] text-xs">Budi P.</span>
+                                    <span class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 uppercase">Redpel</span>
                                 </div>
-                                <span class="text-[11px] text-blue-600 font-medium mt-0.5">@natasha_k</span>
-                                <span class="text-[10px] text-slate-500 font-mono mt-0.5">editor123</span>
+                                <span class="text-[10px] text-purple-600 font-mono mt-0.5">@budi_redpel</span>
+                            </button>
+
+                            <!-- 3. Editor -->
+                            <button type="button" onclick="fillDemo('dewi_editor', 'password123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-300 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-[#0F172A] text-xs">Dewi S.</span>
+                                    <span class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-sky-100 text-sky-700 uppercase">Editor</span>
+                                </div>
+                                <span class="text-[10px] text-sky-600 font-mono mt-0.5">@dewi_editor</span>
+                            </button>
+
+                            <!-- 4. Riset -->
+                            <button type="button" onclick="fillDemo('rizky_k', 'password123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-[#0F172A] text-xs">Rizky K.</span>
+                                    <span class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 uppercase">Riset</span>
+                                </div>
+                                <span class="text-[10px] text-emerald-600 font-mono mt-0.5">@rizky_k</span>
+                            </button>
+
+                            <!-- 5. Sekred -->
+                            <button type="button" onclick="fillDemo('sekred', 'password123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-amber-50 hover:border-amber-300 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-[#0F172A] text-xs">Agus T.</span>
+                                    <span class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-700 uppercase">Sekred</span>
+                                </div>
+                                <span class="text-[10px] text-amber-600 font-mono mt-0.5">@sekred</span>
+                            </button>
+
+                            <!-- 6. Support -->
+                            <button type="button" onclick="fillDemo('support', 'password123')" class="flex flex-col text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-cyan-50 hover:border-cyan-300 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-[#0F172A] text-xs">IT Dev</span>
+                                    <span class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-cyan-100 text-cyan-700 uppercase">Support</span>
+                                </div>
+                                <span class="text-[10px] text-cyan-600 font-mono mt-0.5">@support</span>
                             </button>
                         </div>
                     </div>

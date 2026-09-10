@@ -16,6 +16,47 @@
     </div>
 </div>
 
+<!-- Simple Filters Bar (Search, Status, Role) -->
+<div class="surface-card p-4 mb-6 rounded-xl border border-border shadow-2xs">
+    <form method="get" action="<?= base_url('user') ?>" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div class="relative flex-1">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"></i>
+            <input type="text" name="q" value="<?= esc($filters['q'] ?? '') ?>" placeholder="Cari nama personil, username, atau email..." class="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Filter Status -->
+            <select name="status" class="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                <option value="all">Semua Status</option>
+                <option value="Active" <?= ($filters['status'] ?? '') === 'Active' ? 'selected' : '' ?>>Active (Aktif)</option>
+                <option value="Inactive" <?= ($filters['status'] ?? '') === 'Inactive' ? 'selected' : '' ?>>Inactive (Nonaktif)</option>
+            </select>
+
+            <!-- Filter Role -->
+            <select name="role" class="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary capitalize">
+                <option value="all">Semua Role</option>
+                <option value="administrator" <?= strtolower($filters['role'] ?? '') === 'administrator' ? 'selected' : '' ?>>Administrator</option>
+                <option value="redpel" <?= strtolower($filters['role'] ?? '') === 'redpel' ? 'selected' : '' ?>>Redpel</option>
+                <option value="editor" <?= strtolower($filters['role'] ?? '') === 'editor' ? 'selected' : '' ?>>Editor</option>
+                <option value="riset" <?= strtolower($filters['role'] ?? '') === 'riset' ? 'selected' : '' ?>>Riset</option>
+                <option value="sekred" <?= strtolower($filters['role'] ?? '') === 'sekred' ? 'selected' : '' ?>>Sekred</option>
+                <option value="support" <?= strtolower($filters['role'] ?? '') === 'support' ? 'selected' : '' ?>>Support</option>
+            </select>
+
+            <button type="submit" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
+                <i data-lucide="filter" class="size-3.5"></i>
+                <span>Filter</span>
+            </button>
+
+            <?php if (!empty($filters['q']) || ($filters['status'] ?? 'all') !== 'all' || ($filters['role'] ?? 'all') !== 'all'): ?>
+                <a href="<?= base_url('user') ?>" class="rounded-md border border-input bg-background px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
+                    Reset
+                </a>
+            <?php endif; ?>
+        </div>
+    </form>
+</div>
+
 <div class="surface-card overflow-hidden">
     <div class="relative w-full overflow-auto">
         <table class="w-full caption-bottom text-sm">
@@ -29,6 +70,13 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-border">
+                <?php if (empty($users)): ?>
+                <tr>
+                    <td colspan="5" class="p-8 text-center text-xs text-muted-foreground">
+                        Tidak ada personil yang sesuai kriteria pencarian filter.
+                    </td>
+                </tr>
+                <?php endif; ?>
                 <?php foreach ($users as $user): ?>
                 <?php
                     $uParts = explode(' ', $user['name']);
@@ -49,24 +97,28 @@
                     <td class="p-4">
                         <?php
                             $role = $user['role'];
-                            $roleClass = match($role) {
-                                'Master' => 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold',
-                                'Admin' => 'bg-primary/10 text-primary border-primary/20',
-                                'Editor' => 'bg-accent/12 text-accent border-accent/25',
-                                'Author' => 'bg-success/12 text-success border-success/25',
+                            $roleLower = strtolower($role);
+                            $roleClass = match($roleLower) {
+                                'administrator', 'master', 'admin' => 'bg-primary/10 text-primary border-primary/20 font-bold',
+                                'redpel' => 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/25 font-semibold',
+                                'editor' => 'bg-accent/12 text-accent border-accent/25',
+                                'riset' => 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25',
+                                'sekred' => 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25',
+                                'support' => 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/25',
                                 default => 'bg-muted text-muted-foreground border-border'
                             };
 
                             $sessionUserId = (int)(session()->get('user_id') ?: 9);
-                            $sessionUserRole = session()->get('user_role') ?? 'Admin';
+                            $sessionUserRole = strtolower(session()->get('user_role') ?? 'administrator');
+                            $canManagePerms = in_array($sessionUserRole, ['master', 'administrator', 'admin']);
                             $canDelete = true;
                             if ((int)$user['id'] === $sessionUserId) {
                                 $canDelete = false; // Cannot delete self
-                            } elseif (strcasecmp($sessionUserRole, 'Master') !== 0 && in_array(strtolower($user['role']), ['master', 'admin'])) {
-                                $canDelete = false; // Only Master can delete Admin or Master
+                            } elseif (!in_array($sessionUserRole, ['master', 'administrator']) && in_array(strtolower($user['role']), ['master', 'administrator', 'admin'])) {
+                                $canDelete = false; // Only Administrator can delete Admin
                             }
                         ?>
-                        <span class="inline-flex rounded-md border px-2 py-0.5 text-xs font-medium <?= $roleClass ?>"><?= esc($role) ?></span>
+                        <span class="inline-flex rounded-md border px-2 py-0.5 text-xs font-medium capitalize <?= $roleClass ?>"><?= esc($role) ?></span>
                     </td>
                     <td class="p-4">
                         <span class="inline-flex items-center gap-1.5 rounded-md border border-success/25 bg-success/12 px-2 py-0.5 text-xs font-medium text-success capitalize">
@@ -77,11 +129,21 @@
                     <td class="p-4 text-xs text-muted-foreground"><?= esc($user['last_active']) ?></td>
                     <td class="p-4 text-right">
                         <div class="inline-flex items-center gap-1.5">
-                            <?php if (in_array(strtolower($sessionUserRole), ['master', 'admin'])): ?>
+                            <?php if ($canManagePerms): ?>
                             <button type="button" onclick="openPermissionModal(<?= $user['id'] ?>, '<?= esc(addslashes($user['name'])) ?>', '<?= esc($user['role']) ?>')" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-primary hover:border-primary transition-colors" title="Manage Permissions">
                                 <i data-lucide="shield" class="size-3.5"></i>
                             </button>
                             <?php endif; ?>
+
+                            <?php if ($user['id'] !== $sessionUserId && $canManagePerms): ?>
+                            <form method="post" action="<?= base_url('user/toggle-status/' . $user['id']) ?>" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin <?= $user['is_active'] ? 'menonaktifkan (block)' : 'mengaktifkan kembali (unblock)' ?> akun <?= esc(addslashes($user['name'])) ?>?')">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background <?= $user['is_active'] ? 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20' : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20' ?> transition-colors" title="<?= $user['is_active'] ? 'Block User' : 'Unblock User' ?>">
+                                    <i data-lucide="<?= $user['is_active'] ? 'user-x' : 'user-check' ?>" class="size-3.5"></i>
+                                </button>
+                            </form>
+                            <?php endif; ?>
+
                             <?php if ($canDelete): ?>
                             <button type="button" onclick="openDeleteUserModal(<?= $user['id'] ?>, '<?= esc(addslashes($user['name'])) ?>')" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-destructive hover:bg-destructive/10" title="Delete User">
                                 <i data-lucide="trash-2" class="size-3.5"></i>
@@ -95,9 +157,46 @@
                     </td>
                 </tr>
                 <?php endforeach; ?>
-            </tbody>
         </table>
     </div>
+
+    <!-- Pagination Footer -->
+    <?php if (isset($pagination) && $pagination['totalItems'] > 0): ?>
+        <?php
+            $queryParams = $_GET;
+            $buildUserPageUrl = function($p) use ($queryParams) {
+                $params = $queryParams;
+                $params['page'] = $p;
+                return base_url('user') . '?' . http_build_query($params);
+            };
+        ?>
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border px-4 py-3 text-xs text-muted-foreground bg-muted/20">
+            <div>
+                Menampilkan <span class="font-semibold text-foreground"><?= $pagination['from'] ?></span> - <span class="font-semibold text-foreground"><?= $pagination['to'] ?></span> dari <span class="font-semibold text-foreground"><?= number_format($pagination['totalItems']) ?></span> pengguna
+            </div>
+            <div class="flex items-center gap-1">
+                <?php if ($pagination['page'] > 1): ?>
+                    <a href="<?= $buildUserPageUrl($pagination['page'] - 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Prev</a>
+                <?php else: ?>
+                    <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Prev</span>
+                <?php endif; ?>
+
+                <?php for ($p = max(1, $pagination['page'] - 2); $p <= min($pagination['totalPages'], $pagination['page'] + 2); $p++): ?>
+                    <?php if ($p == $pagination['page']): ?>
+                        <span class="rounded-md bg-primary px-2.5 py-1 font-bold text-primary-foreground"><?= $p ?></span>
+                    <?php else: ?>
+                        <a href="<?= $buildUserPageUrl($p) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors"><?= $p ?></a>
+                    <?php endif; ?>
+                <?php endfor; ?>
+
+                <?php if ($pagination['page'] < $pagination['totalPages']): ?>
+                    <a href="<?= $buildUserPageUrl($pagination['page'] + 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Next</a>
+                <?php else: ?>
+                    <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Next</span>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
 
 <!-- Modal Add User -->
@@ -126,15 +225,33 @@
                 <input type="email" name="email" required placeholder="raditya@investor.id" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             </div>
             <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Inisial Alias Penulis</label>
+                    <span class="text-[10px] text-muted-foreground/70 font-normal italic">Opsional — Contoh: RDP, AGG, dupp</span>
+                </div>
+                <input type="text" name="alias" maxlength="20" placeholder="e.g. RDP" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono">
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Password</label>
+                    <span class="text-[10px] text-muted-foreground/70 font-normal italic">Default: password123 jika kosong</span>
+                </div>
+                <div class="relative flex items-center">
+                    <input type="password" name="password" id="newUserPassword" placeholder="Masukkan password akun..." class="flex h-9 w-full rounded-md border border-input bg-background pl-3 pr-11 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                    <button type="button" onclick="togglePasswordVisibility('newUserPassword', this)" class="absolute right-2 top-1/2 -translate-y-1/2 z-10 text-muted-foreground hover:text-foreground p-1 rounded transition-colors" title="Lihat/Sembunyikan Password">
+                        <i data-lucide="eye" class="size-4"></i>
+                    </button>
+                </div>
+            </div>
+            <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Assigned Role</label>
-                <select name="role" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                    <?php if (strcasecmp(session()->get('user_role') ?? '', 'Master') === 0): ?>
-                    <option value="Master">Master / Super Administrator</option>
-                    <?php endif; ?>
-                    <option value="Admin">Administrator</option>
-                    <option value="Editor">Editor</option>
-                    <option value="Author">Author / Journalist</option>
-                    <option value="Contributor">Contributor</option>
+                <select name="role" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring capitalize">
+                    <option value="administrator">Administrator</option>
+                    <option value="redpel">Redpel (Redaktur Pelaksana)</option>
+                    <option value="editor" selected>Editor</option>
+                    <option value="riset">Riset</option>
+                    <option value="sekred">Sekred</option>
+                    <option value="support">Support</option>
                 </select>
             </div>
             <div class="flex justify-end gap-2 pt-2 border-t border-border">
@@ -162,15 +279,17 @@
     </div>
 </div>
 
-<!-- Modal Page Permissions -->
+<!-- Modal Page Permissions (Informative Read-Only Role Access Overview) -->
 <div id="permissionModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
     <div class="surface-card w-full max-w-lg p-5 shadow-2xl space-y-4 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-150">
         <div class="flex items-center justify-between border-b border-border pb-3">
-            <div class="flex items-center gap-2">
-                <i data-lucide="shield-check" class="size-5 text-primary"></i>
+            <div class="flex items-center gap-2.5">
+                <div class="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <i data-lucide="shield-check" class="size-4.5"></i>
+                </div>
                 <div>
-                    <h3 class="text-sm font-bold text-foreground">Hak Akses Halaman User</h3>
-                    <p class="text-[11px] text-muted-foreground" id="permissionUserDesc">Atur halaman yang boleh diakses oleh personil ini.</p>
+                    <h3 class="text-sm font-bold text-foreground">Daftar Hak Akses Halaman</h3>
+                    <p class="text-[11px] text-muted-foreground" id="permissionUserDesc">Memuat ringkasan wewenang...</p>
                 </div>
             </div>
             <button type="button" onclick="closePermissionModal()" class="text-muted-foreground hover:text-foreground">
@@ -178,104 +297,115 @@
             </button>
         </div>
 
-        <form id="permissionForm" class="space-y-4">
-            <input type="hidden" id="permUserId" name="user_id" value="">
-            
-            <div class="space-y-3 max-h-[340px] overflow-y-auto custom-sidebar-scroll pr-1">
-                <!-- Content Module -->
-                <div class="rounded-lg border border-border p-3 bg-muted/20">
-                    <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">Modul Konten</span>
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="dashboard" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Dashboard</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="post" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Post (Artikel)</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="headline" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Headline</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="media" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Media Library</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="files" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Files Manager</span>
-                        </label>
+        <div class="space-y-3 max-h-[360px] overflow-y-auto custom-sidebar-scroll pr-1">
+            <!-- Content Module -->
+            <div class="rounded-lg border border-border p-3 bg-muted/20">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block mb-2.5">Modul Konten</span>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-dashboard">
+                        <span class="font-medium text-foreground">Dashboard</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
                     </div>
-                </div>
-
-                <!-- Insights Module -->
-                <div class="rounded-lg border border-border p-3 bg-muted/20">
-                    <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">Modul Insights</span>
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="embed-chart" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Embed Chart</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="statistic" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Trafik & Audiens</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="statistic/report" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Performa Tim Editorial</span>
-                        </label>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-post">
+                        <span class="font-medium text-foreground">Post (Artikel)</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
                     </div>
-                </div>
-
-                <!-- Management Module -->
-                <div class="rounded-lg border border-border p-3 bg-muted/20">
-                    <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">Modul Manajemen & Apps</span>
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="kanal/master" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Master Kanal</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="kanal/sub" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Sub Kanal</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="kanal/stats" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Performa Kanal</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="apps-version" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Apps Version</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="apps-push-notif" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Apps Push Notif</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="apps-feature-content" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Feature Content</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="member" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>Member Portal</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="pages[]" value="user" class="rounded border-input text-primary focus:ring-primary perm-checkbox">
-                            <span>User Management</span>
-                        </label>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-headline">
+                        <span class="font-medium text-foreground">Headline</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-media">
+                        <span class="font-medium text-foreground">Media Library</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-files">
+                        <span class="font-medium text-foreground">Files Manager</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
                     </div>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between pt-3 border-t border-border">
-                <button type="button" onclick="selectAllPerms(true)" class="text-[11px] text-primary hover:underline font-medium">Pilih Semua</button>
-                <div class="flex gap-2">
-                    <button type="button" onclick="closePermissionModal()" class="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
-                    <button type="button" onclick="saveUserPermissions()" id="savePermBtn" class="rounded-md bg-primary px-4 py-1.5 text-xs font-bold uppercase text-primary-foreground hover:bg-primary/90">Simpan Izin</button>
+            <!-- Insights Module -->
+            <div class="rounded-lg border border-border p-3 bg-muted/20">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block mb-2.5">Modul Insights</span>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-embed-chart">
+                        <span class="font-medium text-foreground">Embed Chart</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-statistic">
+                        <span class="font-medium text-foreground">Trafik &amp; Audiens</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-statistic-report">
+                        <span class="font-medium text-foreground">Performa Tim Editorial</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
                 </div>
             </div>
-        </form>
+
+            <!-- Management Module -->
+            <div class="rounded-lg border border-border p-3 bg-muted/20">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block mb-2.5">Modul Manajemen &amp; Apps</span>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-kanal-master">
+                        <span class="font-medium text-foreground">Master Kanal</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-kanal-sub">
+                        <span class="font-medium text-foreground">Sub Kanal</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-kanal-stats">
+                        <span class="font-medium text-foreground">Performa Kanal</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-apps-version">
+                        <span class="font-medium text-foreground">Apps Version</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-apps-push-notif">
+                        <span class="font-medium text-foreground">Apps Push Notif</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-apps-feature-content">
+                        <span class="font-medium text-foreground">Feature Content</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-member">
+                        <span class="font-medium text-foreground">Member Portal</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                    <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-border/60 bg-background/80 transition-all" id="perm-user">
+                        <span class="font-medium text-foreground">User Management</span>
+                        <span class="perm-icon-wrapper flex items-center justify-center"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-3 border-t border-border text-xs">
+            <div class="flex items-center gap-3 text-xs">
+                <span class="inline-flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                    <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="m9 12 2 2 4-4"></path>
+                    </svg>
+                    <span>Diizinkan</span>
+                </span>
+                <span class="inline-flex items-center gap-1.5 font-medium text-rose-600 dark:text-rose-400">
+                    <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="m15 9-6 6"></path>
+                        <path d="m9 9 6 6"></path>
+                    </svg>
+                    <span>Dibatasi</span>
+                </span>
+            </div>
+            <button type="button" onclick="closePermissionModal()" class="rounded-md bg-[#2B6CB0] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-xs">
+                Tutup
+            </button>
+        </div>
     </div>
 </div>
 
@@ -283,6 +413,13 @@
 
 <?= $this->section('scripts') ?>
 <script>
+// Embedded preloaded permissions map for zero-lag instant rendering
+const globalPermissionsMap = <?= json_encode($permissionsMap ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+
+const CHECK_ICON_SVG = `<svg class="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>`;
+
+const CROSS_ICON_SVG = `<svg class="size-4 text-rose-600 dark:text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>`;
+
 function closeNewUserModal() {
     const modal = document.getElementById('newUserModal');
     if (modal) modal.style.display = 'none';
@@ -290,11 +427,11 @@ function closeNewUserModal() {
 
 function openDeleteUserModal(userId, userName) {
     const modal = document.getElementById('deleteUserModal');
-    const nameEl = document.getElementById('deleteUserName');
-    const btn = document.getElementById('confirmDeleteUserBtn');
-    if (modal && nameEl && btn) {
-        nameEl.textContent = userName;
-        btn.href = '<?= base_url('user/delete/') ?>/' + userId;
+    const nameSpan = document.getElementById('deleteUserName');
+    const confirmBtn = document.getElementById('confirmDeleteUserBtn');
+    if (modal && nameSpan && confirmBtn) {
+        nameSpan.textContent = userName;
+        confirmBtn.href = '<?= base_url('user/delete/') ?>/' + userId;
         modal.style.display = 'flex';
     }
 }
@@ -304,36 +441,58 @@ function closeDeleteUserModal() {
     if (modal) modal.style.display = 'none';
 }
 
+function renderPermissionItems(permissions) {
+    const allKeys = [
+        'dashboard', 'post', 'headline', 'media', 'files',
+        'embed-chart', 'statistic', 'statistic-report',
+        'kanal-master', 'kanal-sub', 'kanal-stats',
+        'apps-version', 'apps-push-notif', 'apps-feature-content',
+        'member', 'user'
+    ];
+
+    allKeys.forEach(k => {
+        const el = document.getElementById('perm-' + k);
+        if (!el) return;
+        const iconWrapper = el.querySelector('.perm-icon-wrapper');
+        const lookupKey = k.replace('-', '/');
+        const hasAccess = Boolean(permissions.all === true || permissions[k] === true || permissions[lookupKey] === true);
+
+        if (hasAccess) {
+            el.className = 'flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 font-medium transition-all shadow-2xs';
+            if (iconWrapper) iconWrapper.innerHTML = CHECK_ICON_SVG;
+        } else {
+            el.className = 'flex items-center justify-between py-1.5 px-2.5 rounded-lg border border-rose-500/20 bg-rose-500/10 text-rose-950 dark:text-rose-200 transition-all opacity-85';
+            if (iconWrapper) iconWrapper.innerHTML = CROSS_ICON_SVG;
+        }
+    });
+}
+
 function openPermissionModal(userId, userName, userRole) {
     const modal = document.getElementById('permissionModal');
     const desc = document.getElementById('permissionUserDesc');
-    const userIdInput = document.getElementById('permUserId');
     if (!modal) return;
 
-    userIdInput.value = userId;
-    desc.textContent = `Hak akses untuk: ${userName} (${userRole})`;
+    desc.textContent = `Ringkasan wewenang halaman untuk ${userName} (Peran: ${userRole.toUpperCase()})`;
 
-    // Reset checkboxes
-    document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = false);
+    // 1. INSTANT ZERO-LAG RENDERING from local data
+    const roleKey = (userRole || '').toLowerCase();
+    const userKey = String(userId);
+    const defaultRolePerms = (globalPermissionsMap.roles && globalPermissionsMap.roles[roleKey]) ? globalPermissionsMap.roles[roleKey] : {};
+    const userCustomPerms = (globalPermissionsMap.users && globalPermissionsMap.users[userKey]) ? globalPermissionsMap.users[userKey] : defaultRolePerms;
 
-    // Fetch user permissions
+    renderPermissionItems(userCustomPerms);
+    modal.style.display = 'flex';
+
+    // 2. Background sync (optional fallback to update in real-time if modified concurrently)
     fetch('<?= base_url('user/permissions/') ?>/' + userId)
         .then(res => res.json())
         .then(res => {
             if (res.status === 'success' && res.permissions) {
-                const p = res.permissions;
-                document.querySelectorAll('.perm-checkbox').forEach(cb => {
-                    if (p.all === true || p[cb.value] === true) {
-                        cb.checked = true;
-                    }
-                });
+                renderPermissionItems(res.permissions);
             }
-            modal.style.display = 'flex';
-            if (window.lucide) window.lucide.createIcons();
         })
         .catch(err => {
-            console.error(err);
-            modal.style.display = 'flex';
+            console.error('Permissions fetch error:', err);
         });
 }
 
@@ -342,38 +501,13 @@ function closePermissionModal() {
     if (modal) modal.style.display = 'none';
 }
 
-function selectAllPerms(checked) {
-    document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = checked);
-}
-
-function saveUserPermissions() {
-    const form = document.getElementById('permissionForm');
-    const btn = document.getElementById('savePermBtn');
-    const formData = new FormData(form);
-
-    btn.disabled = true;
-    btn.textContent = 'Menyimpan...';
-
-    fetch('<?= base_url('user/permissions/save') ?>', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(res => {
-        btn.disabled = false;
-        btn.textContent = 'Simpan Izin';
-        if (res.status === 'success') {
-            closePermissionModal();
-            alert('Izin halaman berhasil diperbarui.');
-        } else {
-            alert('Gagal: ' + (res.message || 'Terjadi kesalahan'));
-        }
-    })
-    .catch(err => {
-        btn.disabled = false;
-        btn.textContent = 'Simpan Izin';
-        alert('Terjadi kesalahan jaringan.');
-    });
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    btn.innerHTML = isPassword ? '<i data-lucide="eye-off" class="size-4"></i>' : '<i data-lucide="eye" class="size-4"></i>';
+    if (window.lucide) window.lucide.createIcons();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

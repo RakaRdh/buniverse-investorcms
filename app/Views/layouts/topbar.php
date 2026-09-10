@@ -9,7 +9,10 @@ $routeTitles = [
     'headline' => ['section' => 'Headline', 'page' => 'Placements'],
     'media' => ['section' => 'Media', 'page' => 'Library'],
     'files' => ['section' => 'Files', 'page' => 'All Files'],
-    'embed-chart' => ['section' => 'Embed Chart', 'page' => 'Charts'],
+    'embed-chart' => ['section' => 'Embed Chart', 'page' => 'Template Charts'],
+    'embed-chart/template' => ['section' => 'Embed Chart', 'page' => 'Template Charts'],
+    'embed-chart/custom' => ['section' => 'Embed Chart', 'page' => 'Custom Data'],
+    'embed-chart/custom/create' => ['section' => 'Embed Chart', 'page' => 'Create Custom'],
     'statistic' => ['section' => 'Insights', 'page' => 'Trafik & Audiens'],
     'statistic/report' => ['section' => 'Insights', 'page' => 'Performa Tim Editorial'],
     'kanal/master' => ['section' => 'Kanal', 'page' => 'Master Kanal'],
@@ -19,9 +22,17 @@ $routeTitles = [
     'apps-push-notif' => ['section' => 'Apps', 'page' => 'Push Notif'],
     'apps-feature-content' => ['section' => 'Apps', 'page' => 'Feature Content'],
     'user' => ['section' => 'Management', 'page' => 'All Users'],
+    'user/profile' => ['section' => 'Account', 'page' => 'My Profile'],
 ];
 
-$crumb = $routeTitles[$currentUri] ?? ['section' => 'Dashboard', 'page' => 'Overview'];
+$crumb = $routeTitles[$currentUri] ?? null;
+if (!$crumb) {
+    if (str_starts_with($currentUri, 'embed-chart/custom/edit/')) {
+        $crumb = ['section' => 'Embed Chart', 'page' => 'Edit Custom'];
+    } else {
+        $crumb = ['section' => 'Dashboard', 'page' => 'Overview'];
+    }
+}
 ?>
 
 <header class="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur-md">
@@ -40,11 +51,7 @@ $crumb = $routeTitles[$currentUri] ?? ['section' => 'Dashboard', 'page' => 'Over
             </ol>
         </nav>
 
-        <!-- Global Search Input -->
-        <div class="relative hidden w-72 md:block">
-            <i data-lucide="search" class="absolute top-1/2 left-3 -translate-y-1/2 size-4 text-muted-foreground" aria-hidden="true"></i>
-            <input type="search" placeholder="Search articles, media, users…" class="flex h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-        </div>
+
 
         <!-- Theme Toggle Switcher Button (Lucide Icons: Sun / Moon) -->
         <button type="button" onclick="toggleTheme()" id="globalThemeToggleBtn" class="inline-flex size-9 sm:size-10 items-center justify-center rounded-md text-foreground hover:bg-muted transition-colors" title="Ganti Tema (Dark / Light)" aria-label="Toggle Theme">
@@ -74,10 +81,15 @@ $crumb = $routeTitles[$currentUri] ?? ['section' => 'Dashboard', 'page' => 'Over
             <div id="userDropdownMenu" class="absolute right-0 top-full mt-2 hidden w-56 rounded-md border border-border bg-card p-1 text-foreground shadow-lg animate-in fade-in zoom-in-95 duration-100 z-50">
                 <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground"><?= esc(session('user_email') ?? 'user@investor.id') ?></div>
                 <div class="my-1 h-px bg-border"></div>
-                <a href="<?= base_url('user') ?>" class="flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted">Team Staff</a>
+                <a href="<?= base_url('user/profile') ?>" class="flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted">
+                    <i data-lucide="user" class="size-4 mr-2 text-muted-foreground"></i> My Profile
+                </a>
+                <a href="<?= base_url('user') ?>" class="flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted">
+                    <i data-lucide="users" class="size-4 mr-2 text-muted-foreground"></i> Team Staff
+                </a>
                 <div class="my-1 h-px bg-border"></div>
                 <button type="button" onclick="openLogoutModal(); toggleUserDropdown();" class="flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10">
-                    Logout
+                    <i data-lucide="log-out" class="size-4 mr-2"></i> Logout
                 </button>
             </div>
         </div>

@@ -8,7 +8,7 @@ use App\Models\AuthorModel;
 use App\Models\MediaModel;
 use App\Models\AdminModel;
 use App\Models\ChartModel;
-use App\Models\TagModel;
+use App\Models\KeywordModel;
 
 class Post extends BaseController
 {
@@ -18,7 +18,7 @@ class Post extends BaseController
     protected MediaModel $mediaModel;
     protected AdminModel $adminModel;
     protected ChartModel $chartModel;
-    protected TagModel $tagModel;
+    protected KeywordModel $keywordModel;
 
     public function __construct()
     {
@@ -28,18 +28,18 @@ class Post extends BaseController
         $this->mediaModel = new MediaModel();
         $this->adminModel = new AdminModel();
         $this->chartModel = new ChartModel();
-        $this->tagModel = new TagModel();
+        $this->keywordModel = new KeywordModel();
     }
 
     public function index()
     {
         $kanals = $this->categoryModel->getKanalTree();
         $users = $this->adminModel->select('
-                ref_entity_principal_id AS id,
-                attr_display_name AS name,
-                attr_identifier AS username,
-                attr_contact_val AS email,
-                attr_role_code AS role
+                userID AS id,
+                name,
+                username,
+                email,
+                roleName AS role
             ')->findAll();
 
         // Filtering parameters
@@ -74,6 +74,7 @@ class Post extends BaseController
         $page = max(1, (int)($this->request->getGet('page') ?? 1));
         $perPage = 25;
 
+        $statuses = $this->articleModel->getArticleStatuses($userRole);
         $result = $this->articleModel->getArticlesWithRelations($filters, $page, $perPage);
         $totalItems = $result['total'];
         $totalPages = max(1, (int)ceil($totalItems / $perPage));
@@ -86,6 +87,8 @@ class Post extends BaseController
             'posts'      => $result['data'],
             'kanals'     => $kanals,
             'users'      => $users,
+            'statuses'   => $statuses,
+            'userRole'   => $userRole,
             'filters'    => [
                 'q'         => $keyword,
                 'kanal'     => $kanalFilter ?? 'all',
@@ -111,15 +114,16 @@ class Post extends BaseController
     {
         $kanals = $this->categoryModel->getKanalTree();
         $users = $this->adminModel->select('
-                ref_entity_principal_id AS id,
-                attr_display_name AS name,
-                attr_identifier AS username,
-                attr_contact_val AS email,
-                attr_role_code AS role
+                userID AS id,
+                name,
+                username,
+                email,
+                roleName AS role
             ')->findAll();
+        $authors = $this->authorModel->getAuthorsWithCount();
         $media = $this->mediaModel->getMediaWithRelations(1, 30)['data'];
         $allPosts = $this->articleModel->getLightweightArticles(50);
-        $charts = $this->chartModel->getChartsList();
+        $charts = $this->chartModel->getCustomCharts();
 
         return view('post/editor', [
             'title'      => 'Create New Post',
@@ -127,6 +131,7 @@ class Post extends BaseController
             'kanals'     => $kanals,
             'categories' => $kanals,
             'users'      => $users,
+            'authors'    => $authors,
             'media'      => $media,
             'charts'     => $charts,
             'allPosts'   => $allPosts,
@@ -146,8 +151,8 @@ class Post extends BaseController
         $userRole = session('user_role') ?? 'Admin';
         $userId = (int)(session('user_id') ?: 0);
 
-        // RBAC: Author & Contributor can only edit their own articles
-        if (in_array(strtolower($userRole), ['author', 'contributor'])) {
+        // RBAC: Author, Contributor & Support can only edit their own articles
+        if (in_array(strtolower($userRole), ['author', 'contributor', 'support'])) {
             if (!empty($article['author_user_id']) && (int)$article['author_user_id'] !== $userId) {
                 return redirect()->to('/post')->with('error', 'Akses ditolak: Anda hanya dapat mengedit artikel naskah milik Anda sendiri.');
             }
@@ -155,15 +160,17 @@ class Post extends BaseController
 
         $kanals = $this->categoryModel->getKanalTree();
         $users = $this->adminModel->select('
-                ref_entity_principal_id AS id,
-                attr_display_name AS name,
-                attr_identifier AS username,
-                attr_contact_val AS email,
-                attr_role_code AS role
+                userID AS id,
+                name,
+                username,
+                email,
+                roleName AS role
             ')->findAll();
+        $authors = $this->authorModel->getAuthorsWithCount();
         $media = $this->mediaModel->getMediaWithRelations(1, 30)['data'];
         $allPosts = $this->articleModel->getLightweightArticles(50);
-        $charts = $this->chartModel->getChartsList();
+        $charts = $this->chartModel->getCustomCharts();
+        $lockInfo = $this->articleModel->acquireLock((int)$id, $userId);
 
         return view('post/editor', [
             'title'      => 'Edit Post: ' . $article['title'],
@@ -171,10 +178,12 @@ class Post extends BaseController
             'kanals'     => $kanals,
             'categories' => $kanals,
             'users'      => $users,
+            'authors'    => $authors,
             'media'      => $media,
             'charts'     => $charts,
             'allPosts'   => $allPosts,
             'article'    => $article,
+            'lockInfo'   => $lockInfo,
             'isEdit'     => true
         ]);
     }
@@ -197,12 +206,12 @@ class Post extends BaseController
         $authorName = $this->request->getPost('author') ?: 'Raka Herdika';
         $authorId = $this->authorModel->findOrCreate($authorName);
 
-        // Primary Category is ALWAYS the Master Kanal (parent_id IS NULL)
-        $category = $this->categoryModel->where('charlie_name_a', $kanalName)->where('parent_id IS NULL')->first();
+        // Primary Category is ALWAYS the Master Kanal (parent IS NULL)
+        $category = $this->categoryModel->where('categoryName', $kanalName)->where('parent IS NULL')->first();
         if (!$category) {
-            $category = $this->categoryModel->where('charlie_name_a', $kanalName)->first();
+            $category = $this->categoryModel->where('categoryName', $kanalName)->first();
         }
-        $categoryId = $category ? (int)$category['ref_entity_charlie_id'] : 1;
+        $categoryId = $category ? (int)$category['categoryID'] : 1;
 
         $pointsInput = $this->request->getPost('points');
         if (is_array($pointsInput)) {
@@ -229,11 +238,20 @@ class Post extends BaseController
             }
         }
 
-        // Status rule for Author/Contributor
-        $status = $this->request->getPost('status') ?? 'Published';
-        if (in_array(strtolower($userRole), ['author', 'contributor'])) {
-            if (strtolower($status) === 'published') {
-                $status = 'Review';
+        // Status rule for Author/Contributor (Production: Draft, Publish, Hold, Deleted)
+        $rawStatus = $this->request->getPost('status') ?? 'Draft';
+        $status = 'Draft';
+        if (strcasecmp($rawStatus, 'published') === 0 || strcasecmp($rawStatus, 'publish') === 0) {
+            $status = 'Publish';
+        } elseif (in_array(strtolower($rawStatus), ['hold', 'review', 'scheduled'])) {
+            $status = 'Hold';
+        } elseif (in_array(strtolower($rawStatus), ['deleted', 'archived'])) {
+            $status = 'Deleted';
+        }
+
+        if (in_array(strtolower($userRole), ['author', 'contributor', 'support'])) {
+            if ($status === 'Publish') {
+                $status = 'Hold';
             }
         }
 
@@ -251,13 +269,14 @@ class Post extends BaseController
             'sub_kanal'         => $subKanal,
             'is_premium'        => (int)($this->request->getPost('is_premium') ?? 0),
             'headline_type'     => $this->request->getPost('headline_type') ?? 'none',
-            'ref_entity_acc_id' => $sessionUser,
+            'userID'            => $sessionUser,
         ];
 
         // If article was already created as draft (e.g. via AutoSave), update it instead of inserting duplicate!
         $existingId = (int)($this->request->getPost('id') ?: 0);
         if ($existingId > 0 && $this->articleModel->find($existingId)) {
             $this->articleModel->updateArticle($existingId, $articleData, $authorId, $categoryId, $tags, $points, (int)$sessionUser);
+            $this->articleModel->releaseLock($existingId, (int)$sessionUser);
             return redirect()->to('/post')->with('success', 'Article successfully updated and stored in database!');
         }
 
@@ -297,11 +316,11 @@ class Post extends BaseController
         $authorId = $this->authorModel->findOrCreate($authorName);
 
         // Primary Category is ALWAYS Master Kanal
-        $category = $this->categoryModel->where('charlie_name_a', $kanalName)->where('parent_id IS NULL')->first();
+        $category = $this->categoryModel->where('categoryName', $kanalName)->where('parent IS NULL')->first();
         if (!$category) {
-            $category = $this->categoryModel->where('charlie_name_a', $kanalName)->first();
+            $category = $this->categoryModel->where('categoryName', $kanalName)->first();
         }
-        $categoryId = $category ? (int)$category['ref_entity_charlie_id'] : 1;
+        $categoryId = $category ? (int)$category['categoryID'] : 1;
 
         $pointsInput = $this->request->getPost('points');
         if (is_array($pointsInput)) {
@@ -331,10 +350,19 @@ class Post extends BaseController
         }
 
         // Status rule for Author/Contributor
-        $status = $this->request->getPost('status') ?? 'Published';
-        if (in_array(strtolower($userRole), ['author', 'contributor'])) {
-            if (strtolower($status) === 'published') {
-                $status = 'Review';
+        $rawStatus = $this->request->getPost('status') ?? ($article['status'] ?? 'Publish');
+        $status = 'Publish';
+        if (strcasecmp($rawStatus, 'draft') === 0) {
+            $status = 'Draft';
+        } elseif (in_array(strtolower($rawStatus), ['hold', 'review', 'scheduled'])) {
+            $status = 'Hold';
+        } elseif (in_array(strtolower($rawStatus), ['deleted', 'archived'])) {
+            $status = 'Deleted';
+        }
+
+        if (in_array(strtolower($userRole), ['author', 'contributor', 'support'])) {
+            if ($status === 'Publish') {
+                $status = 'Hold';
             }
         }
 
@@ -354,6 +382,7 @@ class Post extends BaseController
         ];
 
         $this->articleModel->updateArticle((int)$id, $articleData, $authorId, $categoryId, $tags, $points, (int)$sessionUser);
+        $this->articleModel->releaseLock((int)$id, (int)$sessionUser);
 
         return redirect()->to('/post')->with('success', 'Article updated successfully!');
     }
@@ -363,12 +392,12 @@ class Post extends BaseController
         $userRole = session('user_role') ?? 'Admin';
         $userId = (int)(session('user_id') ?: 0);
 
-        // RBAC: Author & Contributor cannot delete articles
-        if (in_array(strtolower($userRole), ['author', 'contributor'])) {
+        // RBAC: Author, Contributor & Support cannot delete articles
+        if (in_array(strtolower($userRole), ['author', 'contributor', 'support'])) {
             return redirect()->to('/post')->with('error', 'Akses ditolak: Akun dengan role ' . esc($userRole) . ' tidak memiliki hak menghapus artikel.');
         }
 
-        $this->articleModel->deleteArticle((int)$id);
+        $this->articleModel->deleteArticle((int)$id, $userId);
         return redirect()->to('/post')->with('success', 'Article removed successfully from database.');
     }
 
@@ -376,20 +405,21 @@ class Post extends BaseController
     {
         $action = $this->request->getPost('action');
         $selectedIds = $this->request->getPost('selected_ids');
+        $userId = (int)(session('user_id') ?: 0);
 
         if (!empty($selectedIds)) {
             $ids = is_array($selectedIds) ? $selectedIds : explode(',', $selectedIds);
             $ids = array_map('intval', array_filter($ids));
 
             if ($action === 'publish') {
-                $this->articleModel->whereIn('ref_entity_nano_id', $ids)->set(['status_code' => 'Published'])->update();
-                return redirect()->to('/post')->with('success', count($ids) . ' articles marked as Published.');
+                $this->articleModel->whereIn('articleID', $ids)->set(['status' => 'Publish'])->update();
+                return redirect()->to('/post')->with('success', count($ids) . ' articles marked as Publish.');
             } elseif ($action === 'draft') {
-                $this->articleModel->whereIn('ref_entity_nano_id', $ids)->set(['status_code' => 'Draft'])->update();
+                $this->articleModel->whereIn('articleID', $ids)->set(['status' => 'Draft'])->update();
                 return redirect()->to('/post')->with('success', count($ids) . ' articles moved to Draft.');
             } elseif ($action === 'delete') {
                 foreach ($ids as $delId) {
-                    $this->articleModel->deleteArticle($delId);
+                    $this->articleModel->deleteArticle($delId, $userId);
                 }
                 return redirect()->to('/post')->with('success', count($ids) . ' articles deleted.');
             }
@@ -433,12 +463,12 @@ class Post extends BaseController
             return $this->response->setJSON([]);
         }
 
-        $tags = $this->tagModel->like('field_label_a', $q)
-            ->select('ref_entity_teta_id as id, field_label_a as label, slug_value as slug')
-            ->orderBy('field_label_a', 'ASC')
+        $keywords = $this->keywordModel->like('keyword', $q)
+            ->select('id, keyword AS label, slug')
+            ->orderBy('keyword', 'ASC')
             ->findAll(15);
 
-        return $this->response->setJSON($tags);
+        return $this->response->setJSON($keywords);
     }
 
     public function searchStocks()
@@ -582,4 +612,74 @@ class Post extends BaseController
 
         return $this->response->setJSON(array_slice($results, 0, 15));
     }
+
+    /**
+     * GET /post/history
+     * Menampilkan log riwayat revisi artikel (audit trail)
+     * Replika legacy: Article::Revision()
+     * Tabel: articlehistory (R), article (R), useradministrator (R)
+     */
+    public function history()
+    {
+        $page = max(1, (int)($this->request->getGet('page') ?? 1));
+        $perPage = 25;
+
+        $filters = [
+            'q'          => $this->request->getGet('q'),
+            'article_id' => $this->request->getGet('article_id'),
+            'editor_id'  => $this->request->getGet('editor_id'),
+            'date_from'  => $this->request->getGet('date_from'),
+            'date_to'    => $this->request->getGet('date_to'),
+        ];
+
+        $users = $this->adminModel->select('userID AS id, name, username, roleName AS role')->findAll();
+        $result = $this->articleModel->getRevisionHistory($page, $perPage, $filters);
+        
+        $totalItems = $result['total'];
+        $totalPages = max(1, (int)ceil($totalItems / $perPage));
+        if ($page > $totalPages) $page = $totalPages;
+        $offset = ($page - 1) * $perPage;
+
+        return view('post/history', [
+            'title'      => 'Riwayat Revisi Naskah',
+            'breadcrumb' => 'Post / Revision History',
+            'histories'  => $result['data'],
+            'users'      => $users,
+            'filters'    => [
+                'q'          => $filters['q'] ?? '',
+                'article_id' => $filters['article_id'] ?? '',
+                'editor_id'  => $filters['editor_id'] ?? 'all',
+                'date_from'  => $filters['date_from'] ?? '',
+                'date_to'    => $filters['date_to'] ?? '',
+            ],
+            'pagination' => [
+                'page'       => $page,
+                'perPage'    => $perPage,
+                'totalItems' => $totalItems,
+                'totalPages' => $totalPages,
+                'from'       => $totalItems > 0 ? $offset + 1 : 0,
+                'to'         => min($offset + $perPage, $totalItems),
+            ]
+        ]);
+    }
+
+    /**
+     * GET /post/history/(:num)
+     * Detail perbandingan naskah sebelum dan sesudah revisi (Side-by-Side Diff)
+     * Tabel: articlehistory (R), article (R), useradministrator (R)
+     */
+    public function historyDetail($historyId)
+    {
+        $detail = $this->articleModel->getRevisionDetail((int)$historyId);
+        if (!$detail) {
+            return redirect()->to('/post/history')->with('error', 'Catatan riwayat revisi tidak ditemukan.');
+        }
+
+        return view('post/history_detail', [
+            'title'      => 'Detail Revisi: ' . ($detail['title_after'] ?: $detail['current_title']),
+            'breadcrumb' => 'Post / Revision History / Detail #' . $detail['id'],
+            'detail'     => $detail
+        ]);
+    }
 }
+

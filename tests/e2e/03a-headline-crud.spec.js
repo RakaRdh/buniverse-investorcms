@@ -9,7 +9,7 @@ test.describe('03a - Headline Queue CRUD & Workflow', () => {
     if (res.ok()) {
       const data = await res.json();
       if (data && data.data && data.data.length > 0) {
-        const pub = data.data.find(a => (a.status || '').toLowerCase() === 'published');
+        const pub = data.data.find(a => ['publish', 'published'].includes((a.status || '').toLowerCase()));
         if (pub) {
           targetArticleId = pub.id;
         }
@@ -26,7 +26,7 @@ test.describe('03a - Headline Queue CRUD & Workflow', () => {
     });
     expect([200, 302, 303]).toContain(res.status());
     const body = await res.text();
-    expect(body).toMatch(/berhasil ditambahkan|sudah terdaftar/i);
+    expect(body).toMatch(/berhasil ditambahkan|diaktifkan kembali|sudah terdaftar/i);
   });
 
   test('HEADLINE-02: Adding already queued article indicates it is already registered', async ({ page }) => {
@@ -57,7 +57,7 @@ test.describe('03a - Headline Queue CRUD & Workflow', () => {
     const res = await page.request.get(`/headline/remove/${targetArticleId}?target_category=Headline`);
     expect(res.status()).toBe(200);
     const body = await res.text();
-    expect(body).toMatch(/dihapus dari antrean/i);
+    expect(body).toMatch(/dinonaktifkan|dihapus/i);
   });
 
   test('HEADLINE-05: Save headline configuration persists order', async ({ page }) => {

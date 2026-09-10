@@ -8,18 +8,18 @@ class AddAiLogsAndArticlePoints extends Migration
 {
     public function up()
     {
-        // 1. Tabel article points / entity_nano_points (Pure standalone, NO FK)
+        // 1. Tabel article points (Pure standalone, NO FK)
         $this->forge->addField([
             'id' => [
                 'type'           => 'BIGINT',
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'ref_entity_nano_id' => [
+            'article_id' => [
                 'type'       => 'BIGINT',
                 'unsigned'   => true,
                 'null'       => false,
-                'comment'    => 'ID artikel entity_nano tanpa FK constraint',
+                'comment'    => 'ID artikel article tanpa FK constraint',
             ],
             'point_text' => [
                 'type' => 'TEXT',
@@ -36,7 +36,7 @@ class AddAiLogsAndArticlePoints extends Migration
             ],
         ]);
         $this->forge->addKey('id', true);
-        $this->forge->addKey('ref_entity_nano_id', false, false, 'idx_nano_points_article');
+        $this->forge->addKey('article_id', false, false, 'idx_article_points_article');
         $this->forge->createTable('article_points', true, [
             'ENGINE'  => 'InnoDB',
             'CHARSET' => 'utf8mb4',
@@ -50,18 +50,18 @@ class AddAiLogsAndArticlePoints extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'ref_entity_nano_id' => [
+            'article_id' => [
                 'type'       => 'BIGINT',
                 'unsigned'   => true,
                 'null'       => true,
-                'comment'    => 'ID artikel entity_nano bila sudah tersimpan, tanpa FK',
+                'comment'    => 'ID artikel article bila sudah tersimpan, tanpa FK',
             ],
-            'ref_entity_principal_id' => [
+            'user_id' => [
                 'type'       => 'BIGINT',
                 'unsigned'   => true,
                 'null'       => false,
                 'default'    => 1,
-                'comment'    => 'ID user sys_principal_entity pelaksana AI, tanpa FK',
+                'comment'    => 'ID user useradministrator pelaksana AI, tanpa FK',
             ],
             'action_type' => [
                 'type'       => 'VARCHAR',
@@ -114,8 +114,8 @@ class AddAiLogsAndArticlePoints extends Migration
             ],
         ]);
         $this->forge->addKey('id', true);
-        $this->forge->addKey('ref_entity_nano_id', false, false, 'idx_ai_logs_nano');
-        $this->forge->addKey('ref_entity_principal_id', false, false, 'idx_ai_logs_principal');
+        $this->forge->addKey('article_id', false, false, 'idx_ai_logs_article');
+        $this->forge->addKey('user_id', false, false, 'idx_ai_logs_user');
         $this->forge->addKey('action_type', false, false, 'idx_ai_logs_action');
         $this->forge->addKey('created_at', false, false, 'idx_ai_logs_created');
         $this->forge->createTable('ai_generated_logs', true, [

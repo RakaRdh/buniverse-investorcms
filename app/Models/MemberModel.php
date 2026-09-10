@@ -6,20 +6,20 @@ use CodeIgniter\Model;
 
 class MemberModel extends Model
 {
-    protected $table = 'client_account_entity';
-    protected $primaryKey = 'ref_entity_client_id';
+    protected $table = 'member';
+    protected $primaryKey = 'memberID';
     protected $allowedFields = [
-        'attr_credential_hash',
-        'uniq_id',
-        'attr_contact_val',
-        'attr_full_name',
-        'attr_slug_token',
-        'attr_registration_at',
-        'attr_last_access_at',
-        'attr_status_code',
-        'attr_profile_image',
-        'attr_profile_summary',
-        'attr_modified_at',
+        'password',
+        'uniq',
+        'email',
+        'fullname',
+        'slug',
+        'signupdate',
+        'lastlogin',
+        'status',
+        'avatar',
+        'bio',
+        'lastupdate',
     ];
     protected $useTimestamps = false;
 
@@ -28,11 +28,12 @@ class MemberModel extends Model
      */
     public static function getStatusLabel(string $code): string
     {
+        $code = strtolower(trim($code));
         return match ($code) {
-            'STATUS_1' => 'Active',
-            'STATUS_2' => 'Pending',
-            'STATUS_3' => 'Suspended',
-            default    => 'Active',
+            'active', 'status_1'               => 'Active',
+            'inactive', 'pending', 'status_2'   => 'Pending',
+            'banned', 'suspended', 'status_3'   => 'Suspended',
+            default                             => 'Active',
         };
     }
 
@@ -40,62 +41,62 @@ class MemberModel extends Model
     {
         $label = strtolower(trim($label));
         return match ($label) {
-            'pending'   => 'STATUS_2',
-            'suspended' => 'STATUS_3',
-            default     => 'STATUS_1',
+            'pending', 'inactive' => 'inactive',
+            'suspended', 'banned' => 'banned',
+            default               => 'active',
         };
     }
 
     /**
-     * Get paginated member list from client_account_entity
+     * Get paginated member list from member table
      */
     public function getMembers(array $filters = [], int $page = 1, int $perPage = 10): array
     {
-        $builder = $this->db->table('client_account_entity');
+        $builder = $this->db->table('member');
 
         if (!empty($filters['q'])) {
             $q = trim($filters['q']);
             $builder->groupStart()
-                ->like('attr_full_name', $q)
-                ->orLike('attr_contact_val', $q)
-                ->orLike('attr_profile_summary', $q)
-                ->orLike('attr_slug_token', $q)
+                ->like('fullname', $q)
+                ->orLike('email', $q)
+                ->orLike('bio', $q)
+                ->orLike('slug', $q)
                 ->groupEnd();
         }
 
         if (!empty($filters['status']) && $filters['status'] !== 'all') {
             $code = self::getStatusCode($filters['status']);
-            $builder->where('attr_status_code', $code);
+            $builder->where('status', $code);
         }
 
         $total = $builder->countAllResults(false);
         $offset = ($page - 1) * $perPage;
 
-        $builder->orderBy('ref_entity_client_id', 'DESC');
+        $builder->orderBy('memberID', 'DESC');
         $rows = $builder->limit($perPage, $offset)->get()->getResultArray();
 
         // Transform into clean presentation array
         $data = array_map(function ($row) {
-            $clientId = (int)$row['ref_entity_client_id'];
+            $clientId = (int)$row['memberID'];
             
             // Count favorites / read articles if linked
-            $favCount = $this->db->table('client_favorite_entity_nano')
-                ->where('ref_entity_client_id', $clientId)
+            $favCount = $this->db->table('memberfavarticle')
+                ->where('memberID', $clientId)
                 ->countAllResults();
 
             return [
                 'id'              => $clientId,
-                'full_name'       => $row['attr_full_name'] ?? 'Member',
-                'email'           => $row['attr_contact_val'] ?? '-',
-                'slug'            => $row['attr_slug_token'] ?? '',
-                'company'         => $row['attr_profile_summary'] ?? 'Investor.id Member',
-                'status_code'     => $row['attr_status_code'] ?? 'STATUS_1',
-                'status'          => self::getStatusLabel($row['attr_status_code'] ?? 'STATUS_1'),
-                'avatar'          => $row['attr_profile_image'] ?: null,
+                'full_name'       => $row['fullname'] ?? 'Member',
+                'email'           => $row['email'] ?? '-',
+                'slug'            => $row['slug'] ?? '',
+                'company'         => $row['bio'] ?? 'Investor.id Member',
+                'status_code'     => $row['status'] ?? 'active',
+                'status'          => self::getStatusLabel($row['status'] ?? 'active'),
+                'avatar'          => $row['avatar'] ?: null,
                 'favorites_count' => $favCount,
-                'last_login_at'   => $row['attr_last_access_at'],
-                'created_at'      => $row['attr_registration_at'] ?? $row['attr_modified_at'],
-                'modified_at'     => $row['attr_modified_at'],
+                'last_login_at'   => $row['lastlogin'],
+                'created_at'      => $row['signupdate'] ?? $row['lastupdate'],
+                'modified_at'     => $row['lastupdate'],
             ];
         }, $rows);
 
@@ -110,14 +111,14 @@ class MemberModel extends Model
     }
 
     /**
-     * Get member stats from client_account_entity
+     * Get member stats from member table
      */
     public function getMemberStats(): array
     {
-        $total = $this->db->table('client_account_entity')->countAllResults();
-        $active = $this->db->table('client_account_entity')->where('attr_status_code', 'STATUS_1')->countAllResults();
-        $pending = $this->db->table('client_account_entity')->where('attr_status_code', 'STATUS_2')->countAllResults();
-        $suspended = $this->db->table('client_account_entity')->where('attr_status_code', 'STATUS_3')->countAllResults();
+        $total = $this->db->table('member')->countAllResults();
+        $active = $this->db->table('member')->where('status', 'active')->countAllResults();
+        $pending = $this->db->table('member')->where('status', 'inactive')->countAllResults();
+        $suspended = $this->db->table('member')->where('status', 'banned')->countAllResults();
 
         return [
             'total'     => $total,
@@ -128,7 +129,7 @@ class MemberModel extends Model
     }
 
     /**
-     * Save member to client_account_entity AND sync to client_account_backup
+     * Save member to member AND sync to memberbackup
      */
     public function saveMember(array $input, ?int $id = null): int
     {
@@ -140,64 +141,64 @@ class MemberModel extends Model
         $now = date('Y-m-d H:i:s');
 
         $record = [
-            'attr_full_name'       => $fullName,
-            'attr_contact_val'     => $email,
-            'attr_profile_summary' => $company ?: 'Investor.id Member',
-            'attr_status_code'     => $status,
-            'attr_modified_at'     => $now,
+            'fullname'   => $fullName,
+            'email'      => $email,
+            'bio'        => $company ?: 'Investor.id Member',
+            'status'     => $status,
+            'lastupdate' => $now,
         ];
 
         if (!empty($id)) {
-            // Update client_account_entity
-            $this->db->table('client_account_entity')
-                ->where('ref_entity_client_id', $id)
+            // Update member
+            $this->db->table('member')
+                ->where('memberID', $id)
                 ->update($record);
 
-            // Sync to client_account_backup
-            $backupExists = $this->db->table('client_account_backup')
-                ->where('ref_entity_client_id', $id)
+            // Sync to memberbackup
+            $backupExists = $this->db->table('memberbackup')
+                ->where('memberID', $id)
                 ->countAllResults();
 
             if ($backupExists > 0) {
-                $this->db->table('client_account_backup')
-                    ->where('ref_entity_client_id', $id)
+                $this->db->table('memberbackup')
+                    ->where('memberID', $id)
                     ->update($record);
             } else {
-                $record['ref_entity_client_id'] = $id;
-                $record['attr_slug_token'] = $slug;
-                $record['uniq_id'] = md5($email . time());
-                $record['attr_registration_at'] = $now;
-                $this->db->table('client_account_backup')->insert($record);
+                $record['memberID'] = $id;
+                $record['slug'] = $slug;
+                $record['uniq'] = md5($email . time());
+                $record['signupdate'] = $now;
+                $this->db->table('memberbackup')->insert($record);
             }
 
             return $id;
         } else {
-            // Insert client_account_entity
+            // Insert member
             $password = !empty($input['password']) ? trim($input['password']) : 'investor123';
-            $record['uniq_id'] = md5($email . time());
-            $record['attr_slug_token'] = $slug;
-            $record['attr_credential_hash'] = md5($password);
-            $record['attr_registration_at'] = $now;
-            $record['attr_last_access_at'] = $now;
+            $record['uniq'] = md5($email . time());
+            $record['slug'] = $slug;
+            $record['password'] = md5($password);
+            $record['signupdate'] = $now;
+            $record['lastlogin'] = $now;
 
-            $this->db->table('client_account_entity')->insert($record);
+            $this->db->table('member')->insert($record);
             $newId = $this->db->insertID();
 
-            // Sync to client_account_backup with same PK
-            $record['ref_entity_client_id'] = $newId;
-            $this->db->table('client_account_backup')->insert($record);
+            // Sync to memberbackup with same PK
+            $record['memberID'] = $newId;
+            $this->db->table('memberbackup')->insert($record);
 
             return $newId;
         }
     }
 
     /**
-     * Delete member from client_account_entity and client_account_backup
+     * Delete member from member and memberbackup
      */
     public function deleteMember(int $id): bool
     {
-        $this->db->table('client_favorite_entity_nano')->where('ref_entity_client_id', $id)->delete();
-        $this->db->table('client_account_backup')->where('ref_entity_client_id', $id)->delete();
-        return $this->db->table('client_account_entity')->where('ref_entity_client_id', $id)->delete();
+        $this->db->table('memberfavarticle')->where('memberID', $id)->delete();
+        $this->db->table('memberbackup')->where('memberID', $id)->delete();
+        return $this->db->table('member')->where('memberID', $id)->delete();
     }
 }

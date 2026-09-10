@@ -23,8 +23,11 @@ class Headline extends BaseController
     {
         $categories = $this->categoryModel->getKanalTree();
 
-        // Selected target category (defaults to 'Headline')
-        $targetCategory = $this->request->getGet('target_category') ?: 'Headline';
+        // Selected target category (defaults to 'home')
+        $targetCategory = $this->request->getGet('target_category') ?: 'home';
+        if ($targetCategory === 'Headline') {
+            $targetCategory = 'home';
+        }
         $headlines = $this->headlineModel->getActiveHeadlines($targetCategory);
 
         // Filtering parameters for available posts
@@ -33,7 +36,7 @@ class Headline extends BaseController
         $page = (int)($this->request->getGet('page') ?? 1);
 
         $filters = [
-            'status' => 'Published',
+            'status' => 'Publish',
             'q'      => $keyword,
             'kanal'  => $categoryFilter,
         ];
@@ -71,7 +74,10 @@ class Headline extends BaseController
     public function add()
     {
         $articleId = (int)$this->request->getPost('article_id');
-        $targetCategory = $this->request->getPost('target_category') ?: 'Headline';
+        $targetCategory = $this->request->getPost('target_category') ?: 'home';
+        if ($targetCategory === 'Headline') {
+            $targetCategory = 'home';
+        }
 
         // Server-side validation: Verify article exists and is Published
         $article = $this->articleModel->find($articleId);
@@ -79,29 +85,38 @@ class Headline extends BaseController
             return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Artikel tidak ditemukan.");
         }
 
-        if (strcasecmp($article['status_code'] ?? '', 'published') !== 0) {
-            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Gagal: Hanya artikel berstatus 'Published' yang dapat dijadikan headline.");
+        if (!in_array(strtolower($article['status'] ?? ''), ['publish', 'published'])) {
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Gagal: Hanya artikel berstatus 'Publish' yang dapat dijadikan headline.");
         }
 
-        $exists = $this->headlineModel
-            ->where('ref_entity_nano_id', $articleId)
-            ->where('charlie_label', $targetCategory)
+        $existing = $this->headlineModel
+            ->where('articleID', $articleId)
+            ->where('category', $targetCategory)
             ->first();
 
-        if (!$exists) {
-            $maxPos = $this->headlineModel
-                ->where('charlie_label', $targetCategory)
-                ->selectMax('numeric_val')
-                ->first()['numeric_val'] ?? 0;
+        $maxPos = $this->headlineModel
+            ->where('category', $targetCategory)
+            ->where('status', 1)
+            ->selectMax('num')
+            ->first()['num'] ?? 0;
 
+        if (!$existing) {
             $this->headlineModel->insert([
-                'charlie_label'      => $targetCategory,
-                'ref_entity_nano_id' => $articleId,
-                'numeric_val'        => $maxPos + 1,
-                'event_timestamp'    => date('Y-m-d H:i:s'),
-                'status_code'        => 1,
+                'category'   => $targetCategory,
+                'articleID'  => $articleId,
+                'num'        => $maxPos + 1,
+                'timestamp'  => date('Y-m-d H:i:s'),
+                'status'     => 1,
             ]);
             return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil ditambahkan ke antrean headline {$targetCategory}.");
+        } else if ((int)$existing['status'] === 0) {
+            // Re-activate previously removed headline
+            $this->headlineModel->update($existing['id'], [
+                'num'       => $maxPos + 1,
+                'timestamp' => date('Y-m-d H:i:s'),
+                'status'    => 1,
+            ]);
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil diaktifkan kembali di antrean headline {$targetCategory}.");
         }
 
         return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('info', "Artikel sudah terdaftar di antrean headline {$targetCategory}.");
@@ -109,17 +124,68 @@ class Headline extends BaseController
 
     public function remove($id)
     {
-        $targetCategory = $this->request->getGet('target_category') ?: 'Headline';
+        $targetCategory = $this->request->getGet('target_category') ?: 'home';
+        if ($targetCategory === 'Headline') {
+            $targetCategory = 'home';
+        }
+
+        // Production convention: set status = 0 rather than hard deleting to preserve audit log
         $this->headlineModel
-            ->where('ref_entity_nano_id', (int)$id)
-            ->where('charlie_label', $targetCategory)
-            ->delete();
-        return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel dihapus dari antrean headline {$targetCategory}.");
+            ->where('articleID', (int)$id)
+            ->where('category', $targetCategory)
+            ->set(['status' => 0])
+            ->update();
+
+        return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel dinonaktifkan dari antrean headline {$targetCategory}.");
     }
 
     public function save()
     {
-        $targetCategory = $this->request->getPost('target_category') ?: 'Headline';
+        $targetCategory = $this->request->getPost('target_category') ?: 'home';
+        if ($targetCategory === 'Headline') {
+            $targetCategory = 'home';
+        }
         return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Daftar headline kanal '{$targetCategory}' berhasil disimpan.");
+    }
+
+    /**
+     * POST /headline/reorder
+     * Menerima JSON payload: { category: 'home', order: [12, 45, 89] }
+     */
+    public function reorder()
+    {
+        $category = $this->request->getPost('category') ?: 'home';
+        $rawOrder = $this->request->getPost('order');
+
+        if (empty($rawOrder)) {
+            $json = $this->request->getJSON(true);
+            if (!empty($json['category'])) {
+                $category = $json['category'];
+            }
+            if (!empty($json['order']) && is_array($json['order'])) {
+                $rawOrder = $json['order'];
+            }
+        }
+
+        if (empty($rawOrder) || !is_array($rawOrder)) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status'  => 'error',
+                'message' => 'Format data urutan tidak valid.'
+            ]);
+        }
+
+        $success = $this->headlineModel->batchReorder($category, $rawOrder);
+
+        if ($success) {
+            return $this->response->setJSON([
+                'status'  => 'success',
+                'message' => "Urutan headline {$category} berhasil diperbarui."
+            ]);
+        }
+
+        return $this->response->setStatusCode(500)->setJSON([
+            'status'  => 'error',
+            'message' => 'Gagal memperbarui urutan headline.'
+        ]);
     }
 }

@@ -6,24 +6,31 @@ use CodeIgniter\Model;
 
 class ActivityLogModel extends Model
 {
-    protected $table = 'entity_epsilon_log';
-    protected $primaryKey = 'record_id';
+    protected $table = 'editorlog';
+    protected $primaryKey = 'id';
     protected $allowedFields = [
-        'ref_entity_epsilon_id',
-        'created_at',
-        'action_type_a',
-        'action_type_b',
-        'log_data'
+        'editorId',
+        'timestamp',
+        'action',
+        'doaction',
+        'log'
     ];
     protected $useTimestamps = false;
 
-    public function logAction(int $userId, string $actionTypeA, string $actionTypeB, string $details): void
+    /**
+     * Log user/editor activity
+     * Produksi convention: action ('login', 'insert', 'edit'), doaction ('login', 'foto'), log (JSON or empty)
+     */
+    public function logAction(int $userId, string $actionTypeA, string $actionTypeB, $details = ''): void
     {
+        $logVal = is_array($details) || is_object($details) ? json_encode($details) : (string)$details;
+
         $this->insert([
-            'ref_entity_epsilon_id' => $userId,
-            'action_type_a'        => $actionTypeA,
-            'action_type_b'        => $actionTypeB,
-            'log_data'             => $details,
+            'editorId'  => $userId,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'action'    => strtolower($actionTypeA),
+            'doaction'  => strtolower($actionTypeB),
+            'log'       => $logVal,
         ]);
     }
 }

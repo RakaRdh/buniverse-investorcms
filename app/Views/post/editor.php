@@ -51,6 +51,25 @@
         </div>
     </div>
 
+    <?php if (!empty($lockInfo) && !empty($lockInfo['locked']) && empty($lockInfo['is_owner'])): ?>
+    <!-- Edit Lock Warning Banner -->
+    <div id="lockWarningBanner" class="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-lg bg-amber-500/15 border border-amber-500/35 text-amber-900 dark:text-amber-200 text-xs shadow-xs animate-in fade-in duration-200">
+        <div class="flex items-center gap-2.5">
+            <i data-lucide="lock" class="size-4 text-amber-600 shrink-0"></i>
+            <div>
+                <strong>Perhatian:</strong> Artikel ini sedang dibuka dan diedit oleh <span class="font-bold underline decoration-amber-500"><?= esc($lockInfo['locked_by']) ?></span>.
+                Untuk mencegah tabrakan data, disarankan untuk tidak mengubah artikel ini bersamaan.
+            </div>
+        </div>
+        <?php if (in_array(strtolower(session('user_role') ?? ''), ['administrator', 'redpel', 'admin'])): ?>
+            <button type="button" onclick="forceUnlockArticle(<?= (int)$article['id'] ?>)" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-600 text-white font-semibold hover:bg-amber-700 transition-colors text-xs shadow-2xs">
+                <i data-lucide="unlock" class="size-3.5"></i>
+                <span>Buka Gembok Paksa</span>
+            </button>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
     <!-- 2-Column Canvas Layout -->
     <div class="flex flex-col lg:grid lg:grid-cols-3 gap-6 items-start">
         
@@ -67,14 +86,16 @@
                 <!-- Status Workflow -->
                 <div>
                     <label class="block text-xs font-bold text-foreground mb-1.5">Status Penayangan</label>
-                    <?php $isAuthorRole = in_array(strtolower(session('user_role') ?? ''), ['author', 'contributor']); ?>
+                    <?php $isAuthorRole = in_array(strtolower(session('user_role') ?? ''), ['author', 'contributor', 'support']); ?>
                     <select name="status" id="workflowStatusSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                        <option value="Draft" <?= strcasecmp($article['status'] ?? 'Draft', 'Draft') === 0 ? 'selected' : '' ?>>Draft</option>
                         <?php if (!$isAuthorRole): ?>
-                            <option value="Published" <?= ($article['status'] ?? 'Published') === 'Published' ? 'selected' : '' ?>>Langsung Publish (Published)</option>
-                            <option value="Scheduled" <?= ($article['status'] ?? '') === 'Scheduled' ? 'selected' : '' ?>>Terjadwal (Scheduled)</option>
+                            <option value="Publish" <?= in_array(strtolower($article['status'] ?? ''), ['publish', 'published']) ? 'selected' : '' ?>>Publish (Tayang)</option>
                         <?php endif; ?>
-                        <option value="Draft" <?= ($article['status'] ?? ($isAuthorRole ? 'Draft' : '')) === 'Draft' ? 'selected' : '' ?>>Draft</option>
-                        <option value="Review" <?= ($article['status'] ?? '') === 'Review' ? 'selected' : '' ?>>Review Redaksi</option>
+                        <option value="Hold" <?= strcasecmp($article['status'] ?? '', 'Hold') === 0 ? 'selected' : '' ?>>Hold (Review / Pending)</option>
+                        <?php if (in_array(strtolower(session('user_role') ?? ''), ['administrator', 'redpel'])): ?>
+                            <option value="Deleted" <?= strcasecmp($article['status'] ?? '', 'Deleted') === 0 ? 'selected' : '' ?>>Deleted (Soft Delete)</option>
+                        <?php endif; ?>
                     </select>
                 </div>
 
@@ -270,29 +291,51 @@
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Editor</label>
                     <input type="text" readonly value="<?= esc(session('user_name') ?? 'Raka Herdika') ?>" class="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm cursor-not-allowed">
                 </div>
-                <div class="relative">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">
+                <div class="relative" id="authorAutosuggestContainer">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5" for="authorInput">
                         Penulis (Author By Line) <span class="text-destructive">*</span>
                     </label>
-                    <input type="text" 
-                           name="author" 
-                           id="authorInput"
-                           required
-                           list="authorSuggestions"
-                           autocomplete="off"
-                           value="<?= esc($article['author'] ?? session('user_name') ?? 'Raka Herdika') ?>" 
-                           placeholder="Ketik nama wartawan / penulis..."
-                           class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                    <datalist id="authorSuggestions">
-                        <?php foreach ($users as $u): ?>
-                            <option value="<?= esc($u['name']) ?>"><?= esc($u['name']) ?> (<?= esc($u['role']) ?>)</option>
-                        <?php endforeach; ?>
-                        <option value="Tim Redaksi Investor">Tim Redaksi Investor</option>
-                        <option value="B-Universe Research">B-Universe Research</option>
-                        <option value="Antara News">Antara News</option>
-                        <option value="Bloomberg Technoz">Bloomberg Technoz</option>
-                    </datalist>
-                    <span class="text-[10px] text-muted-foreground mt-0.5 block">*) Ketik bebas atau pilih dari saran nama penulis</span>
+                    <?php
+                        $currentAuthor = trim(rtrim($article['author'] ?? session('user_name') ?? 'Natasha Khairunisa', '*)'));
+                    ?>
+                    <div class="relative flex items-center h-9 w-full rounded-md border border-input bg-background focus-within:ring-1 focus-within:ring-ring focus-within:border-ring shadow-sm transition-all px-2.5">
+                        <input type="text" 
+                               name="author" 
+                               id="authorInput" 
+                               required 
+                               autocomplete="off"
+                               value="<?= esc($currentAuthor) ?>"
+                               placeholder="Ketik untuk mencari penulis..."
+                               onfocus="openAuthorDropdown()"
+                               oninput="filterAuthorDropdown(this.value)"
+                               class="flex-1 bg-transparent border-0 p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0">
+                        <button type="button" 
+                                onclick="toggleAuthorDropdown()" 
+                                class="ml-1 size-7 shrink-0 inline-flex items-center justify-center text-muted-foreground hover:text-foreground rounded transition-colors" 
+                                title="Buka daftar penulis">
+                            <i data-lucide="chevron-down" id="authorDropdownArrow" class="size-3.5 transition-transform duration-150"></i>
+                        </button>
+                    </div>
+
+                    <!-- Autosuggest Dropdown Menu -->
+                    <div id="authorSuggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-background border border-border rounded-lg shadow-xl z-50 max-h-56 overflow-y-auto divide-y divide-border/60 custom-sidebar-scroll animate-in fade-in duration-150">
+                        <?php if (!empty($authors) && is_array($authors)): ?>
+                            <?php foreach ($authors as $a): 
+                                $authorCleanName = trim(rtrim($a['name'], '*)'));
+                            ?>
+                                <div class="author-option-item px-3 py-2 text-xs hover:bg-primary/10 hover:text-primary cursor-pointer flex items-center justify-between transition-colors" 
+                                     data-author="<?= esc(strtolower($authorCleanName)) ?>" 
+                                     onclick="selectAuthorName('<?= esc(addslashes($authorCleanName)) ?>')">
+                                    <span class="font-medium"><?= esc($authorCleanName) ?></span>
+                                    <i data-lucide="check" class="size-3 text-primary opacity-0 author-check-icon"></i>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        <div id="authorNoResults" class="p-3 text-xs text-muted-foreground italic text-center hidden">
+                            Penulis tidak ditemukan. Nama yang Anda ketik akan didaftarkan sebagai penulis baru.
+                        </div>
+                    </div>
+                    <span class="text-[10px] text-muted-foreground mt-0.5 block">Ketik untuk menyaring nama atau klik tanda panah untuk melihat semua penulis</span>
                 </div>
             </div>
 
@@ -331,8 +374,11 @@
                         <option value="">-- Pilih Kanal --</option>
                         <?php foreach ($kanals as $kn): ?>
                             <?php 
-                                $currKanal = $article['kanal'] ?? ($article['category'] ?? '');
-                                $isSelected = ($currKanal === $kn['name']) || (str_starts_with($currKanal, $kn['name']));
+                                $currKanal = strtolower(trim($article['kanal'] ?? ($article['category'] ?? '')));
+                                $knName = strtolower(trim($kn['name']));
+                                $knSlug = strtolower(trim($kn['slug'] ?? ''));
+                                $knNameHyphen = str_replace(' ', '-', $knName);
+                                $isSelected = ($currKanal === $knName || $currKanal === $knSlug || $currKanal === $knNameHyphen || str_starts_with($currKanal, $knName) || str_starts_with($knName, $currKanal));
                             ?>
                             <option value="<?= esc($kn['name']) ?>" <?= $isSelected ? 'selected' : '' ?>>
                                 <?= esc($kn['name']) ?>
@@ -455,9 +501,13 @@
                         <i data-lucide="image" class="size-3 text-primary"></i>
                         <span>Insert Media</span>
                     </button>
+                    <button type="button" onclick="openEmbedGoogleDocModal()" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
+                        <i data-lucide="file-spreadsheet" class="size-3 text-emerald-600"></i>
+                        <span>Google Docs/Sheets</span>
+                    </button>
                     <button type="button" onclick="insertEmbedTool('embed_socmed')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
                         <i data-lucide="code-2" class="size-3 text-amber-600"></i>
-                        <span>Embed Socmed/Doc</span>
+                        <span>Embed Socmed</span>
                     </button>
                     <button type="button" onclick="insertEmbedTool('stock_chart')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
                         <i data-lucide="trending-up" class="size-3 text-indigo-600"></i>
@@ -475,12 +525,12 @@
                 <input type="hidden" name="content" id="hiddenContentInput" value="<?= esc($article['content'] ?? '') ?>">
             </div>
 
-            <!-- I. Kata Kunci / Keyword (Tags) Integrated Input System (Matching PortalBerita) -->
+            <!-- I. Kata Kunci / Keyword Integrated Input System (Matching PortalBerita) -->
             <div class="pt-2 border-t border-border space-y-1.5">
                 <div class="flex items-center justify-between">
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                         <i data-lucide="tag" class="size-3.5 text-primary"></i>
-                        <span>Kata Kunci / Keyword (Tags)</span>
+                        <span>Kata Kunci / Keyword</span>
                     </label>
                     <button type="button" onclick="handleAiAssistance('tags')" class="inline-flex items-center gap-1 rounded bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors">
                         <i data-lucide="sparkles" class="size-3 text-accent"></i>
@@ -494,7 +544,7 @@
                         <div id="tags-badge-container" class="flex flex-wrap items-center gap-1.5">
                             <!-- Badges rendered dynamically via JS -->
                         </div>
-                        <input id="artTagInput" type="text" autocomplete="off" placeholder="Ketik keyword / tag lalu tekan Enter atau koma (,)..." class="flex-grow min-w-[140px] focus:outline-none text-xs bg-transparent border-none p-0 text-foreground placeholder:text-muted-foreground">
+                        <input id="artTagInput" type="text" autocomplete="off" placeholder="Ketik kata kunci lalu tekan Enter..." class="flex-grow min-w-[140px] focus:outline-none text-xs bg-transparent border-none p-0 text-foreground placeholder:text-muted-foreground">
                     </div>
 
                     <!-- Hidden input submitted with the form -->
@@ -570,7 +620,7 @@
                         <span class="text-[9px] text-muted-foreground font-mono truncate">
                             <i data-lucide="calendar" class="size-2.5 inline-block mr-0.5"></i><?= esc($m['date'] ?? '') ?>
                         </span>
-                        <button type="button" onclick="selectMediaImage('<?= esc($m['image']) ?>')" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] text-white px-3 py-1.5 text-xs font-bold shadow-2xs hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
+                        <button type="button" onclick="selectMediaImage('<?= esc(addslashes($m['image'])) ?>', '<?= esc(addslashes($m['caption'] ?? 'Dokumentasi Investor.id')) ?>')" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] text-white px-3 py-1.5 text-xs font-bold shadow-2xs hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
                             <i data-lucide="check" class="size-3"></i>
                             <span>Pilih Gambar</span>
                         </button>
@@ -811,6 +861,79 @@
     </div>
 </div>
 
+<!-- Modal 4: Embed Google Docs / Spreadsheet (Standardized max-w-lg) -->
+<div id="embedGoogleDocModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-lg max-h-[85vh] flex flex-col p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-border">
+        <div class="flex items-center justify-between border-b border-border pb-3">
+            <div>
+                <h3 class="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                    <i data-lucide="file-spreadsheet" class="size-4 text-emerald-600"></i>
+                    <span>Sisipkan Google Docs / Spreadsheet</span>
+                </h3>
+                <p class="text-[11px] text-muted-foreground mt-0.5">Embed dokumen atau spreadsheet publik dari Google Workspace.</p>
+            </div>
+            <button type="button" onclick="closeEmbedGoogleDocModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <i data-lucide="x" class="size-4"></i>
+            </button>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1">Tipe Google File</label>
+                <select id="googleDocTypeSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                    <option value="Doc">Google Docs (Dokumen Teks / Riset)</option>
+                    <option value="Sheet">Google Sheets (Spreadsheet / Tabel Data)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1">URL Publik Google Doc / Sheet <span class="text-destructive">*</span></label>
+                <input type="url" id="googleDocUrlInput" placeholder="https://docs.google.com/document/d/... atau https://docs.google.com/spreadsheets/d/..." class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                <span class="text-[10px] text-muted-foreground mt-1 block">Pastikan dokumen diset publik (Share &gt; Anyone with the link can view).</span>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1">Judul / Keterangan Dokumen (Opsional)</label>
+                <input type="text" id="googleDocTitleInput" placeholder="Misal: Laporan Analisis Keuangan Kuartal II..." class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-border">
+            <button type="button" onclick="closeEmbedGoogleDocModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
+            <button type="button" onclick="submitGoogleDocEmbed()" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90">
+                <i data-lucide="plus" class="size-3.5"></i>
+                <span>Sisipkan Dokumen</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 5: Unsaved Changes Confirmation Modal -->
+<div id="unsavedChangesModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-md p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-amber-500/30">
+        <div class="flex items-start gap-3">
+            <div class="size-10 rounded-full bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0">
+                <i data-lucide="alert-triangle" class="size-5"></i>
+            </div>
+            <div class="min-w-0">
+                <h3 class="text-sm font-bold text-foreground">Perubahan Belum Disimpan</h3>
+                <p class="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    Anda memiliki draft atau perubahan artikel yang belum disimpan ke database. Yakin ingin meninggalkan halaman ini?
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">
+            <button type="button" onclick="closeUnsavedChangesModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+                Tetap di Halaman Ini
+            </button>
+            <button type="button" id="confirmLeavePageBtn" class="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3.5 py-1.5 text-xs font-bold text-destructive-foreground hover:bg-destructive/90 transition-colors">
+                <span>Tinggalkan Halaman</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Embedded Kanals Data for Client-Side Cascading Dropdown -->
 <script>
 window.__KANALS_DATA__ = <?= json_encode($kanals ?? []) ?>;
@@ -824,4 +947,33 @@ window.__ARTICLE_CURRENT_SUBKANAL__ = <?= json_encode($article['sub_kanal'] ?? '
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="/js/pages/editor.js"></script>
+<?php if ($isEdit && !empty($article['id'])): ?>
+<script>
+// Auto release edit lock when navigating away or closing window
+window.addEventListener('beforeunload', function() {
+    navigator.sendBeacon('<?= base_url('api/post/release-lock/' . $article['id']) ?>');
+});
+
+function forceUnlockArticle(articleId) {
+    if (!confirm('Yakin ingin membuka gembok artikel ini secara paksa?')) return;
+    fetch('<?= base_url('api/post/force-unlock/') ?>' + articleId, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const banner = document.getElementById('lockWarningBanner');
+            if (banner) banner.remove();
+            alert('Gembok berhasil dibuka. Anda sekarang dapat mengedit artikel ini.');
+        } else {
+            alert(data.error || 'Gagal membuka gembok.');
+        }
+    })
+    .catch(err => alert('Terjadi kesalahan: ' + err.message));
+}
+</script>
+<?php endif; ?>
 <?= $this->endSection() ?>

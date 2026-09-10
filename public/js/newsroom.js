@@ -8,13 +8,20 @@ document.addEventListener('DOMContentLoaded', () => {
         window.lucide.createIcons();
     }
 
-    // 2. Restore Desktop Sidebar Preference
+    // 2. Remove preload class after first render cycle to re-enable transitions cleanly
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            document.body.classList.remove('preload');
+        });
+    });
+
+    // 3. Restore Desktop Sidebar Preference
     const isCollapsed = localStorage.getItem('investor_sidebar_collapsed') === '1';
     if (isCollapsed && window.innerWidth >= 1024) {
         applySidebarState(true);
     }
 
-    // 3. Sidebar Scroll Position Preservation
+    // 4. Sidebar Scroll Position Preservation
     initSidebarScrollPreservation();
 });
 
@@ -61,6 +68,9 @@ function applySidebarState(collapsed) {
     const label = document.getElementById('sidebarCollapseLabel');
 
     if (!sidebar || !wrapper) return;
+
+    // Remove pre-render lock class
+    document.documentElement.classList.remove('sidebar-pre-collapsed');
 
     if (collapsed) {
         sidebar.classList.add('sidebar-collapsed');
@@ -234,27 +244,35 @@ function showToast(message, type = 'info') {
     }, 3500);
 }
 
-// Sidebar Dropdown Toggle (Accordion behavior: only 1 dropdown open at a time)
+// Sidebar Dropdown Toggle (Smooth Accordion behavior: only 1 dropdown open at a time)
 function toggleSidebarDropdown(buttonEl) {
     const parent = buttonEl.closest('.sidebar-dropdown-wrapper');
     if (!parent) return;
 
     const currentMenu = parent.querySelector('.dropdown-menu');
     const currentArrow = parent.querySelector('.dropdown-arrow');
-    const isCurrentlyHidden = currentMenu ? currentMenu.classList.contains('hidden') : true;
+    const isCurrentlyOpen = currentMenu ? currentMenu.classList.contains('dropdown-open') : false;
 
-    // Close all other dropdowns in sidebar
-    document.querySelectorAll('.sidebar-dropdown-wrapper').forEach(wrapper => {
-        const menu = wrapper.querySelector('.dropdown-menu');
-        const arrow = wrapper.querySelector('.dropdown-arrow');
-        if (menu) menu.classList.add('hidden');
-        if (arrow) arrow.classList.remove('rotate-180');
+    // Close all other dropdowns in this sidebar context smoothly
+    const container = parent.closest('#sidebarMainNavigation') || document;
+    container.querySelectorAll('.sidebar-dropdown-wrapper').forEach(wrapper => {
+        if (wrapper !== parent) {
+            const menu = wrapper.querySelector('.dropdown-menu');
+            const arrow = wrapper.querySelector('.dropdown-arrow');
+            if (menu) menu.classList.remove('dropdown-open');
+            if (arrow) arrow.classList.remove('rotate-180');
+        }
     });
 
     // Toggle clicked dropdown
-    if (currentMenu && isCurrentlyHidden) {
-        currentMenu.classList.remove('hidden');
-        if (currentArrow) currentArrow.classList.add('rotate-180');
+    if (currentMenu) {
+        if (isCurrentlyOpen) {
+            currentMenu.classList.remove('dropdown-open');
+            if (currentArrow) currentArrow.classList.remove('rotate-180');
+        } else {
+            currentMenu.classList.add('dropdown-open');
+            if (currentArrow) currentArrow.classList.add('rotate-180');
+        }
     }
 }
 

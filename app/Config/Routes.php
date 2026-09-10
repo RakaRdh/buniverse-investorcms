@@ -12,6 +12,9 @@ $routes->get('/', 'Auth::login');
 // Authentication
 $routes->get('/login', 'Auth::login');
 $routes->post('/login', 'Auth::login');
+$routes->get('/auth/verify-code', 'Auth::verifyCode');
+$routes->post('/auth/verify-code', 'Auth::verifyCode');
+$routes->post('/auth/resend-code', 'Auth::resendCode');
 $routes->get('/logout', 'Auth::logout');
 $routes->post('/logout', 'Auth::logout');
 
@@ -27,14 +30,23 @@ $routes->post('/post/update/(:num)', 'Post::update/$1');
 $routes->get('/post/delete/(:num)', 'Post::delete/$1');
 $routes->post('/post/bulk-action', 'Post::bulkAction');
 $routes->get('/post/export', 'Post::export');
+$routes->get('/post/history', 'Post::history');
+$routes->get('/post/history/(:num)', 'Post::historyDetail/$1');
 $routes->get('/post/preview/(:num)', 'PostPreview::show/$1');
+$routes->get('/post/preview', 'PostPreview::fromSessionOrForm');
 $routes->post('/post/preview', 'PostPreview::fromForm');
+
+// Keyword Management (Master Topics & SEO)
+$routes->get('/keyword', 'Keyword::index');
+$routes->post('/keyword/save', 'Keyword::save');
+$routes->get('/keyword/delete/(:num)', 'Keyword::delete/$1');
 
 // Headline Management (Master, Admin, Editor)
 $routes->get('/headline', 'Headline::index', ['filter' => 'role:master,admin,editor']);
 $routes->post('/headline/add', 'Headline::add', ['filter' => 'role:master,admin,editor']);
 $routes->get('/headline/remove/(:num)', 'Headline::remove/$1', ['filter' => 'role:master,admin,editor']);
 $routes->post('/headline/save', 'Headline::save', ['filter' => 'role:master,admin,editor']);
+$routes->post('/headline/reorder', 'Headline::reorder', ['filter' => 'role:master,admin,editor']);
 
 // Media Library
 $routes->get('/media', 'Media::index');
@@ -49,14 +61,21 @@ $routes->get('/files', 'Files::index');
 $routes->post('/files/upload', 'Files::upload');
 $routes->get('/files/delete/(:num)', 'Files::delete/$1');
 
-// Financial Embed Chart
+// Financial Embed Chart (Template & Custom Data)
 $routes->get('/embed-chart', 'EmbedChart::index', ['filter' => 'role:master,admin,editor']);
+$routes->get('/embed-chart/template', 'EmbedChart::template', ['filter' => 'role:master,admin,editor']);
+$routes->get('/embed-chart/custom', 'EmbedChart::custom', ['filter' => 'role:master,admin,editor']);
+$routes->get('/embed-chart/custom/create', 'EmbedChart::createCustom', ['filter' => 'role:master,admin,editor']);
+$routes->post('/embed-chart/custom/save', 'EmbedChart::saveCustom', ['filter' => 'role:master,admin,editor']);
+$routes->get('/embed-chart/custom/edit/(:num)', 'EmbedChart::editCustom/$1', ['filter' => 'role:master,admin,editor']);
+$routes->post('/embed-chart/custom/update/(:num)', 'EmbedChart::updateCustom/$1', ['filter' => 'role:master,admin,editor']);
 $routes->post('/embed-chart/save', 'EmbedChart::save', ['filter' => 'role:master,admin,editor']);
 $routes->get('/embed-chart/delete/(:num)', 'EmbedChart::delete/$1', ['filter' => 'role:master,admin,editor']);
 
 // Editorial Statistics & Reporting
 $routes->get('/statistic', 'Statistic::index');
 $routes->get('/statistic/report', 'StatisticReport::index');
+$routes->get('/statistic/hourly-heatmap', 'StatisticReport::hourlyHeatmap');
 
 // Kanal & Sub-Kanal Taxonomy & Performance (Master, Admin)
 $routes->get('/kanal', 'Kanal::master', ['filter' => 'role:master,admin']);
@@ -75,6 +94,7 @@ $routes->post('/apps-push-notif/create', 'Apps::createPushNotif', ['filter' => '
 
 $routes->get('/apps-feature-content', 'Apps::featureContent', ['filter' => 'role:master,admin']);
 $routes->post('/apps-feature-content/save', 'Apps::saveFeatureContent', ['filter' => 'role:master,admin']);
+$routes->get('/apps-feature-content/delete/(:num)', 'Apps::deleteFeature/$1', ['filter' => 'role:master,admin']);
 
 // Category Taxonomy (Legacy Redirect)
 $routes->get('/categories', 'Kanal::master', ['filter' => 'role:master,admin']);
@@ -90,8 +110,14 @@ $routes->get('/member/delete/(:num)', 'Member::delete/$1', ['filter' => 'role:ma
 $routes->get('/user', 'User::index', ['filter' => 'role:master,admin']);
 $routes->post('/user/save', 'User::save', ['filter' => 'role:master,admin']);
 $routes->get('/user/delete/(:num)', 'User::delete/$1', ['filter' => 'role:master,admin']);
+$routes->post('/user/toggle-status/(:num)', 'User::toggleStatus/$1', ['filter' => 'role:master,admin']);
 $routes->get('/user/permissions/(:num)', 'User::getPermissions/$1', ['filter' => 'role:master,admin']);
 $routes->post('/user/permissions/save', 'User::savePermissions', ['filter' => 'role:master,admin']);
+$routes->get('/api/user/check-email', 'User::checkEmail');
+
+// User Personal Profile (All authenticated users)
+$routes->get('/user/profile', 'User::profile');
+$routes->post('/user/profile/update', 'User::updateProfile');
 
 // AI Editorial Assistant (Gemini)
 $routes->post('/api/ai/title', 'AiAssistant::generateTitle');
@@ -100,9 +126,11 @@ $routes->post('/api/ai/tags', 'AiAssistant::generateTags');
 $routes->post('/api/ai/points', 'AiAssistant::generatePoints');
 $routes->post('/api/ai/scrape', 'AiAssistant::scrape');
 
-// Editorial Auto-Save & Standardized Image Upload
+// Editorial Auto-Save, Standardized Image Upload & Edit Lock
 $routes->post('/api/autosave', 'Api\PostApi::autosave');
 $routes->post('/api/upload-image', 'Api\PostApi::uploadImage');
+$routes->post('/api/post/release-lock/(:num)', 'Api\PostApi::releaseLock/$1');
+$routes->post('/api/post/force-unlock/(:num)', 'Api\PostApi::forceUnlock/$1');
 
 // Tag Real-Time Autocomplete
 $routes->get('/api/tags/search', 'Post::searchTags');

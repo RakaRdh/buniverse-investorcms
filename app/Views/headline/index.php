@@ -59,12 +59,9 @@
         </div>
 
         <select name="target_category" onchange="onTargetCategoryChange(this.value)" class="flex h-8.5 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold shadow-sm focus-visible:outline-none">
-            <option value="Headline" <?= ($targetCategory === 'Headline') ? 'selected' : '' ?>>Kanal: Headline (Cover)</option>
-            <?php foreach ($categories as $cat): ?>
-                <option value="<?= esc($cat['name']) ?>" <?= ($targetCategory === $cat['name']) ? 'selected' : '' ?>>
-                    Kanal: <?= esc($cat['name']) ?>
-                </option>
-            <?php endforeach; ?>
+            <option value="home" <?= ($targetCategory === 'home') ? 'selected' : '' ?>>★ Headline Utama (Home)</option>
+            <option value="tropical" <?= ($targetCategory === 'tropical') ? 'selected' : '' ?>>Tropical</option>
+            <option value="trending" <?= ($targetCategory === 'trending') ? 'selected' : '' ?>>Trending</option>
         </select>
 
         <div class="space-y-2">
@@ -192,21 +189,9 @@
                     </span>
                 </div>
                 <select name="target_category" id="targetCategorySelect" onchange="onTargetCategoryChange(this.value)" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm font-semibold shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                    <option value="Headline" <?= ($targetCategory === 'Headline') ? 'selected' : '' ?>>★ Headline Utama (Cover / Carousel)</option>
-                    <optgroup label="── Kanal Kategori ──">
-                        <?php foreach ($categories as $cat): ?>
-                            <option value="<?= esc($cat['name']) ?>" <?= ($targetCategory === $cat['name']) ? 'selected' : '' ?>>
-                                Kanal: <?= esc($cat['name']) ?>
-                            </option>
-                            <?php if (!empty($cat['sub_kanals'])): ?>
-                                <?php foreach ($cat['sub_kanals'] as $sub): ?>
-                                    <option value="<?= esc($sub['name']) ?>" <?= ($targetCategory === $sub['name']) ? 'selected' : '' ?>>
-                                        &nbsp;&nbsp;↳ <?= esc($sub['name']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        <?php endforeach; ?>
-                    </optgroup>
+                    <option value="home" <?= ($targetCategory === 'home') ? 'selected' : '' ?>>★ Headline Utama (Home)</option>
+                    <option value="tropical" <?= ($targetCategory === 'tropical') ? 'selected' : '' ?>>Tropical</option>
+                    <option value="trending" <?= ($targetCategory === 'trending') ? 'selected' : '' ?>>Trending</option>
                 </select>
             </div>
 

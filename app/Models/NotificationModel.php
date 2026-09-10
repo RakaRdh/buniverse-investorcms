@@ -6,25 +6,25 @@ use CodeIgniter\Model;
 
 class NotificationModel extends Model
 {
-    protected $table = 'notif_message';
-    protected $primaryKey = 'ref_push_id';
+    protected $table = 'pushnotif';
+    protected $primaryKey = 'idPush';
     protected $allowedFields = [
-        'posted_by',
-        'push_date',
-        'push_type',
-        'push_url',
-        'target_direction',
-        'push_slug',
-        'push_title',
-        'push_body',
-        'push_image',
-        'push_message_ref',
-        'status_code',
-        'dump_start_at',
-        'dump_end_at',
-        'complete_sent_at',
-        'ref_entity_nano_id',
-        'category_name'
+        'postBy',
+        'pushDate',
+        'pushType',
+        'pushUrl',
+        'urlTarget',
+        'pushSlug',
+        'pushTitle',
+        'pushBody',
+        'pushImage',
+        'fcm_message_id',
+        'status',
+        'dumpStart',
+        'dumpEnd',
+        'completeSent',
+        'articleID',
+        'categoryName'
     ];
     protected $useTimestamps = false;
 
@@ -33,17 +33,17 @@ class NotificationModel extends Model
      */
     public function getNotifHistory(): array
     {
-        return $this->db->table('notif_message nm')
+        return $this->db->table('pushnotif nm')
             ->select('
-                nm.ref_push_id AS id,
-                nm.push_title AS content,
-                nm.push_date AS push_date,
-                p.attr_identifier AS post_by,
-                p.attr_display_name AS author_name,
-                nm.status_code AS status
+                nm.idPush AS id,
+                nm.pushTitle AS content,
+                nm.pushDate AS push_date,
+                p.username AS post_by,
+                p.name AS author_name,
+                nm.status AS status
             ')
-            ->join('sys_principal_entity p', 'p.ref_entity_principal_id = nm.posted_by', 'left')
-            ->orderBy('nm.push_date', 'DESC')
+            ->join('useradministrator p', 'p.userID = nm.postBy', 'left')
+            ->orderBy('nm.pushDate', 'DESC')
             ->get()->getResultArray();
     }
 }

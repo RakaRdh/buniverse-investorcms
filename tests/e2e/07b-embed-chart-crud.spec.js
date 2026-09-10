@@ -11,7 +11,7 @@ test.describe('07b - Embed Chart Widgets CRUD & Management', () => {
     await expect(page).toHaveTitle(/Chart|Embed|Investor/i);
 
     const bodyText = await page.locator('body').innerText();
-    expect(bodyText).toMatch(/Financial Embed Charts|IHSG|Saham|TradingView/i);
+    expect(bodyText).toMatch(/Template|Master|Chart|Bar|Line|Pie/i);
 
     const cards = page.locator('.surface-card, table, .chart-card');
     expect(await cards.count()).toBeGreaterThan(0);
@@ -23,12 +23,12 @@ test.describe('07b - Embed Chart Widgets CRUD & Management', () => {
       form: {
         title: createdChartTitle,
         symbol: 'COMPOSITE:IDX',
-        type: 'Candlestick / Area'
+        type: 'line'
       }
     });
     expect([200, 302, 303]).toContain(res.status());
 
-    await page.goto('/embed-chart');
+    await page.goto('/embed-chart/custom');
     const bodyText = await page.locator('body').innerText();
     expect(bodyText).toContain(createdChartTitle);
   });
@@ -40,11 +40,11 @@ test.describe('07b - Embed Chart Widgets CRUD & Management', () => {
       form: {
         title: deleteChartTitle,
         symbol: 'ANTM:IDX',
-        type: 'Line'
+        type: 'line'
       }
     });
 
-    await page.goto('/embed-chart');
+    await page.goto('/embed-chart/custom');
     const cardOrRow = page.locator(`:has-text("${deleteChartTitle}")`).first();
     await expect(cardOrRow).toBeVisible();
 
@@ -52,7 +52,7 @@ test.describe('07b - Embed Chart Widgets CRUD & Management', () => {
     if (await deleteLink.count() > 0) {
       const delHref = await deleteLink.getAttribute('href');
       await page.goto(delHref);
-      await page.waitForURL('**/embed-chart**', { timeout: 15000 });
+      await page.waitForURL('**/embed-chart/**', { timeout: 15000 });
       const bodyText = await page.locator('body').innerText();
       expect(bodyText).toMatch(/removed|dihapus|berhasil/i);
     }

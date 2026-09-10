@@ -27,7 +27,7 @@
     <!-- Page Specific CSS -->
     <?= $this->renderSection('styles') ?>
 
-    <!-- Anti-Flicker Zero-FOUC Dark Mode Pre-renderer: Default Light Theme Across All Browsers -->
+    <!-- Anti-Flicker Zero-FOUC Dark Mode & Sidebar Pre-renderer -->
     <script>
         (function() {
             try {
@@ -40,11 +40,16 @@
                         localStorage.setItem('investor_theme', 'light');
                     }
                 }
+
+                // Pre-render collapsed sidebar state immediately to prevent layout blink
+                if (localStorage.getItem('investor_sidebar_collapsed') === '1' && window.innerWidth >= 1024) {
+                    document.documentElement.classList.add('sidebar-pre-collapsed');
+                }
             } catch (e) {}
         })();
     </script>
 </head>
-<body class="bg-background text-foreground font-sans antialiased">
+<body class="bg-background text-foreground font-sans antialiased preload">
 
 <div class="flex min-h-screen w-full bg-background">
     <!-- Sidebar Navigation (Desktop Fixed & Collapsible) -->

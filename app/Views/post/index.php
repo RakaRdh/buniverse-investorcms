@@ -30,10 +30,12 @@
 <?php
 // Compute boolean states for toggleable quick filters
 $isDefaultFilter = (($filters['status'] ?? 'all') === 'all' && ($filters['premium'] ?? 'all') === 'all' && empty($filters['q']) && ($filters['kanal'] ?? 'all') === 'all' && ($filters['author'] ?? 'all') === 'all' && ($filters['editor'] ?? 'all') === 'all' && empty($filters['date_from']) && empty($filters['date_to']));
-$isPublishedActive = (($filters['status'] ?? '') === 'Published' && ($filters['premium'] ?? 'all') === 'all');
-$isDraftActive = (($filters['status'] ?? '') === 'Draft' && ($filters['premium'] ?? 'all') === 'all');
-$isScheduledActive = (($filters['status'] ?? '') === 'Scheduled' && ($filters['premium'] ?? 'all') === 'all');
+$isPublishActive = (in_array(strtolower($filters['status'] ?? ''), ['publish', 'published']) && ($filters['premium'] ?? 'all') === 'all');
+$isDraftActive = (strcasecmp($filters['status'] ?? '', 'Draft') === 0 && ($filters['premium'] ?? 'all') === 'all');
+$isHoldActive = (strcasecmp($filters['status'] ?? '', 'Hold') === 0 && ($filters['premium'] ?? 'all') === 'all');
+$isDeletedActive = (strcasecmp($filters['status'] ?? '', 'Deleted') === 0 && ($filters['premium'] ?? 'all') === 'all');
 $isPremiumActive = (($filters['premium'] ?? '') === '1');
+$canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), ['administrator', 'redpel', 'admin']);
 ?>
 
 <div class="surface-card p-4 mb-6">
@@ -50,8 +52,16 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
             <div class="flex-1 sm:flex-initial min-w-[130px]">
                 <select name="kanal" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="this.form.submit()">
                     <option value="all">Kanal: Semua</option>
+                    <?php 
+                        $filterKanalNorm = strtolower(trim((string)($filters['kanal'] ?? '')));
+                    ?>
                     <?php foreach ($kanals as $kn): ?>
-                        <option value="<?= esc($kn['name']) ?>" <?= ($filters['kanal'] === $kn['name']) ? 'selected' : '' ?>>
+                        <?php 
+                            $knName = strtolower(trim($kn['name']));
+                            $knSlug = strtolower(trim($kn['slug'] ?? ''));
+                            $isSelected = ($filterKanalNorm === $knName || $filterKanalNorm === $knSlug || $filterKanalNorm === str_replace('-', ' ', $knName));
+                        ?>
+                        <option value="<?= esc($kn['name']) ?>" <?= $isSelected ? 'selected' : '' ?>>
                             <?= esc($kn['name']) ?>
                         </option>
                     <?php endforeach; ?>
@@ -61,11 +71,24 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
             <!-- Status Select -->
             <div class="flex-1 sm:flex-initial min-w-[120px]">
                 <select name="status" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="this.form.submit()">
-                    <option value="all" <?= $filters['status'] === 'all' ? 'selected' : '' ?>>Status: Semua</option>
-                    <option value="Published" <?= $filters['status'] === 'Published' ? 'selected' : '' ?>>Published</option>
-                    <option value="Draft" <?= $filters['status'] === 'Draft' ? 'selected' : '' ?>>Draft</option>
-                    <option value="Scheduled" <?= $filters['status'] === 'Scheduled' ? 'selected' : '' ?>>Scheduled</option>
-                    <option value="Review" <?= $filters['status'] === 'Review' ? 'selected' : '' ?>>Review</option>
+                    <option value="all" <?= ($filters['status'] ?? 'all') === 'all' ? 'selected' : '' ?>>Status: Semua</option>
+                    <?php if (!empty($statuses)): ?>
+                        <?php foreach ($statuses as $st): ?>
+                            <?php 
+                                $stLabel = $st['label'];
+                                $isSelected = (strcasecmp($filters['status'] ?? '', $stLabel) === 0) || 
+                                              ($stLabel === 'Publish' && strcasecmp($filters['status'] ?? '', 'Published') === 0);
+                            ?>
+                            <option value="<?= esc($stLabel) ?>" <?= $isSelected ? 'selected' : '' ?>><?= esc($stLabel) ?></option>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <option value="Publish" <?= in_array(strtolower($filters['status'] ?? ''), ['publish', 'published']) ? 'selected' : '' ?>>Publish</option>
+                        <option value="Draft" <?= strcasecmp($filters['status'] ?? '', 'Draft') === 0 ? 'selected' : '' ?>>Draft</option>
+                        <option value="Hold" <?= strcasecmp($filters['status'] ?? '', 'Hold') === 0 ? 'selected' : '' ?>>Hold</option>
+                        <?php if ($canViewDeleted): ?>
+                            <option value="Deleted" <?= strcasecmp($filters['status'] ?? '', 'Deleted') === 0 ? 'selected' : '' ?>>Deleted</option>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </select>
             </div>
 
@@ -155,9 +178,9 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
                 All Posts
             </a>
 
-            <!-- Published -->
-            <a href="<?= $isPublishedActive ? base_url('post') : base_url('post?status=Published') ?>" class="rounded-md px-2.5 py-1 font-medium transition-colors <?= $isPublishedActive ? 'bg-success/15 text-success font-semibold border border-success/30' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
-                Published
+            <!-- Publish -->
+            <a href="<?= $isPublishActive ? base_url('post') : base_url('post?status=Publish') ?>" class="rounded-md px-2.5 py-1 font-medium transition-colors <?= $isPublishActive ? 'bg-success/15 text-success font-semibold border border-success/30' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
+                Publish
             </a>
 
             <!-- Drafts -->
@@ -165,10 +188,18 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
                 Drafts
             </a>
 
-            <!-- Scheduled -->
-            <a href="<?= $isScheduledActive ? base_url('post') : base_url('post?status=Scheduled') ?>" class="rounded-md px-2.5 py-1 font-medium transition-colors <?= $isScheduledActive ? 'bg-primary/10 text-primary font-semibold border border-primary/30' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
-                Scheduled
+            <!-- Hold -->
+            <a href="<?= $isHoldActive ? base_url('post') : base_url('post?status=Hold') ?>" class="rounded-md px-2.5 py-1 font-medium transition-colors <?= $isHoldActive ? 'bg-amber-500/15 text-amber-700 font-semibold border border-amber-500/30' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
+                Hold
             </a>
+
+            <?php if ($canViewDeleted): ?>
+            <!-- Deleted (Trash) -->
+            <a href="<?= $isDeletedActive ? base_url('post') : base_url('post?status=Deleted') ?>" class="inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition-colors <?= $isDeletedActive ? 'bg-destructive/15 text-destructive font-semibold border border-destructive/30' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
+                <i data-lucide="trash-2" class="size-3"></i>
+                <span>Deleted</span>
+            </a>
+            <?php endif; ?>
 
             <!-- Premium Content -->
             <a href="<?= $isPremiumActive ? base_url('post') : base_url('post?premium=1') ?>" class="inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition-colors <?= $isPremiumActive ? 'bg-amber-500/15 text-amber-700 font-bold border border-amber-500/40' : 'bg-muted/60 text-muted-foreground hover:text-foreground' ?>">
@@ -207,10 +238,10 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
             <?php 
                 $status = strtolower($post['status']);
                 $badgeClass = match($status) {
-                    'published' => 'bg-success/12 text-success border-success/25',
+                    'publish', 'published' => 'bg-success/12 text-success border-success/25',
                     'draft' => 'bg-muted text-muted-foreground border-border',
-                    'scheduled' => 'bg-accent/12 text-accent border-accent/25',
-                    'review' => 'bg-warning/15 text-warning border-warning/30',
+                    'hold' => 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
+                    'deleted' => 'bg-destructive/15 text-destructive border-destructive/30',
                     default => 'bg-muted text-muted-foreground border-border'
                 };
             ?>
@@ -221,6 +252,17 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
                         <a href="<?= base_url('post/edit/' . $post['id']) ?>" class="block font-medium text-xs text-foreground hover:text-primary transition-colors leading-snug line-clamp-2">
                             <?= esc($post['title']) ?>
                         </a>
+                        <?php if (!empty($post['editlock'])): ?>
+                            <div class="flex items-center gap-1.5 mt-1">
+                                <span class="inline-flex items-center gap-1 text-[10px] text-rose-600 dark:text-rose-400 font-medium">
+                                    <i data-lucide="lock" class="size-3"></i>
+                                    <span>Diedit: <?= esc($post['locked_by_name'] ?: ($post['locked_by_username'] ?: 'User #' . $post['editlock'])) ?></span>
+                                </span>
+                                <?php if ($canViewDeleted): ?>
+                                    <button type="button" onclick="forceUnlockItem(<?= (int)$post['id'] ?>)" class="text-[10px] text-amber-600 hover:text-amber-700 underline font-medium">Unlock</button>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
                         <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                             <span class="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.2 text-[10px] font-medium capitalize <?= $badgeClass ?>">
                                 <span class="size-1 rounded-full bg-current"></span>
@@ -301,6 +343,17 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
                                     <a href="<?= base_url('post/edit/' . $post['id']) ?>" class="block font-medium text-foreground truncate hover:text-primary transition-colors text-xs leading-snug">
                                         <?= esc($post['title']) ?>
                                     </a>
+                                    <?php if (!empty($post['editlock'])): ?>
+                                        <div class="flex items-center gap-1.5 mt-0.5">
+                                            <span class="inline-flex items-center gap-1 text-[10px] text-rose-600 dark:text-rose-400 font-medium">
+                                                <i data-lucide="lock" class="size-2.5"></i>
+                                                <span>Diedit: <?= esc($post['locked_by_name'] ?: ($post['locked_by_username'] ?: 'User #' . $post['editlock'])) ?></span>
+                                            </span>
+                                            <?php if ($canViewDeleted): ?>
+                                                <button type="button" onclick="forceUnlockItem(<?= (int)$post['id'] ?>)" class="text-[10px] text-amber-600 hover:text-amber-700 underline font-medium" title="Buka gembok artikel">Unlock</button>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
                                     <?php if (!empty($post['is_premium'])): ?>
                                         <span class="inline-flex items-center gap-0.5 rounded-sm bg-amber-500/15 px-1 py-0.2 text-[8px] font-bold text-amber-700 uppercase">
                                             <i data-lucide="star" class="size-2 text-amber-600"></i>
@@ -322,10 +375,10 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
                             <?php 
                                 $status = strtolower($post['status']);
                                 $badgeClass = match($status) {
-                                    'published' => 'bg-success/12 text-success border-success/25',
+                                    'publish', 'published' => 'bg-success/12 text-success border-success/25',
                                     'draft' => 'bg-muted text-muted-foreground border-border',
-                                    'scheduled' => 'bg-accent/12 text-accent border-accent/25',
-                                    'review' => 'bg-warning/15 text-warning border-warning/30',
+                                    'hold' => 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
+                                    'deleted' => 'bg-destructive/15 text-destructive border-destructive/30',
                                     default => 'bg-muted text-muted-foreground border-border'
                                 };
                             ?>
@@ -397,4 +450,22 @@ $isPremiumActive = (($filters['premium'] ?? '') === '1');
 <?= $this->section('scripts') ?>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="/js/pages/post.js"></script>
+<script>
+function forceUnlockItem(articleId) {
+    if (!confirm('Yakin ingin membuka gembok artikel ini secara paksa?')) return;
+    fetch('<?= base_url('api/post/force-unlock/') ?>' + articleId, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Gagal membuka gembok.');
+        }
+    })
+    .catch(err => alert('Terjadi kesalahan: ' + err.message));
+}
+</script>
 <?= $this->endSection() ?>

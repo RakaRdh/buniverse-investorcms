@@ -23,11 +23,11 @@ class Statistic extends BaseController
         $recentArticles = $this->articleModel->getArticlesWithRelations([], 1, 20)['data'];
 
         // Compute Category Distribution for Chart via SQL JOIN
-        $catDistribution = $this->categoryModel->db->table('entity_charlie c')
-            ->select('c.charlie_name_a AS name, COUNT(DISTINCT ncl.ref_entity_nano_id) AS count')
-            ->join('entity_nano_charlie_link ncl', 'ncl.ref_entity_charlie_id = c.ref_entity_charlie_id')
-            ->where('c.parent_id IS NULL')
-            ->groupBy('c.ref_entity_charlie_id')
+        $catDistribution = $this->categoryModel->db->table('category c')
+            ->select('c.categoryName AS name, COUNT(DISTINCT ncl.articleID) AS count')
+            ->join('articlecategory ncl', 'ncl.categoryID = c.categoryID')
+            ->where('c.parent IS NULL')
+            ->groupBy('c.categoryID')
             ->orderBy('count', 'DESC')
             ->limit(5)
             ->get()->getResultArray();
@@ -59,39 +59,14 @@ class Statistic extends BaseController
         $activeMembers = $memberStats['active'] ?? 0;
         $premiumSubscribersStr = number_format(($activeMembers * 4200) + 1200);
 
-        // Premium articles count from entity_nano_meta
-        $premiumArticlesCount = (int)$this->articleModel->db->table('entity_nano_meta')
-            ->where('meta_key', 'is_premium')
-            ->where('meta_value', '1')
+        // Premium articles count from articlemeta
+        $premiumArticlesCount = (int)$this->articleModel->db->table('articlemeta')
+            ->where('metakey', 'is_premium')
+            ->where('metaval', '1')
             ->countAllResults();
         if ($premiumArticlesCount === 0) {
             $premiumArticlesCount = 14;
         }
-
-        // Dynamic Device Breakdown (Derived from traffic trends with deterministic distribution)
-        $rawTotalViews = (int)$metrics['rawViews'];
-        $mobileShare = min(82.5, max(72.0, 75.0 + (($rawTotalViews % 70) / 10)));
-        $desktopShare = min(25.0, max(15.0, 100.0 - $mobileShare - 2.4));
-        $tabletShare = round(100.0 - $mobileShare - $desktopShare, 1);
-
-        // Dynamic Referral Breakdown
-        $googleShare = min(52.0, max(44.0, 47.0 + (($rawTotalViews % 40) / 10)));
-        $directShare = min(28.0, max(21.0, 24.0 + (($rawTotalViews % 30) / 10)));
-        $socialShare = min(18.0, max(13.0, 15.5 + (($rawTotalViews % 25) / 10)));
-        $syndicationShare = round(100.0 - ($googleShare + $directShare + $socialShare), 1);
-
-        $deviceDistribution = [
-            'mobile'  => number_format($mobileShare, 1),
-            'desktop' => number_format($desktopShare, 1),
-            'tablet'  => number_format($tabletShare, 1),
-        ];
-
-        $referralSources = [
-            'google'      => number_format($googleShare, 1),
-            'direct'      => number_format($directShare, 1),
-            'social'      => number_format($socialShare, 1),
-            'syndication' => number_format($syndicationShare, 1),
-        ];
 
         return view('statistic/index', [
             'title'           => 'Audience Analytics & Traffic Statistics',
@@ -104,10 +79,7 @@ class Statistic extends BaseController
                 'premiumSubscribers' => $premiumSubscribersStr,
                 'premiumArticles'    => $premiumArticlesCount,
                 'publishedCount'     => $metrics['published'],
-                'socialReferralPct'  => number_format($googleShare + $socialShare, 1) . '%',
                 'avgReadTime'        => $avgReadTimeStr,
-                'devices'            => $deviceDistribution,
-                'referrals'          => $referralSources,
             ],
             'chartData'       => [
                 'catLabels' => $catLabels,

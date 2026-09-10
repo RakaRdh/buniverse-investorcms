@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= esc($title) ?> — Investor.id Live Preview</title>
+
+    <?php
+        $kwList = !empty($article['tags']) ? (is_array($article['tags']) ? implode(', ', $article['tags']) : $article['tags']) : '';
+        $metaKeywords = 'Berita terkini, berita hari ini' . ($kwList ? ', ' . $kwList : '');
+    ?>
+    <meta name="keywords" content="<?= esc($metaKeywords) ?>">
+    <meta name="description" content="<?= esc($article['summary'] ?? '') ?>">
     
     <!-- Favicon -->
     <link rel="icon" type="image/jpeg" href="/img/investor-logo.jpg">

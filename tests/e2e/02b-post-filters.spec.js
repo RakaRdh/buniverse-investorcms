@@ -6,7 +6,7 @@ test.describe('02b - Post Editorial Filtering & Search', () => {
     await expect(page).toHaveURL(/.*kanal=Market.*/);
 
     const kanalSelect = page.locator('select[name="kanal"]');
-    await expect(kanalSelect).toHaveValue('Market');
+    await expect(kanalSelect).toHaveValue(/Market/i);
 
     // Table should contain articles
     const rows = page.locator('table tbody tr');

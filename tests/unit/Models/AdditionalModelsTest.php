@@ -90,12 +90,12 @@ class AdditionalModelsTest extends CIUnitTestCase
         $this->assertArrayHasKey('suspended', $stats);
 
         // 2. Status code and label mapping
-        $this->assertSame('Active', MemberModel::getStatusLabel('STATUS_1'));
-        $this->assertSame('Pending', MemberModel::getStatusLabel('STATUS_2'));
-        $this->assertSame('Suspended', MemberModel::getStatusLabel('STATUS_3'));
-        $this->assertSame('STATUS_1', MemberModel::getStatusCode('active'));
-        $this->assertSame('STATUS_2', MemberModel::getStatusCode('pending'));
-        $this->assertSame('STATUS_3', MemberModel::getStatusCode('suspended'));
+        $this->assertSame('Active', MemberModel::getStatusLabel('active'));
+        $this->assertSame('Pending', MemberModel::getStatusLabel('inactive'));
+        $this->assertSame('Suspended', MemberModel::getStatusLabel('banned'));
+        $this->assertSame('active', MemberModel::getStatusCode('active'));
+        $this->assertSame('inactive', MemberModel::getStatusCode('pending'));
+        $this->assertSame('banned', MemberModel::getStatusCode('suspended'));
 
         // 3. Create Member
         $uniqueEmail = 'testmember_' . time() . '@example.com';
@@ -160,15 +160,15 @@ class AdditionalModelsTest extends CIUnitTestCase
 
         $tagModel->syncArticleTags($dummyNanoId, ['Unit Test Tag A', 'Unit Test Tag B']);
 
-        $links = $this->db->table('entity_nano_teta_link')
-            ->where('ref_entity_nano_id', $dummyNanoId)
+        $links = $this->db->table('articletag')
+            ->where('articleId', $dummyNanoId)
             ->get()->getResultArray();
 
         $this->assertCount(2, $links);
 
         // Clean up
-        $this->db->table('entity_nano_teta_link')->where('ref_entity_nano_id', $dummyNanoId)->delete();
-        $tagModel->whereIn('field_label_a', ['Unit Test Tag A', 'Unit Test Tag B'])->delete();
+        $this->db->table('articletag')->where('articleId', $dummyNanoId)->delete();
+        $tagModel->whereIn('label', ['Unit Test Tag A', 'Unit Test Tag B'])->delete();
     }
 
     public function testActivityLogModelLogAction(): void
@@ -176,16 +176,16 @@ class AdditionalModelsTest extends CIUnitTestCase
         $logModel = new ActivityLogModel();
         $logModel->logAction(1, 'UNIT_TEST', 'RUN', 'PHPUnit execution test');
 
-        $inserted = $logModel->where('action_type_a', 'UNIT_TEST')
-            ->where('action_type_b', 'RUN')
-            ->orderBy('record_id', 'DESC')
+        $inserted = $logModel->where('action', 'UNIT_TEST')
+            ->where('doaction', 'RUN')
+            ->orderBy('id', 'DESC')
             ->first();
 
         $this->assertNotNull($inserted);
-        $this->assertSame('PHPUnit execution test', $inserted['log_data']);
+        $this->assertSame('PHPUnit execution test', $inserted['log']);
 
         // Clean up
-        $logModel->delete($inserted['record_id']);
+        $logModel->delete($inserted['id']);
     }
 
     public function testDataRepositoryGetAndSave(): void

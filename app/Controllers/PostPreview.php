@@ -142,11 +142,66 @@ class PostPreview extends BaseController
             'is_premium'    => (int)($this->request->getPost('is_premium') ?: 0),
             'thumbnail'     => $this->request->getPost('thumbnail') ?: '/img/investor_placeholder.jpg',
             'summary'       => $this->request->getPost('summary') ?: 'Ringkasan artikel pengantar belum diisi.',
+            'raw_content'   => $content,
             'content'       => $displayedContent,
             'tags'          => $this->request->getPost('tags') ?: '',
             'points'        => $points,
             'stock_symbols' => array_values($stockSymbols),
         ];
+
+        // Store in session for multipage pagination navigation
+        session()->set('preview_article_form', $article);
+
+        return view('post/preview', [
+            'title'      => 'Live Preview: ' . $article['title'],
+            'article'    => $article,
+            'pagination' => $pagination,
+            'isFromForm' => true
+        ]);
+    }
+
+    public function fromSessionOrForm()
+    {
+        $article = session()->get('preview_article_form');
+        if (!$article) {
+            return redirect()->to('/post')->with('error', 'Sesi pratinjau telah berakhir. Silakan klik Preview Artikel kembali dari editor.');
+        }
+
+        $rawContent = $article['raw_content'] ?? ($article['content'] ?? '');
+        $rawParsedContent = $this->parseEmbeds($rawContent);
+
+        // Page break pattern support (Multi-page article splitting)
+        $pageBreakPattern = '/(?:<div[^>]*class=["\'][^"\']*article-page-break[^"\']*["\'][^>]*>.*?<\/div>|<div[^>]*data-page-break=["\']true["\'][^>]*>.*?<\/div>|<!--\s*pagebreak\s*-->|<hr[^>]*>\s*<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>\s*<hr[^>]*>|<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>|--- HALAMAN BERIKUTNYA [^-\n]+ ---)/is';
+        $contentPages = preg_split($pageBreakPattern, $rawParsedContent);
+        $contentPages = array_values(array_filter(array_map('trim', $contentPages), fn($p) => $p !== ''));
+
+        if (empty($contentPages)) {
+            $contentPages = [$rawParsedContent];
+        }
+
+        $totalPages = count($contentPages);
+        $reqPage = $this->request->getGet('halaman') ?: ($this->request->getGet('page') ?: 1);
+
+        if ($reqPage === 'all' || $reqPage === 'semua') {
+            $displayedContent = implode('', $contentPages);
+            $currentPage = 'all';
+        } else {
+            $pageIndex = max(1, min((int)$reqPage, $totalPages));
+            $displayedContent = $contentPages[$pageIndex - 1];
+            $currentPage = $pageIndex;
+        }
+
+        $pagination = [
+            'is_multipage' => ($totalPages > 1),
+            'total_pages'  => $totalPages,
+            'current_page' => $currentPage,
+            'has_next'     => ($currentPage !== 'all' && (int)$currentPage < $totalPages),
+            'next_page'    => ((int)$currentPage + 1),
+            'has_prev'     => ($currentPage !== 'all' && (int)$currentPage > 1),
+            'prev_page'    => ((int)$currentPage - 1),
+        ];
+
+        $article['content'] = $displayedContent;
 
         return view('post/preview', [
             'title'      => 'Live Preview: ' . $article['title'],
@@ -165,6 +220,70 @@ class PostPreview extends BaseController
         if (empty($content)) {
             return '';
         }
+
+        // 0. User-requested clean syntax: ::(disini keterangan chart)::
+        $content = preg_replace_callback(
+            '/::\((.*?)\)::/i',
+            function ($m) {
+                $chartDesc = trim($m[1]);
+                if (empty($chartDesc)) {
+                    $chartDesc = 'Financial Chart Analysis';
+                }
+
+                // Check if chart description contains stock ticker (e.g. BBCA, IDX:BBCA)
+                $stockTicker = null;
+                if (preg_match('/\b(?:IDX:)?([A-Z]{4})\b/', strtoupper($chartDesc), $tm)) {
+                    $stockTicker = $tm[1];
+                }
+
+                if ($stockTicker) {
+                    return '
+                    <div class="my-6 rounded-xl border border-slate-200 overflow-hidden bg-white shadow-xs">
+                        <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between text-xs">
+                            <span class="font-bold text-slate-800">' . htmlspecialchars($chartDesc) . '</span>
+                            <span class="rounded bg-indigo-100 text-indigo-700 px-2 py-0.5 text-[10px] font-mono font-bold">IDX:' . htmlspecialchars($stockTicker) . '</span>
+                        </div>
+                        <div class="w-full relative" style="height: 440px;">
+                            <iframe src="https://s.tradingview.com/widgetembed/?symbol=IDX%3A' . urlencode($stockTicker) . '&interval=D&symboledit=1&saveimage=1&toolbarbg=ffffff&studies=%5B%22STD%3BVolume%22%5D&theme=light&style=1&timezone=Asia%2FJakarta&locale=id&utm_source=investor.id"
+                                class="w-full h-full border-0"
+                                loading="lazy"
+                                title="' . htmlspecialchars($chartDesc) . '">
+                            </iframe>
+                        </div>
+                    </div>';
+                }
+
+                // General interactive financial chart card
+                return '
+                <div class="my-6 rounded-xl border border-blue-200/80 bg-blue-50/40 p-4 shadow-xs">
+                    <div class="flex items-center justify-between border-b border-blue-200/60 pb-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="size-2 rounded-full bg-blue-600 animate-pulse"></span>
+                            <h4 class="text-xs font-bold text-slate-900">' . htmlspecialchars($chartDesc) . '</h4>
+                        </div>
+                        <span class="rounded bg-blue-600 text-white px-2 py-0.5 text-[10px] font-bold">EMBED CHART</span>
+                    </div>
+                    <div class="h-64 sm:h-72 w-full rounded-lg bg-white border border-blue-100 flex flex-col items-center justify-center text-slate-400 p-4 text-center">
+                        <svg class="size-12 text-blue-500/70 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                        <span class="text-xs font-semibold text-slate-700">' . htmlspecialchars($chartDesc) . '</span>
+                        <span class="text-[11px] text-slate-400 mt-0.5">Grafik interaktif dirender secara otomatis pada portal berita pembaca</span>
+                    </div>
+                </div>';
+            },
+            $content
+        );
+
+        // Google Docs / Spreadsheet Embed Tokens (::Google Doc: URL:: or ::Google Sheet: URL::)
+        $content = preg_replace_callback(
+            '/::Google (Doc|Sheet|Spreadsheet):\s*(https?:\/\/[^\s:]+)(?:\s*\|\s*([^:]+))?::/i',
+            function ($m) {
+                $type = strtolower($m[1]);
+                $url = trim($m[2]);
+                $title = !empty($m[3]) ? trim($m[3]) : ($type === 'doc' ? 'Google Document' : 'Google Spreadsheet');
+                return $this->renderGoogleEmbed($type, $url, $title);
+            },
+            $content
+        );
 
         // 1. Stock / Financial Charts (Tokens and Placeholders)
         $content = preg_replace_callback(
@@ -273,6 +392,18 @@ class PostPreview extends BaseController
                 'btn'   => 'bg-blue-600 text-white',
                 'svg'   => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/>'
             ],
+            'google_doc' => [
+                'name'  => 'Google Document',
+                'color' => 'bg-blue-50 border-blue-200 text-blue-800',
+                'btn'   => 'bg-blue-600 text-white',
+                'svg'   => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/>'
+            ],
+            'google_sheet' => [
+                'name'  => 'Google Spreadsheet',
+                'color' => 'bg-emerald-50 border-emerald-200 text-emerald-800',
+                'btn'   => 'bg-emerald-600 text-white',
+                'svg'   => '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/>'
+            ],
             'scribd' => [
                 'name'  => 'Scribd Financial Report',
                 'color' => 'bg-amber-50 border-amber-200 text-amber-800',
@@ -300,6 +431,44 @@ class PostPreview extends BaseController
                 </div>
             </div>
             ' . ($safeUrl !== '#' ? '<a href="' . $safeUrl . '" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg text-xs font-bold ' . $p['btn'] . ' hover:opacity-90 transition shrink-0 flex items-center gap-1.5 shadow-2xs">Buka Tautan <svg class="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>' : '') . '
+        </div>';
+    }
+
+    /**
+     * Render responsive Google Docs / Sheets embedded viewer
+     */
+    protected function renderGoogleEmbed(string $type, string $url, string $title): string
+    {
+        $safeUrl = htmlspecialchars($url);
+        $safeTitle = htmlspecialchars($title);
+        $isSheet = in_array($type, ['sheet', 'spreadsheet']);
+        
+        $embedUrl = $url;
+        // Transform standard edit URLs to preview / pub embed URLs
+        if (str_contains($url, 'docs.google.com/document/d/')) {
+            $embedUrl = preg_replace('/\/edit.*$/', '/preview', $url);
+        } elseif (str_contains($url, 'docs.google.com/spreadsheets/d/')) {
+            $embedUrl = preg_replace('/\/edit.*$/', '/pubhtml?widget=true&headers=false', $url);
+        }
+
+        $badgeColor = $isSheet ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white';
+        $badgeLabel = $isSheet ? 'GOOGLE SPREADSHEET' : 'GOOGLE DOCS';
+
+        return '
+        <div class="my-6 rounded-xl border border-slate-200 overflow-hidden bg-white shadow-xs">
+            <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="rounded px-2 py-0.5 text-[10px] font-bold ' . $badgeColor . '">' . $badgeLabel . '</span>
+                    <span class="font-bold text-slate-800 truncate max-w-sm sm:max-w-md">' . $safeTitle . '</span>
+                </div>
+                <a href="' . $safeUrl . '" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline font-semibold text-[11px] flex items-center gap-1 shrink-0">
+                    <span>Buka Penuh</span>
+                    <svg class="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+            </div>
+            <div class="w-full relative" style="height: 480px;">
+                <iframe src="' . htmlspecialchars($embedUrl) . '" class="w-full h-full border-0" loading="lazy" title="' . $safeTitle . '"></iframe>
+            </div>
         </div>';
     }
 }

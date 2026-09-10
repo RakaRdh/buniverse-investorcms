@@ -22,8 +22,8 @@ class RoleGuard implements FilterInterface
 
         $userRole = strtolower($session->get('user_role') ?? 'staff');
         
-        // Allow 'master' full bypass access to all modules
-        if ($userRole === 'master') {
+        // Allow 'master', 'administrator', 'riset', 'sekred' full access to all modules
+        if (in_array($userRole, ['master', 'administrator', 'admin', 'riset', 'sekred'], true)) {
             return;
         }
 
@@ -63,6 +63,14 @@ class RoleGuard implements FilterInterface
 
         if (!empty($arguments)) {
             $allowedRoles = array_map('trim', array_map('strtolower', $arguments));
+
+            // Map aliases for backward compatibility
+            if (in_array('admin', $allowedRoles, true)) {
+                $allowedRoles[] = 'administrator';
+            }
+            if (in_array('editor', $allowedRoles, true)) {
+                $allowedRoles[] = 'redpel';
+            }
 
             if (!in_array($userRole, $allowedRoles, true)) {
                 return redirect()->to('/dashboard')->with('error', 'Akses ditolak: Peran (' . esc($session->get('user_role')) . ') tidak memiliki wewenang untuk membuka halaman tersebut.');

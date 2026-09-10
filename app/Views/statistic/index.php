@@ -66,13 +66,13 @@
 
     <div class="surface-card p-3 sm:p-5 flex flex-col justify-between">
         <div class="flex items-center justify-between gap-1.5">
-            <span class="text-[10px] sm:text-xs font-semibold tracking-wider text-muted-foreground uppercase truncate">Referrals</span>
-            <span class="grid size-6.5 sm:size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                <i data-lucide="share-2" class="size-3.5 sm:size-[18px]"></i>
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wider text-muted-foreground uppercase truncate">Artikel Tayang</span>
+            <span class="grid size-6.5 sm:size-8 shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                <i data-lucide="check-circle-2" class="size-3.5 sm:size-[18px]"></i>
             </span>
         </div>
-        <p class="mt-2 sm:mt-3 text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground truncate"><?= esc($metrics['socialReferralPct']) ?></p>
-        <p class="mt-1 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground truncate">Discover &amp; Feed</p>
+        <p class="mt-2 sm:mt-3 text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground truncate"><?= esc($metrics['publishedCount']) ?></p>
+        <p class="mt-1 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground truncate">Total Published</p>
     </div>
 </div>
 
@@ -96,79 +96,18 @@
 </div>
 
 <!-- Additional Platform Insights Card Grid -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="grid grid-cols-1 gap-6 mb-8">
     <div class="surface-card p-5 space-y-3">
         <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Device Distribution</h3>
-            <i data-lucide="smartphone" class="size-4 text-primary"></i>
-        </div>
-        <div class="space-y-2 pt-1">
-            <div>
-                <div class="flex justify-between text-xs mb-1">
-                    <span class="font-medium text-foreground">Mobile Web & Apps</span>
-                    <span class="font-bold text-primary"><?= esc($metrics['devices']['mobile']) ?>%</span>
-                </div>
-                <div class="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div class="h-full bg-primary rounded-full" style="width: <?= esc($metrics['devices']['mobile']) ?>%"></div>
-                </div>
-            </div>
-            <div>
-                <div class="flex justify-between text-xs mb-1">
-                    <span class="font-medium text-foreground">Desktop Browser</span>
-                    <span class="font-bold text-accent"><?= esc($metrics['devices']['desktop']) ?>%</span>
-                </div>
-                <div class="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div class="h-full bg-accent rounded-full" style="width: <?= esc($metrics['devices']['desktop']) ?>%"></div>
-                </div>
-            </div>
-            <div>
-                <div class="flex justify-between text-xs mb-1">
-                    <span class="font-medium text-foreground">Tablet & Other</span>
-                    <span class="font-bold text-muted-foreground"><?= esc($metrics['devices']['tablet']) ?>%</span>
-                </div>
-                <div class="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div class="h-full bg-muted-foreground/50 rounded-full" style="width: <?= esc($metrics['devices']['tablet']) ?>%"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="surface-card p-5 space-y-3">
-        <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Top Referral Sources</h3>
-            <i data-lucide="globe" class="size-4 text-accent"></i>
-        </div>
-        <div class="space-y-2 text-xs pt-1">
-            <div class="flex items-center justify-between py-1 border-b border-border/50">
-                <span class="text-foreground font-medium">Google News & Discover</span>
-                <span class="font-bold text-foreground"><?= esc($metrics['referrals']['google']) ?>%</span>
-            </div>
-            <div class="flex items-center justify-between py-1 border-b border-border/50">
-                <span class="text-foreground font-medium">Direct URL & Bookmark</span>
-                <span class="font-bold text-foreground"><?= esc($metrics['referrals']['direct']) ?>%</span>
-            </div>
-            <div class="flex items-center justify-between py-1 border-b border-border/50">
-                <span class="text-foreground font-medium">Social Media (X, IG, LinkedIn)</span>
-                <span class="font-bold text-foreground"><?= esc($metrics['referrals']['social']) ?>%</span>
-            </div>
-            <div class="flex items-center justify-between py-1">
-                <span class="text-foreground font-medium">Syndication / Aggregators</span>
-                <span class="font-bold text-foreground"><?= esc($metrics['referrals']['syndication']) ?>%</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="surface-card p-5 space-y-3">
-        <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Quick Action</h3>
-            <i data-lucide="arrow-right-circle" class="size-4 text-primary"></i>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Laporan Kinerja Redaksi</h3>
+            <i data-lucide="clipboard-list" class="size-4 text-primary"></i>
         </div>
         <p class="text-xs text-muted-foreground leading-relaxed">
-            Untuk melihat detail performa harian jurnalis atau editor per tanggal dalam 30 hari, silakan buka menu Laporan Tim Editorial.
+            Untuk melihat detail performa harian jurnalis atau editor per tanggal dalam rentang 30 hari, silakan buka menu Laporan Tim Editorial.
         </p>
-        <div class="pt-2">
-            <a href="<?= base_url('statistic/report') ?>" class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/90 transition-colors">
-                <i data-lucide="clipboard-list" class="size-3.5"></i>
+        <div class="pt-1">
+            <a href="<?= base_url('statistic/report') ?>" class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/90 transition-colors">
+                <i data-lucide="arrow-right" class="size-3.5"></i>
                 <span>Buka Performa Tim Editorial</span>
             </a>
         </div>

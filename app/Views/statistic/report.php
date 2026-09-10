@@ -32,9 +32,6 @@
             <a href="<?= base_url('statistic/report?tab=editor&from=' . $fromDate . '&to=' . $toDate) ?>" class="rounded-md px-2.5 py-1 sm:px-3 sm:py-1.5 transition-all <?= $tab === 'editor' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground' ?>">
                 Editor Redaksi
             </a>
-            <a href="<?= base_url('statistic/report?tab=contributor&from=' . $fromDate . '&to=' . $toDate) ?>" class="rounded-md px-2.5 py-1 sm:px-3 sm:py-1.5 transition-all <?= $tab === 'contributor' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground' ?>">
-                Contributor
-            </a>
         </div>
     </div>
 </div>
@@ -53,11 +50,11 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-            <!-- Search Name Filter -->
-            <div class="relative flex-1 sm:flex-initial">
-                <i data-lucide="search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground"></i>
-                <input type="text" id="reportSearchName" placeholder="Cari nama personil..." class="h-8 w-full sm:w-44 rounded-md border border-input bg-background pl-8 pr-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <!-- Search Name Filter (Full width on mobile, w-48 on desktop) -->
+            <div class="relative w-full sm:w-48">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none"></i>
+                <input type="text" id="reportSearchName" placeholder="Cari nama personil..." class="h-8 w-full rounded-md border border-input bg-background pl-9 pr-3 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             </div>
 
             <!-- Date Inputs -->
@@ -86,12 +83,10 @@
 // Pick current dataset based on tab
 $activeMatrix = match($tab) {
     'editor' => $editorMatrix,
-    'contributor' => $contribMatrix,
     default => $authorMatrix,
 };
 $roleLabel = match($tab) {
     'editor' => 'Editor Redaksi',
-    'contributor' => 'Contributor',
     default => 'Author (Jurnalis)',
 };
 ?>
@@ -103,7 +98,7 @@ $roleLabel = match($tab) {
             <i data-lucide="table-2" class="size-4 text-primary"></i>
             <h2 class="text-sm font-bold text-foreground">Matriks Performa: <?= esc($roleLabel) ?></h2>
         </div>
-        <span id="reportPersonnelCount" class="text-xs font-medium text-muted-foreground"><?= count($activeMatrix) ?> Personil Terdaftar</span>
+        <span id="reportPersonnelCount" class="text-xs font-medium text-muted-foreground"><?= isset($fullPersonnelCount) ? esc($fullPersonnelCount) : count($activeMatrix) ?> Personil Terdaftar</span>
     </div>
 
     <div class="relative w-full overflow-x-auto custom-sidebar-scroll">
@@ -175,9 +170,46 @@ $roleLabel = match($tab) {
                     </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
         </table>
     </div>
+
+    <!-- Pagination Footer -->
+    <?php if (isset($pagination) && $pagination['totalItems'] > 0): ?>
+        <?php
+            $reportQueryParams = $_GET;
+            $buildReportPageUrl = function($p) use ($reportQueryParams) {
+                $params = $reportQueryParams;
+                $params['page'] = $p;
+                return base_url('statistic/report') . '?' . http_build_query($params);
+            };
+        ?>
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border px-4 py-3 text-xs text-muted-foreground bg-muted/20">
+            <div>
+                Menampilkan <span class="font-semibold text-foreground"><?= $pagination['from'] ?></span> - <span class="font-semibold text-foreground"><?= $pagination['to'] ?></span> dari <span class="font-semibold text-foreground"><?= number_format($pagination['totalItems']) ?></span> personil
+            </div>
+            <div class="flex items-center gap-1">
+                <?php if ($pagination['page'] > 1): ?>
+                    <a href="<?= $buildReportPageUrl($pagination['page'] - 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Prev</a>
+                <?php else: ?>
+                    <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Prev</span>
+                <?php endif; ?>
+
+                <?php for ($p = max(1, $pagination['page'] - 2); $p <= min($pagination['totalPages'], $pagination['page'] + 2); $p++): ?>
+                    <?php if ($p == $pagination['page']): ?>
+                        <span class="rounded-md bg-primary px-2.5 py-1 font-bold text-primary-foreground"><?= $p ?></span>
+                    <?php else: ?>
+                        <a href="<?= $buildReportPageUrl($p) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors"><?= $p ?></a>
+                    <?php endif; ?>
+                <?php endfor; ?>
+
+                <?php if ($pagination['page'] < $pagination['totalPages']): ?>
+                    <a href="<?= $buildReportPageUrl($pagination['page'] + 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Next</a>
+                <?php else: ?>
+                    <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Next</span>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
 
 <?= $this->endSection() ?>
