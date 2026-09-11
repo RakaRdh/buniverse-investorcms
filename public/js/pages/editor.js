@@ -979,10 +979,16 @@ async function handleAiAssistance(field) {
                 throw new Error(json.data || 'Gagal generate summary');
             }
         } else if (field === 'tags') {
+            const titleVal = document.getElementById('articleTitleInput')?.value || '';
+            const articleIdInput = document.querySelector('input[name="id"]') || document.querySelector('input[name="article_id"]');
             const res = await fetch('/api/ai/tags', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ body: bodyText })
+                body: JSON.stringify({
+                    title: titleVal,
+                    body: bodyText,
+                    article_id: articleIdInput ? articleIdInput.value : null
+                })
             });
             const json = await res.json();
             if (json.status === 'success') {
@@ -996,7 +1002,17 @@ async function handleAiAssistance(field) {
                     markEditorDirty();
                 }
                 if (typeof showToast === 'function') {
-                    showToast('Tag kata kunci berhasil di-generate!', 'success');
+                    const matchedCount = (json.data.matched_from_db || []).length;
+                    const newCount = (json.data.new_generated || []).length;
+                    let msg = 'Tag kata kunci berhasil di-generate!';
+                    if (matchedCount > 0 && newCount > 0) {
+                        msg = `Tag diselaraskan: ${matchedCount} dari DB, ${newCount} baru via AI!`;
+                    } else if (matchedCount > 0 && newCount === 0) {
+                        msg = `Semua ${matchedCount} tag berhasil dicocokkan dari database!`;
+                    } else if (newCount > 0) {
+                        msg = `${newCount} tag baru berhasil di-generate via Gemini AI!`;
+                    }
+                    showToast(msg, 'success');
                 }
             } else {
                 throw new Error(json.data || 'Gagal generate tags');
@@ -1472,20 +1488,37 @@ function filterAuthorDropdown(val) {
 function selectAuthorName(name) {
     const input = document.getElementById('authorInput');
     if (input) {
-        input.value = name;
+        const currentAuthors = input.value.split(',').map(a => a.trim()).filter(a => a.length > 0);
+        const existsIndex = currentAuthors.findIndex(a => a.toLowerCase() === name.toLowerCase());
+
+        if (existsIndex >= 0) {
+            // If already selected, toggle off (unless it's the only one)
+            if (currentAuthors.length > 1) {
+                currentAuthors.splice(existsIndex, 1);
+            }
+        } else {
+            // Add as primary or co-author
+            currentAuthors.push(name);
+        }
+
+        input.value = currentAuthors.join(', ');
         markEditorDirty();
     }
 
+    updateAuthorDropdownChecks();
+}
+
+function updateAuthorDropdownChecks() {
+    const input = document.getElementById('authorInput');
+    const selected = (input?.value || '').split(',').map(a => a.trim().toLowerCase()).filter(Boolean);
     const items = document.querySelectorAll('.author-option-item');
     items.forEach(item => {
         const icon = item.querySelector('.author-check-icon');
-        const itemAuthor = item.getAttribute('data-author') || '';
+        const itemAuthor = (item.getAttribute('data-author') || '').toLowerCase();
         if (icon) {
-            icon.classList.toggle('opacity-0', itemAuthor !== name.toLowerCase());
+            icon.classList.toggle('opacity-0', !selected.includes(itemAuthor));
         }
     });
-
-    closeAuthorDropdown();
 }
 
 // Click outside author dropdown to dismiss

@@ -373,14 +373,17 @@ select {
 }
 
 /* Lucide Icons Anti-Blink & Layout Shift Prevention */
-[data-lucide] {
+[data-lucide]:not(.hidden):not([hidden]) {
   display: inline-block;
   vertical-align: middle;
   flex-shrink: 0;
 }
 
 /* Match explicit sizes commonly used in sidebar & topbar before Lucide SVG renders */
-i[data-lucide].size-4, i[data-lucide].size-4\.5, i[data-lucide].size-5, i[data-lucide].size-3\.5 {
+i[data-lucide].size-4:not(.hidden):not([hidden]),
+i[data-lucide].size-4\.5:not(.hidden):not([hidden]),
+i[data-lucide].size-5:not(.hidden):not([hidden]),
+i[data-lucide].size-3\.5:not(.hidden):not([hidden]) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -389,6 +392,29 @@ i[data-lucide].size-4 { width: 1rem; height: 1rem; }
 i[data-lucide].size-4\.5 { width: 1.125rem; height: 1.125rem; }
 i[data-lucide].size-5 { width: 1.25rem; height: 1.25rem; }
 i[data-lucide].size-3\.5 { width: 0.875rem; height: 0.875rem; }
+
+/* Global Theme Toggle Button: Exact Single Icon Display */
+#globalThemeToggleBtn {
+  position: relative;
+  overflow: hidden;
+}
+
+#globalThemeToggleBtn .theme-icon-moon,
+#globalThemeToggleBtn .theme-icon-sun {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.dark #globalThemeToggleBtn .theme-icon-moon,
+html:not(.dark) #globalThemeToggleBtn .theme-icon-sun {
+  display: none !important;
+}
+
+html.dark #globalThemeToggleBtn .theme-icon-sun,
+html:not(.dark) #globalThemeToggleBtn .theme-icon-moon {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
 
 /* Page Load Anti-Blink: Suppress transition animations during initial render */
 body.preload,

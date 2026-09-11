@@ -110,4 +110,79 @@ class KeywordModel extends Model
 
         return $this->db->transStatus();
     }
+
+    /**
+     * Scan and retrieve relevant keyword candidates from database based on article text
+     * Returns a flat list of keyword strings to guide AI generation
+     */
+    public function getRelevantCandidates(string $text, int $limit = 80): array
+    {
+        $cleanText = strip_tags($text);
+
+        // Stop words in Indonesian common in editorial text
+        $stopWords = [
+            'yang', 'untuk', 'dengan', 'dalam', 'karena', 'bahwa', 'tersebut', 'kepada',
+            'sebagai', 'antara', 'menurut', 'adalah', 'mereka', 'seperti', 'terhadap',
+            'melalui', 'tentang', 'setelah', 'sebelum', 'selama', 'hingga', 'sampai',
+            'kemudian', 'sedangkan', 'padahal', 'bahkan', 'namun', 'tetapi', 'melainkan',
+            'ketika', 'saat', 'waktu', 'secara', 'sangat', 'lebih', 'paling', 'sudah',
+            'telah', 'sedang', 'akan', 'dapat', 'bisa', 'harus', 'mampu', 'tidak', 'bukan'
+        ];
+
+        preg_match_all('/[a-zA-Z0-9]{4,}/u', $cleanText, $matches);
+        $words = $matches[0] ?? [];
+        $uniqueWords = [];
+        foreach ($words as $w) {
+            $wLower = strtolower($w);
+            if (!in_array($wLower, $stopWords) && !isset($uniqueWords[$wLower])) {
+                $uniqueWords[$wLower] = true;
+                if (count($uniqueWords) >= 25) break;
+            }
+        }
+
+        $candidates = [];
+
+        // 1. Query keywords matching significant content tokens
+        if (!empty($uniqueWords)) {
+            $builder = $this->db->table('keyword')->select('keyword')->groupStart();
+            $first = true;
+            foreach (array_keys($uniqueWords) as $token) {
+                if ($first) {
+                    $builder->like('keyword', $token);
+                    $first = false;
+                } else {
+                    $builder->orLike('keyword', $token);
+                }
+            }
+            $builder->groupEnd();
+
+            $tokenMatches = $builder->limit($limit)->get()->getResultArray();
+            foreach ($tokenMatches as $row) {
+                if (!empty($row['keyword'])) {
+                    $candidates[$row['keyword']] = true;
+                }
+            }
+        }
+
+        // 2. Also retrieve top frequently used / popular keywords if candidate list is small
+        if (count($candidates) < $limit) {
+            $remaining = $limit - count($candidates);
+            $popular = $this->db->table('keyword k')
+                ->select('k.keyword, COUNT(ak.articleID) as cnt')
+                ->join('articlekeyword ak', 'ak.keywordID = k.id', 'left')
+                ->groupBy('k.id')
+                ->orderBy('cnt', 'DESC')
+                ->orderBy('k.id', 'DESC')
+                ->limit($remaining)
+                ->get()->getResultArray();
+
+            foreach ($popular as $row) {
+                if (!empty($row['keyword'])) {
+                    $candidates[$row['keyword']] = true;
+                }
+            }
+        }
+
+        return array_keys($candidates);
+    }
 }

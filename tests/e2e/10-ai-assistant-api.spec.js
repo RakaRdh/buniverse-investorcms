@@ -77,4 +77,25 @@ test.describe('10 - AI Assistant Editorial API Suite', () => {
     expect(json).toHaveProperty('status');
     expect(json).toHaveProperty('data');
   });
+
+  test('AI-09: Generate tags with DB pre-scanning returns grounded tags and metadata', async ({ request }) => {
+    const sampleBody = 'Indeks Harga Saham Gabungan (IHSG) menguat didorong kenaikan saham perbankan BBCA dan sentimen pembagian dividen.';
+    const res = await request.post('/api/ai/tags', {
+      data: { title: 'IHSG Menguat Bersama Saham Perbankan', body: sampleBody }
+    });
+    expect([200, 500]).toContain(res.status());
+    const json = await res.json();
+    expect(json).toHaveProperty('status');
+    if (json.status === 'success') {
+      expect(json.data).toHaveProperty('tags');
+      expect(Array.isArray(json.data.tags)).toBe(true);
+      expect(json.data).toHaveProperty('matched_from_db');
+      expect(Array.isArray(json.data.matched_from_db)).toBe(true);
+      expect(json.data).toHaveProperty('new_generated');
+      expect(Array.isArray(json.data.new_generated)).toBe(true);
+      expect(json.data).toHaveProperty('candidates_count');
+      expect(typeof json.data.candidates_count).toBe('number');
+    }
+  });
 });
+

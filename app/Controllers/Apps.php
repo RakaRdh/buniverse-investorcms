@@ -110,6 +110,35 @@ class Apps extends BaseController
         return redirect()->to('/apps-push-notif')->with('success', 'Push notification recorded to database successfully!');
     }
 
+    /**
+     * [Kategori D - Sengaja Dilewatkan / Placeholder Only]
+     * Method stub pengiriman FCM langsung ke server Google Firebase Cloud Messaging.
+     * Disediakan sesuai permintaan arsitektur namun di-comment out agar tidak membebani lingkungan lokal/staging.
+     *
+     * protected function sendFcmDirect(array $payload, string $targetToken): array
+     * {
+     *     // $fcmServerKey = getenv('FCM_SERVER_KEY');
+     *     // $client = \Config\Services::curlrequest();
+     *     // $response = $client->post('https://fcm.googleapis.com/fcm/send', [
+     *     //     'headers' => [
+     *     //         'Authorization' => 'key=' . $fcmServerKey,
+     *     //         'Content-Type'  => 'application/json',
+     *     //     ],
+     *     //     'json' => [
+     *     //         'to'           => $targetToken,
+     *     //         'notification' => [
+     *     //             'title' => $payload['title'],
+     *     //             'body'  => $payload['body'],
+     *     //             'image' => $payload['image'] ?? null,
+     *     //         ],
+     *     //         'data' => $payload,
+     *     //     ]
+     *     // ]);
+     *     // return json_decode($response->getBody(), true) ?: ['success' => 1];
+     *     return ['success' => 1, 'mock' => true];
+     * }
+     */
+
     public function featureContent()
     {
         $features = $this->featureModel->getFeaturesList();

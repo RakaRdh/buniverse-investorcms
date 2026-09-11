@@ -25,7 +25,7 @@ class User extends BaseController
         ];
 
         $page = max(1, (int)($this->request->getGet('page') ?? 1));
-        $perPage = 15;
+        $perPage = 30;
         $totalUsers = $this->adminModel->countAdminsWithActivity($filters);
         $totalPages = max(1, (int)ceil($totalUsers / $perPage));
         if ($page > $totalPages) {
@@ -266,6 +266,74 @@ class User extends BaseController
         );
 
         return redirect()->to('/user/profile')->with('success', 'Profile alias updated successfully.');
+    }
+
+    /**
+     * Ubah kata sandi mandiri dari halaman profil pengguna
+     * Memvalidasi kata sandi lama, kemudian menyimpan hash SHA-512 + 128 chars salt baru
+     */
+    public function changePasswordProfile()
+    {
+        $userId = session()->get('user_id') ?: 1;
+        $user = $this->adminModel->find($userId);
+
+        if (!$user) {
+            return redirect()->to('/login');
+        }
+
+        $currentPassword = (string)$this->request->getPost('current_password');
+        $newPassword     = (string)$this->request->getPost('new_password');
+        $confirmPassword = (string)$this->request->getPost('confirm_password');
+
+        if (empty($currentPassword) || empty($newPassword)) {
+            return redirect()->to('/user/profile')->with('error', 'Kata sandi saat ini dan kata sandi baru wajib diisi.');
+        }
+
+        if (strlen($newPassword) < 8) {
+            return redirect()->to('/user/profile')->with('error', 'Kata sandi baru minimal harus 8 karakter.');
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            return redirect()->to('/user/profile')->with('error', 'Konfirmasi kata sandi baru tidak cocok.');
+        }
+
+        // Verifikasi kata sandi saat ini
+        $salt = $user['salt'] ?? '';
+        $storedHash = $user['password'] ?? '';
+        $isValidCurrent = false;
+
+        if (!empty($salt) && \App\Models\AdminModel::verifyPassword($currentPassword, $salt, $storedHash)) {
+            $isValidCurrent = true;
+        } elseif (!empty($salt) && \App\Models\AdminModel::decodePassword($storedHash, $salt) === $currentPassword) {
+            $isValidCurrent = true;
+        } elseif (password_verify($currentPassword, $storedHash)) {
+            $isValidCurrent = true;
+        } elseif (strcasecmp(md5($currentPassword), $storedHash) === 0) {
+            $isValidCurrent = true;
+        }
+
+        if (!$isValidCurrent) {
+            return redirect()->to('/user/profile')->with('error', 'Kata sandi saat ini tidak sesuai.');
+        }
+
+        // Update password baru dengan SHA-512
+        $newSalt = \App\Models\AdminModel::generateSalt(128);
+        $newHash = \App\Models\AdminModel::encodePassword($newPassword, $newSalt);
+
+        $this->adminModel->update($userId, [
+            'password'        => $newHash,
+            'salt'            => $newSalt,
+            'passwordExpired' => date('Y-m-d H:i:s', strtotime('+90 days')),
+        ]);
+
+        $this->activityLogModel->logAction(
+            $userId,
+            'USER',
+            'CHANGE_PASSWORD',
+            "User {$user['username']} changed password via profile page"
+        );
+
+        return redirect()->to('/user/profile')->with('success', 'Kata sandi Anda berhasil diperbarui!');
     }
 
     /**

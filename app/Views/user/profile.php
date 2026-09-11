@@ -129,6 +129,42 @@
                 </button>
             </div>
         </form>
+
+        <!-- Change Password Section -->
+        <div class="mt-8 pt-6 border-t border-border/60">
+            <div class="mb-4">
+                <h3 class="text-sm font-bold text-foreground flex items-center gap-2">
+                    <i data-lucide="lock" class="size-4 text-primary"></i>
+                    <span>Ubah Kata Sandi Mandiri</span>
+                </h3>
+                <p class="text-xs text-muted-foreground mt-0.5">Tingkatkan keamanan akun Anda dengan mengganti kata sandi secara berkala.</p>
+            </div>
+
+            <form action="<?= base_url('user/profile/change-password') ?>" method="POST" class="space-y-4">
+                <?= csrf_field() ?>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-muted-foreground mb-1.5">Kata Sandi Saat Ini</label>
+                        <input type="password" name="current_password" required placeholder="••••••••••••" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-muted-foreground mb-1.5">Kata Sandi Baru</label>
+                        <input type="password" name="new_password" required minlength="8" placeholder="Minimal 8 karakter" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-muted-foreground mb-1.5">Konfirmasi Sandi Baru</label>
+                        <input type="password" name="confirm_password" required minlength="8" placeholder="Ulangi sandi baru" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-mono">
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end">
+                    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border px-4 py-2 text-xs font-bold uppercase tracking-wider shadow-xs transition-colors">
+                        <i data-lucide="key" class="size-3.5"></i>
+                        <span>Perbarui Kata Sandi</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 

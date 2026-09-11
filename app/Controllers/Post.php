@@ -203,8 +203,21 @@ class Post extends BaseController
         }
 
         $sumberBerita = $this->request->getPost('source') ?: ($this->request->getPost('sumber_berita') ?: 'Investor.id / Riset');
-        $authorName = $this->request->getPost('author') ?: 'Raka Herdika';
-        $authorId = $this->authorModel->findOrCreate($authorName);
+        $rawAuthor = $this->request->getPost('author') ?: 'Raka Herdika';
+        $authorNames = array_values(array_filter(array_map('trim', explode(',', $rawAuthor))));
+        if (empty($authorNames)) {
+            $authorNames = ['Raka Herdika'];
+        }
+        $authorId = [];
+        foreach ($authorNames as $aName) {
+            $cleanName = trim(rtrim($aName, '*)'));
+            if (!empty($cleanName)) {
+                $authorId[] = $this->authorModel->findOrCreate($cleanName);
+            }
+        }
+        if (empty($authorId)) {
+            $authorId = [$this->authorModel->findOrCreate('Raka Herdika')];
+        }
 
         // Primary Category is ALWAYS the Master Kanal (parent IS NULL)
         $category = $this->categoryModel->where('categoryName', $kanalName)->where('parent IS NULL')->first();
@@ -212,6 +225,19 @@ class Post extends BaseController
             $category = $this->categoryModel->where('categoryName', $kanalName)->first();
         }
         $categoryId = $category ? (int)$category['categoryID'] : 1;
+
+        // Sub-Kanal Category Resolution (if present)
+        $subKanalId = 0;
+        if (!empty($subKanal)) {
+            $firstSubName = trim(explode(',', $subKanal)[0]);
+            $subCategory = $this->categoryModel->where('categoryName', $firstSubName)->where('parent', $categoryId)->first();
+            if (!$subCategory) {
+                $subCategory = $this->categoryModel->where('categoryName', $firstSubName)->first();
+            }
+            if ($subCategory) {
+                $subKanalId = (int)$subCategory['categoryID'];
+            }
+        }
 
         $pointsInput = $this->request->getPost('points');
         if (is_array($pointsInput)) {
@@ -263,10 +289,13 @@ class Post extends BaseController
             'status'            => $status,
             'publish_date'      => $publishDate,
             'thumbnail'         => $this->request->getPost('thumbnail') ?: '/img/investor_placeholder.jpg',
+            'media_id'          => (int)($this->request->getPost('media_id') ?: 0),
+            'thumbnail_caption' => $this->request->getPost('thumbnail_caption') ?: '',
             'upper_deck'        => $this->request->getPost('upper_deck') ?? '',
             'source'            => $sumberBerita,
             'kanal'             => $kanalName,
             'sub_kanal'         => $subKanal,
+            'sub_kanal_id'      => $subKanalId,
             'is_premium'        => (int)($this->request->getPost('is_premium') ?? 0),
             'headline_type'     => $this->request->getPost('headline_type') ?? 'none',
             'userID'            => $sessionUser,
@@ -277,10 +306,31 @@ class Post extends BaseController
         if ($existingId > 0 && $this->articleModel->find($existingId)) {
             $this->articleModel->updateArticle($existingId, $articleData, $authorId, $categoryId, $tags, $points, (int)$sessionUser);
             $this->articleModel->releaseLock($existingId, (int)$sessionUser);
+
+            // Jejak audit editorlog
+            try {
+                $activityLog = new \App\Models\ActivityLogModel();
+                $activityLog->logAction((int)$sessionUser, 'update', 'article', [
+                    'article_id' => $existingId,
+                    'title'      => $title,
+                    'status'     => $status,
+                ]);
+            } catch (\Throwable $e) {}
+
             return redirect()->to('/post')->with('success', 'Article successfully updated and stored in database!');
         }
 
-        $this->articleModel->createArticle($articleData, $authorId, $categoryId, $tags, $points);
+        $newArticleId = $this->articleModel->createArticle($articleData, $authorId, $categoryId, $tags, $points);
+
+        // Jejak audit editorlog
+        try {
+            $activityLog = new \App\Models\ActivityLogModel();
+            $activityLog->logAction((int)$sessionUser, 'create', 'article', [
+                'article_id' => $newArticleId,
+                'title'      => $title,
+                'status'     => $status,
+            ]);
+        } catch (\Throwable $e) {}
 
         return redirect()->to('/post')->with('success', 'Article successfully created and stored in database!');
     }
@@ -312,8 +362,21 @@ class Post extends BaseController
         }
 
         $sumberBerita = $this->request->getPost('source') ?: ($this->request->getPost('sumber_berita') ?: 'Investor.id / Riset');
-        $authorName = $this->request->getPost('author') ?: 'Raka Herdika';
-        $authorId = $this->authorModel->findOrCreate($authorName);
+        $rawAuthor = $this->request->getPost('author') ?: 'Raka Herdika';
+        $authorNames = array_values(array_filter(array_map('trim', explode(',', $rawAuthor))));
+        if (empty($authorNames)) {
+            $authorNames = ['Raka Herdika'];
+        }
+        $authorId = [];
+        foreach ($authorNames as $aName) {
+            $cleanName = trim(rtrim($aName, '*)'));
+            if (!empty($cleanName)) {
+                $authorId[] = $this->authorModel->findOrCreate($cleanName);
+            }
+        }
+        if (empty($authorId)) {
+            $authorId = [$this->authorModel->findOrCreate('Raka Herdika')];
+        }
 
         // Primary Category is ALWAYS Master Kanal
         $category = $this->categoryModel->where('categoryName', $kanalName)->where('parent IS NULL')->first();
@@ -321,6 +384,19 @@ class Post extends BaseController
             $category = $this->categoryModel->where('categoryName', $kanalName)->first();
         }
         $categoryId = $category ? (int)$category['categoryID'] : 1;
+
+        // Sub-Kanal Category Resolution (if present)
+        $subKanalId = 0;
+        if (!empty($subKanal)) {
+            $firstSubName = trim(explode(',', $subKanal)[0]);
+            $subCategory = $this->categoryModel->where('categoryName', $firstSubName)->where('parent', $categoryId)->first();
+            if (!$subCategory) {
+                $subCategory = $this->categoryModel->where('categoryName', $firstSubName)->first();
+            }
+            if ($subCategory) {
+                $subKanalId = (int)$subCategory['categoryID'];
+            }
+        }
 
         $pointsInput = $this->request->getPost('points');
         if (is_array($pointsInput)) {
@@ -367,22 +443,35 @@ class Post extends BaseController
         }
 
         $articleData = [
-            'title'         => $title,
-            'summary'       => $this->request->getPost('summary') ?? '',
-            'content'       => $this->request->getPost('content') ?? '',
-            'status'        => $status,
-            'publish_date'  => $publishDate,
-            'thumbnail'     => $this->request->getPost('thumbnail') ?: '/img/investor_placeholder.jpg',
-            'upper_deck'    => $this->request->getPost('upper_deck') ?? '',
-            'source'        => $sumberBerita,
-            'kanal'         => $kanalName,
-            'sub_kanal'     => $subKanal,
-            'is_premium'    => (int)($this->request->getPost('is_premium') ?? 0),
-            'headline_type' => $this->request->getPost('headline_type') ?? 'none',
+            'title'             => $title,
+            'summary'           => $this->request->getPost('summary') ?? '',
+            'content'           => $this->request->getPost('content') ?? '',
+            'status'            => $status,
+            'publish_date'      => $publishDate,
+            'thumbnail'         => $this->request->getPost('thumbnail') ?: '/img/investor_placeholder.jpg',
+            'media_id'          => (int)($this->request->getPost('media_id') ?: 0),
+            'thumbnail_caption' => $this->request->getPost('thumbnail_caption') ?: '',
+            'upper_deck'        => $this->request->getPost('upper_deck') ?? '',
+            'source'            => $sumberBerita,
+            'kanal'             => $kanalName,
+            'sub_kanal'         => $subKanal,
+            'sub_kanal_id'      => $subKanalId,
+            'is_premium'        => (int)($this->request->getPost('is_premium') ?? 0),
+            'headline_type'     => $this->request->getPost('headline_type') ?? 'none',
         ];
 
         $this->articleModel->updateArticle((int)$id, $articleData, $authorId, $categoryId, $tags, $points, (int)$sessionUser);
         $this->articleModel->releaseLock((int)$id, (int)$sessionUser);
+
+        // Jejak audit editorlog
+        try {
+            $activityLog = new \App\Models\ActivityLogModel();
+            $activityLog->logAction((int)$sessionUser, 'update', 'article', [
+                'article_id' => (int)$id,
+                'title'      => $title,
+                'status'     => $status,
+            ]);
+        } catch (\Throwable $e) {}
 
         return redirect()->to('/post')->with('success', 'Article updated successfully!');
     }
@@ -397,8 +486,11 @@ class Post extends BaseController
             return redirect()->to('/post')->with('error', 'Akses ditolak: Akun dengan role ' . esc($userRole) . ' tidak memiliki hak menghapus artikel.');
         }
 
-        $this->articleModel->deleteArticle((int)$id, $userId);
-        return redirect()->to('/post')->with('success', 'Article removed successfully from database.');
+        $reason = trim($this->request->getPost('reason') ?: ($this->request->getGet('reason') ?: ''));
+        $notes = trim($this->request->getPost('notes') ?: ($this->request->getGet('notes') ?: ''));
+
+        $this->articleModel->deleteArticle((int)$id, $userId, $reason, $notes);
+        return redirect()->to('/post')->with('success', 'Artikel berhasil dipindahkan ke status Deleted (Soft Delete).');
     }
 
     public function bulkAction()

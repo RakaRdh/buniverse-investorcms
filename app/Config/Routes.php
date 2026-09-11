@@ -15,6 +15,10 @@ $routes->post('/login', 'Auth::login');
 $routes->get('/auth/verify-code', 'Auth::verifyCode');
 $routes->post('/auth/verify-code', 'Auth::verifyCode');
 $routes->post('/auth/resend-code', 'Auth::resendCode');
+$routes->get('/auth/forgot-password', 'Auth::forgotPassword');
+$routes->post('/auth/forgot-password', 'Auth::sendResetLink');
+$routes->get('/auth/reset-password', 'Auth::resetPassword');
+$routes->post('/auth/reset-password', 'Auth::resetPassword');
 $routes->get('/logout', 'Auth::logout');
 $routes->post('/logout', 'Auth::logout');
 
@@ -27,7 +31,7 @@ $routes->get('/post/new', 'Post::new');
 $routes->post('/post/save', 'Post::save');
 $routes->get('/post/edit/(:num)', 'Post::edit/$1');
 $routes->post('/post/update/(:num)', 'Post::update/$1');
-$routes->get('/post/delete/(:num)', 'Post::delete/$1');
+$routes->match(['GET', 'POST'], '/post/delete/(:num)', 'Post::delete/$1');
 $routes->post('/post/bulk-action', 'Post::bulkAction');
 $routes->get('/post/export', 'Post::export');
 $routes->get('/post/history', 'Post::history');
@@ -118,6 +122,7 @@ $routes->get('/api/user/check-email', 'User::checkEmail');
 // User Personal Profile (All authenticated users)
 $routes->get('/user/profile', 'User::profile');
 $routes->post('/user/profile/update', 'User::updateProfile');
+$routes->post('/user/profile/change-password', 'User::changePasswordProfile');
 
 // AI Editorial Assistant (Gemini)
 $routes->post('/api/ai/title', 'AiAssistant::generateTitle');

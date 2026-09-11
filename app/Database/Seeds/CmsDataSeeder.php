@@ -76,28 +76,32 @@ class CmsDataSeeder extends Seeder
         $this->db->table('articlestatus')->insertBatch($statuses);
 
         // 2. useradministrator (15 Editorial Staff Accounts - SHA-512 Encrypted Salt)
+        $targetEmail = 'raka.herdika.ramadhan.tik23@stu.pnj.ac.id';
         $defaultStaff = [
             // 1. Administrator (Master - Akses Penuh)
-            ['username' => 'raka_h',        'name' => 'Raka Herdika',           'alias' => 'RHR', 'email' => 'raka@investor.id',          'role' => 'administrator', 'password' => 'password123'],
-            ['username' => 'admin',         'name' => 'Redaksi Master Admin',   'alias' => 'AGG', 'email' => 'admin@investor.id',         'role' => 'administrator', 'password' => 'password123'],
+            ['username' => 'raka_h',        'name' => 'Raka Herdika',           'alias' => 'RHR', 'email' => $targetEmail, 'role' => 'administrator', 'password' => 'password123'],
+            ['username' => 'admin',         'name' => 'Redaksi Master Admin',   'alias' => 'AGG', 'email' => $targetEmail, 'role' => 'administrator', 'password' => 'password123'],
             // 2. Redpel (Redaktur Pelaksana - Otoritas setara Editor)
-            ['username' => 'budi_redpel',   'name' => 'Budi Prakoso',           'alias' => 'BDP', 'email' => 'budi.redpel@investor.id',   'role' => 'redpel',        'password' => 'password123'],
-            ['username' => 'hendra_redpel', 'name' => 'Hendra Kusuma',          'alias' => 'HNK', 'email' => 'hendra.redpel@investor.id', 'role' => 'redpel',        'password' => 'password123'],
+            ['username' => 'budi_redpel',   'name' => 'Budi Prakoso',           'alias' => 'BDP', 'email' => $targetEmail, 'role' => 'redpel',        'password' => 'password123'],
+            ['username' => 'hendra_redpel', 'name' => 'Hendra Kusuma',          'alias' => 'HNK', 'email' => $targetEmail, 'role' => 'redpel',        'password' => 'password123'],
             // 3. Editor (Editor & Jurnalis Penulis Artikel)
-            ['username' => 'dewi_editor',   'name' => 'Dewi Sartika',           'alias' => 'DWS', 'email' => 'dewi.editor@investor.id',   'role' => 'editor',        'password' => 'password123'],
-            ['username' => 'natasha_k',     'name' => 'Natasha Khairunisa',     'alias' => 'NKH', 'email' => 'natasha@investor.id',        'role' => 'editor',        'password' => 'password123'],
-            ['username' => 'dimas_a',       'name' => 'Dimas Anggoro',          'alias' => 'DMA', 'email' => 'dimas.editor@investor.id',  'role' => 'editor',        'password' => 'password123'],
-            ['username' => 'siti_r',        'name' => 'Siti Rahmawati',         'alias' => 'STR', 'email' => 'siti.editor@investor.id',   'role' => 'editor',        'password' => 'password123'],
-            ['username' => 'bambang_w',     'name' => 'Bambang Wijaya',         'alias' => 'BMW', 'email' => 'bambang.editor@investor.id','role' => 'editor',        'password' => 'password123'],
-            ['username' => 'fajar_p',       'name' => 'Fajar Pratama',          'alias' => 'FJP', 'email' => 'fajar.editor@investor.id',  'role' => 'editor',        'password' => 'password123'],
-            ['username' => 'anisa_m',       'name' => 'Anisa Maharani',         'alias' => 'ANM', 'email' => 'anisa.editor@investor.id',  'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'dewi_editor',   'name' => 'Dewi Sartika',           'alias' => 'DWS', 'email' => $targetEmail, 'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'natasha_k',     'name' => 'Natasha Khairunisa',     'alias' => 'NKH', 'email' => $targetEmail, 'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'dimas_a',       'name' => 'Dimas Anggoro',          'alias' => 'DMA', 'email' => $targetEmail, 'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'siti_r',        'name' => 'Siti Rahmawati',         'alias' => 'STR', 'email' => $targetEmail, 'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'bambang_w',     'name' => 'Bambang Wijaya',         'alias' => 'BMW', 'email' => $targetEmail, 'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'fajar_p',       'name' => 'Fajar Pratama',          'alias' => 'FJP', 'email' => $targetEmail, 'role' => 'editor',        'password' => 'password123'],
+            ['username' => 'anisa_m',       'name' => 'Anisa Maharani',         'alias' => 'ANM', 'email' => $targetEmail, 'role' => 'editor',        'password' => 'password123'],
             // 4. Riset (Tim Riset & Analis - Akses Terbuka)
-            ['username' => 'rizky_k',       'name' => 'Rizky Kurniawan',        'alias' => 'RZK', 'email' => 'rizky.riset@investor.id',   'role' => 'riset',         'password' => 'password123'],
-            ['username' => 'maya_s',        'name' => 'Maya Safitri',           'alias' => 'MYS', 'email' => 'maya.riset@investor.id',    'role' => 'riset',         'password' => 'password123'],
+            ['username' => 'rizky_k',       'name' => 'Rizky Kurniawan',        'alias' => 'RZK', 'email' => $targetEmail, 'role' => 'riset',         'password' => 'password123'],
+            ['username' => 'maya_s',        'name' => 'Maya Safitri',           'alias' => 'MYS', 'email' => $targetEmail, 'role' => 'riset',         'password' => 'password123'],
             // 5. Sekred (Sekretariat Redaksi - Akses Terbuka)
-            ['username' => 'sekred',        'name' => 'Agus Triyono',           'alias' => 'AGT', 'email' => 'sekred@investor.id',        'role' => 'sekred',        'password' => 'password123'],
+            ['username' => 'sekred',        'name' => 'Agus Triyono',           'alias' => 'AGT', 'email' => $targetEmail, 'role' => 'sekred',        'password' => 'password123'],
             // 6. Support (IT Dev & Support - Akses Terbatas)
-            ['username' => 'support',       'name' => 'IT Dev & Support',       'alias' => 'DEV', 'email' => 'support@investor.id',        'role' => 'support',       'password' => 'password123'],
+            ['username' => 'support',       'name' => 'IT Dev & Support',       'alias' => 'DEV', 'email' => $targetEmail, 'role' => 'support',       'password' => 'password123', 'active' => 1],
+            // 7. Suspended / Inactive Users (Menjaga paritas variasi kasus ekstrem active = 0 sesuai DB Sumber)
+            ['username' => 'webadmin_old',  'name' => 'Former Web Administrator', 'alias' => 'WAD', 'email' => $targetEmail, 'role' => 'support',       'password' => 'password123', 'active' => 0],
+            ['username' => 'alumni_editor', 'name' => 'Alumni Editor Nonaktif',    'alias' => 'ALM', 'email' => $targetEmail, 'role' => 'editor',        'password' => 'password123', 'active' => 0],
         ];
 
         $userMap = []; // username => userID
@@ -112,8 +116,9 @@ class CmsDataSeeder extends Seeder
                 'password'  => $hashedPass,
                 'salt'      => $salt,
                 'email'     => $u['email'],
-                'active'    => 1,
+                'active'    => $u['active'] ?? 1,
                 'roleName'  => $u['role'],
+                'nextVerify'=> date('Y-m-d', strtotime('+30 days')),
                 'lastLogin' => date('Y-m-d H:i:s'),
             ]);
             $userMap[$u['username']] = $this->db->insertID();
@@ -366,20 +371,53 @@ class CmsDataSeeder extends Seeder
             }
         }
 
-        // 7. articleheadline (Active Headlines: 'home', 'tropical', 'trending')
-        $headlineCategories = ['home', 'tropical', 'trending'];
-        for ($i = 0; $i < 12; $i++) {
+        // 7. articleheadline (Active & Inactive Headlines: 'home', 'topical', 'trending', 'newsletter')
+        $headlineCategories = ['home', 'topical', 'trending', 'newsletter'];
+        for ($i = 0; $i < 20; $i++) {
             if (isset($articleMap[$i])) {
                 $catName = $headlineCategories[$i % count($headlineCategories)];
+                // Variasi status = 0 untuk 3 headline terakhir guna memastikan parity kasus status = 0 dari DB Sumber
+                $hStatus = ($i >= 17) ? 0 : 1;
                 $this->db->table('articleheadline')->insert([
                     'category'  => $catName,
                     'articleID' => $articleMap[$i],
-                    'num'       => ($i % 4) + 1,
+                    'num'       => ($i % 5) + 1,
                     'timestamp' => date('Y-m-d H:i:s', strtotime("-{$i} hours")),
-                    'status'    => 1,
+                    'status'    => $hStatus,
                 ]);
             }
         }
+
+        // 7b. articlehistory (Audit trail revisi naskah berita simulasi 3 minggu operasional)
+        $historySamples = [];
+        $historyStatuses = [
+            ['prev' => 'Draft', 'after' => 'Hold'],
+            ['prev' => 'Hold',  'after' => 'Publish'],
+            ['prev' => 'Draft', 'after' => 'Publish'],
+            ['prev' => 'Publish','after' => 'Publish'], // Edit judul / isi setelah tayang
+        ];
+
+        for ($h = 0; $h < 22; $h++) {
+            $artIndex = ($h * 3) % count($articleMap);
+            $targetArtId = $articleMap[$artIndex] ?? ($h + 1);
+            $daysAgo = ($h % 21) + 1;
+            $hoursAgo = ($h * 2) % 24;
+            $editorId = ($h % 5) + 1; // Raka, admin, Budi, Hendra, Dewi
+
+            $stPair = $historyStatuses[$h % count($historyStatuses)];
+            $historySamples[] = [
+                'timestamp'    => date('Y-m-d H:i:s', strtotime("-{$daysAgo} days -{$hoursAgo} hours")),
+                'articleID'    => $targetArtId,
+                'editorID'     => $editorId,
+                'title_prev'   => 'Draf Awal Naskah Berita #' . ($artIndex + 1),
+                'title_after'  => 'Pembaruan Redaksi Naskah Berita #' . ($artIndex + 1),
+                'content_prev' => '<p>Draf naskah awal yang diajukan reporter untuk peninjauan redaksi.</p>',
+                'content_after'=> '<p>Naskah telah disunting, diverifikasi kelengkapan data fundamental, dan disetujui untuk tayang.</p>',
+                'status_prev'  => $stPair['prev'],
+                'status_after' => $stPair['after'],
+            ];
+        }
+        $this->db->table('articlehistory')->insertBatch($historySamples);
 
         // 8. media & mediaarticle (Media Library: 24 Assets)
         $imgPool = [
@@ -569,36 +607,52 @@ class CmsDataSeeder extends Seeder
         ];
         $this->db->table('pushnotif')->insertBatch($pushes);
 
-        // 13. editorlog (Aktivitas Login & Insert Foto dalam Format JSON)
-        $editorLogs = [
+        // 13. editorlog (Aktivitas Login, Naskah & Media dalam Rentang 3 Minggu Operasional)
+        $editorLogs = [];
+        $staffIds = [1, 2, 3, 4, 5, 6, 7]; // Administrator, Redpel, Editor
+        $actionsPool = [
             [
-                'editorId'  => 1,
-                'action'    => 'login',
-                'doaction'  => 'login',
-                'log'       => json_encode(['ip' => '127.0.0.1', 'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)']),
-                'timestamp' => date('Y-m-d H:i:s', strtotime('-2 hours')),
+                'action' => 'login',
+                'doaction' => 'login',
+                'payload' => ['ip' => '127.0.0.1', 'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/128.0.0.0']
             ],
             [
-                'editorId'  => 1,
-                'action'    => 'insert',
-                'doaction'  => 'foto',
-                'log'       => json_encode([
-                    'mediaTitle' => 'Gedung Bursa Efek Indonesia Jakarta #1',
-                    'caption'    => 'Dokumentasi riset redaksi Investor.id terkait aktivitas perdagangan saham.'
-                ]),
-                'timestamp' => date('Y-m-d H:i:s', strtotime('-1 hour')),
+                'action' => 'insert',
+                'doaction' => 'article',
+                'payload' => ['headline' => 'Liputan Kinerja Keuangan Kuartal Emiten Perbankan', 'status' => 'Draft']
             ],
             [
-                'editorId'  => 3,
-                'action'    => 'edit',
-                'doaction'  => 'foto',
-                'log'       => json_encode([
-                    'mediaTitle' => 'Fasilitas Smelter Tembaga dan Emas Sumbawa #3',
-                    'caption'    => 'Pembaruan takarir foto dokumentasi smelter PT Amman Mineral.'
-                ]),
-                'timestamp' => date('Y-m-d H:i:s', strtotime('-30 minutes')),
+                'action' => 'edit',
+                'doaction' => 'article',
+                'payload' => ['headline' => 'Review Pergerakan Indeks Sektoral dan Arus Dana Asing', 'status' => 'Publish']
+            ],
+            [
+                'action' => 'insert',
+                'doaction' => 'foto',
+                'payload' => ['mediaTitle' => 'Dokumentasi RUPS Tahunan Emiten BEI', 'caption' => 'Rapat umum pemegang saham menyepakati pembagian dividen.']
+            ],
+            [
+                'action' => 'edit',
+                'doaction' => 'foto',
+                'payload' => ['mediaTitle' => 'Fasilitas Smelter Tembaga dan Emas Sumbawa', 'caption' => 'Pembaruan takarir foto dokumentasi smelter.']
             ],
         ];
+
+        for ($logIdx = 0; $logIdx < 45; $logIdx++) {
+            $daysAgo = ($logIdx % 21) + 1; // 1 s/d 21 hari yang lalu
+            $hoursAgo = ($logIdx * 3) % 24;
+            $minsAgo = ($logIdx * 17) % 60;
+            $act = $actionsPool[$logIdx % count($actionsPool)];
+            $edId = $staffIds[$logIdx % count($staffIds)];
+
+            $editorLogs[] = [
+                'editorId'  => $edId,
+                'action'    => $act['action'],
+                'doaction'  => $act['doaction'],
+                'log'       => json_encode($act['payload']),
+                'timestamp' => date('Y-m-d H:i:s', strtotime("-{$daysAgo} days -{$hoursAgo} hours -{$minsAgo} minutes")),
+            ];
+        }
         $this->db->table('editorlog')->insertBatch($editorLogs);
 
         // 14. member & memberbackup (10 Akun Member Pembaca)
@@ -775,6 +829,45 @@ class CmsDataSeeder extends Seeder
             ['IndexCode' => 'AMMN', 'PrevVal' => 9750,  'HighVal' => 10050, 'LowVal' => 9700,  'LastVal' => 9950,  'ChgVal' => 200, 'ChgPct' => 2.05, 'LastChange' => date('Y-m-d H:i:s')],
         ];
         $this->db->table('saham_topvalue')->insertBatch($topValues);
+
+        // 18b. saham_index (Master Indeks Global / Regional: HSI, NIKKEI, DJI, dll)
+        $sahamIndexes = [
+            ['IndexCode' => 'HSI',    'PrevVal' => 17950.00, 'HighVal' => 18050.20, 'LowVal' => 17900.50, 'LastVal' => 18009.10, 'ChgVal' => 59.10,  'ChgPct' => 0.33, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'NIKKEI', 'PrevVal' => 38100.00, 'HighVal' => 38350.00, 'LowVal' => 38020.00, 'LastVal' => 38280.50, 'ChgVal' => 180.50, 'ChgPct' => 0.47, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'DJI',    'PrevVal' => 40200.00, 'HighVal' => 40450.00, 'LowVal' => 40150.00, 'LastVal' => 40380.00, 'ChgVal' => 180.00, 'ChgPct' => 0.45, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'S&P500', 'PrevVal' => 5500.00,  'HighVal' => 5540.00,  'LowVal' => 5490.00,  'LastVal' => 5525.20, 'ChgVal' => 25.20,  'ChgPct' => 0.46, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'NASDAQ', 'PrevVal' => 17300.00, 'HighVal' => 17450.00, 'LowVal' => 17280.00, 'LastLast' => 17410.00, 'ChgVal' => 110.00, 'ChgPct' => 0.64, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'STI',    'PrevVal' => 3450.00,  'HighVal' => 3480.00,  'LowVal' => 3445.00,  'LastVal' => 3470.50, 'ChgVal' => 20.50,  'ChgPct' => 0.59, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'KLCI',   'PrevVal' => 1650.00,  'HighVal' => 1665.00,  'LowVal' => 1648.00,  'LastVal' => 1660.00, 'ChgVal' => 10.00,  'ChgPct' => 0.61, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'SET',    'PrevVal' => 1420.00,  'HighVal' => 1435.00,  'LowVal' => 1418.00,  'LastVal' => 1428.80, 'ChgVal' => 8.80,   'ChgPct' => 0.62, 'LastChange' => date('Y-m-d H:i:s')],
+        ];
+        // Fix column alias for NASDAQ if needed
+        foreach ($sahamIndexes as &$si) {
+            if (isset($si['LastLast'])) {
+                $si['LastVal'] = $si['LastLast'];
+                unset($si['LastLast']);
+            }
+        }
+        if ($this->db->tableExists('saham_index')) {
+            $this->db->table('saham_index')->insertBatch($sahamIndexes);
+        }
+
+        // 18c. saham_sectoral (Master Sektoral BEI: AGRI, MINING, BASIC-IND, MISC-IND, CONSUMER, PROPERTY, INFRASTRUC, FINANCE, TRADE, MANUFACTURE)
+        $sectorals = [
+            ['IndexCode' => 'AGRI',       'PrevVal' => 1440.92, 'HighVal' => 1461.68, 'LowVal' => 1437.21, 'LastVal' => 1457.95, 'ChgVal' => 17.03,  'ChgPct' => 1.18, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'MINING',     'PrevVal' => 1797.73, 'HighVal' => 1846.62, 'LowVal' => 1797.73, 'LastVal' => 1841.19, 'ChgVal' => 43.46,  'ChgPct' => 2.42, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'BASIC-IND',  'PrevVal' => 1250.40, 'HighVal' => 1270.00, 'LowVal' => 1245.50, 'LastVal' => 1265.80, 'ChgVal' => 15.40,  'ChgPct' => 1.23, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'MISC-IND',   'PrevVal' => 980.50,  'HighVal' => 995.00,  'LowVal' => 978.00,  'LastVal' => 990.20,  'ChgVal' => 9.70,   'ChgPct' => 0.99, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'CONSUMER',   'PrevVal' => 1410.20, 'HighVal' => 1425.00, 'LowVal' => 1405.00, 'LastVal' => 1418.60, 'ChgVal' => 8.40,   'ChgPct' => 0.60, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'PROPERTY',   'PrevVal' => 374.92,  'HighVal' => 377.48,  'LowVal' => 372.70,  'LastVal' => 374.48,  'ChgVal' => -0.44,  'ChgPct' => -0.12,'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'INFRASTRUC', 'PrevVal' => 890.30,  'HighVal' => 905.00,  'LowVal' => 888.00,  'LastVal' => 901.40,  'ChgVal' => 11.10,  'ChgPct' => 1.25, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'FINANCE',    'PrevVal' => 1480.00, 'HighVal' => 1502.00, 'LowVal' => 1475.00, 'LastVal' => 1495.50, 'ChgVal' => 15.50,  'ChgPct' => 1.05, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'TRADE',      'PrevVal' => 780.20,  'HighVal' => 790.00,  'LowVal' => 778.00,  'LastVal' => 786.50,  'ChgVal' => 6.30,   'ChgPct' => 0.81, 'LastChange' => date('Y-m-d H:i:s')],
+            ['IndexCode' => 'MANUFACTUR', 'PrevVal' => 1320.00, 'HighVal' => 1340.00, 'LowVal' => 1315.00, 'LastVal' => 1335.20, 'ChgVal' => 15.20,  'ChgPct' => 1.15, 'LastChange' => date('Y-m-d H:i:s')],
+        ];
+        if ($this->db->tableExists('saham_sectoral')) {
+            $this->db->table('saham_sectoral')->insertBatch($sectorals);
+        }
 
         // 19. apps (Konfigurasi Versi Aplikasi)
         $configs = [

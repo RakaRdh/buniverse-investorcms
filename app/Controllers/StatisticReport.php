@@ -20,12 +20,8 @@ class StatisticReport extends BaseController
     {
         $tab = $this->request->getGet('tab') ?: 'author';
 
-        // Date range filtering
-        $todayStr = date('Y-m-d');
-        $defaultFromStr = date('Y-m-d', strtotime('-30 days'));
-
-        $fromDate = $this->request->getGet('from') ?: $defaultFromStr;
-        $toDate = $this->request->getGet('to') ?: $todayStr;
+        $fromDate = $this->request->getGet('from') ?: date('Y-m-d', strtotime('-30 days'));
+        $toDate   = $this->request->getGet('to') ?: date('Y-m-d');
 
         $fromTimestamp = strtotime($fromDate);
         $toTimestamp = strtotime($toDate);
@@ -38,9 +34,10 @@ class StatisticReport extends BaseController
             $toDate = date('Y-m-d', $toTimestamp);
         }
 
+        // Custom range: allow up to 90 days for flexible in-depth editorial analysis
         $diffDays = ($toTimestamp - $fromTimestamp) / (60 * 60 * 24);
-        if ($diffDays > 30) {
-            $fromTimestamp = strtotime($toDate . ' -30 days');
+        if ($diffDays > 90) {
+            $fromTimestamp = strtotime($toDate . ' -90 days');
             $fromDate = date('Y-m-d', $fromTimestamp);
         }
 
@@ -101,10 +98,12 @@ class StatisticReport extends BaseController
             ->where('articleDate <=', date('Y-m-d 23:59:59', $toTimestamp))
             ->countAllResults();
 
-        // Default tab fallback if invalid or contributor
-        if (!in_array($tab, ['author', 'editor'])) {
+        // Default tab fallback
+        if (!in_array($tab, ['author', 'editor', 'heatmap'])) {
             $tab = 'author';
         }
+
+        $heatmapData = $this->getHourlyHeatmapData($fromDate, $toDate);
 
         return view('statistic/report', [
             'title'                 => 'Editorial Performance Matrix Report',
@@ -115,6 +114,7 @@ class StatisticReport extends BaseController
             'dateColumns'           => $dateColumns,
             'authorMatrix'          => $authorMatrix,
             'editorMatrix'          => $editorMatrix,
+            'heatmapData'           => $heatmapData,
             'fullPersonnelCount'    => $totalItems,
             'pagination'            => $pagination,
             'totalFilteredArticles' => $totalFilteredArticles,
@@ -191,6 +191,21 @@ class StatisticReport extends BaseController
         $fromDate = $this->request->getGet('from') ?: date('Y-m-d', strtotime('-7 days'));
         $toDate = $this->request->getGet('to') ?: date('Y-m-d');
 
+        $matrix = $this->getHourlyHeatmapData($fromDate, $toDate);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'from'   => $fromDate,
+            'to'     => $toDate,
+            'data'   => $matrix,
+        ]);
+    }
+
+    /**
+     * Get hourly productivity matrix array
+     */
+    protected function getHourlyHeatmapData(string $fromDate, string $toDate): array
+    {
         $db = $this->articleModel->db;
         $records = $db->table('article')
             ->select('DATE(articleDate) AS pdate, HOUR(articleDate) AS phour, COUNT(*) AS total')
@@ -198,7 +213,7 @@ class StatisticReport extends BaseController
             ->where('articleDate <=', $toDate . ' 23:59:59')
             ->whereIn('LOWER(status)', ['publish', 'published'])
             ->groupBy('DATE(articleDate), HOUR(articleDate)')
-            ->orderBy('pdate', 'ASC')
+            ->orderBy('pdate', 'DESC')
             ->orderBy('phour', 'ASC')
             ->get()->getResultArray();
 
@@ -212,11 +227,6 @@ class StatisticReport extends BaseController
             $matrix[$date][$hour] = (int)$r['total'];
         }
 
-        return $this->response->setJSON([
-            'status' => 'success',
-            'from'   => $fromDate,
-            'to'     => $toDate,
-            'data'   => $matrix,
-        ]);
+        return $matrix;
     }
 }

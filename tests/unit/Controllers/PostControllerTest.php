@@ -161,4 +161,62 @@ class PostControllerTest extends CIUnitTestCase
         $sample = $this->articleModel->find($targetId);
         $this->assertNotNull($sample);
     }
+
+    public function testPostBulkActionPublishAndDraft(): void
+    {
+        // Switch to Admin role
+        $_SESSION['user_role'] = 'Admin';
+        $_SESSION['user_id'] = 1;
+
+        // Get two articles
+        $articles = $this->articleModel->where('status !=', 'Deleted')->findAll(2);
+        if (count($articles) >= 2) {
+            $id1 = (int)$articles[0]['articleID'];
+            $id2 = (int)$articles[1]['articleID'];
+
+            // 1. Bulk draft
+            $draftReq = service('incomingrequest', null, false);
+            $draftReq->setGlobal('post', [
+                'action'       => 'draft',
+                'selected_ids' => [$id1, $id2]
+            ]);
+            $res = $this->withURI('http://localhost:8080/post/bulk-action')
+                ->withRequest($draftReq)
+                ->controller(Post::class)
+                ->execute('bulkAction');
+            $this->assertTrue($res->isRedirect());
+
+            $art1 = $this->articleModel->find($id1);
+            $this->assertSame('Draft', $art1['status']);
+
+            // 2. Bulk publish back
+            $pubReq = service('incomingrequest', null, false);
+            $pubReq->setGlobal('post', [
+                'action'       => 'publish',
+                'selected_ids' => [$id1, $id2]
+            ]);
+            $this->withURI('http://localhost:8080/post/bulk-action')
+                ->withRequest($pubReq)
+                ->controller(Post::class)
+                ->execute('bulkAction');
+
+            $art1After = $this->articleModel->find($id1);
+            $this->assertSame('Publish', $art1After['status']);
+        }
+    }
+
+    public function testPostSearchTagsReturnsJsonResponse(): void
+    {
+        $request = service('incomingrequest', null, false);
+        $request->setGlobal('get', ['q' => 'Saham']);
+
+        $result = $this->withURI('http://localhost:8080/api/tags/search?q=Saham')
+            ->withRequest($request)
+            ->controller(Post::class)
+            ->execute('searchTags');
+
+        $this->assertTrue($result->isOK());
+        $body = json_decode($result->response()->getBody(), true);
+        $this->assertIsArray($body);
+    }
 }

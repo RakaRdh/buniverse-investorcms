@@ -282,6 +282,12 @@ function toggleTheme() {
     const theme = isDark ? 'dark' : 'light';
     localStorage.setItem('investor_theme', theme);
 
+    const btn = document.getElementById('globalThemeToggleBtn');
+    if (btn) {
+        btn.setAttribute('title', isDark ? 'Beralih ke Tema Terang (Light Mode)' : 'Beralih ke Tema Gelap (Dark Mode)');
+        btn.setAttribute('aria-label', isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme');
+    }
+
     if (window.lucide) {
         window.lucide.createIcons();
     }

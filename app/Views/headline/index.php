@@ -60,8 +60,9 @@
 
         <select name="target_category" onchange="onTargetCategoryChange(this.value)" class="flex h-8.5 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold shadow-sm focus-visible:outline-none">
             <option value="home" <?= ($targetCategory === 'home') ? 'selected' : '' ?>>★ Headline Utama (Home)</option>
-            <option value="tropical" <?= ($targetCategory === 'tropical') ? 'selected' : '' ?>>Tropical</option>
+            <option value="topical" <?= ($targetCategory === 'topical') ? 'selected' : '' ?>>Topical</option>
             <option value="trending" <?= ($targetCategory === 'trending') ? 'selected' : '' ?>>Trending</option>
+            <option value="newsletter" <?= ($targetCategory === 'newsletter') ? 'selected' : '' ?>>Newsletter</option>
         </select>
 
         <div class="space-y-2">
@@ -190,8 +191,9 @@
                 </div>
                 <select name="target_category" id="targetCategorySelect" onchange="onTargetCategoryChange(this.value)" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm font-semibold shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                     <option value="home" <?= ($targetCategory === 'home') ? 'selected' : '' ?>>★ Headline Utama (Home)</option>
-                    <option value="tropical" <?= ($targetCategory === 'tropical') ? 'selected' : '' ?>>Tropical</option>
+                    <option value="topical" <?= ($targetCategory === 'topical') ? 'selected' : '' ?>>Topical</option>
                     <option value="trending" <?= ($targetCategory === 'trending') ? 'selected' : '' ?>>Trending</option>
+                    <option value="newsletter" <?= ($targetCategory === 'newsletter') ? 'selected' : '' ?>>Newsletter</option>
                 </select>
             </div>
 
@@ -199,12 +201,12 @@
                 <table class="w-full text-xs">
                     <thead class="bg-muted/50 border-b border-border">
                         <tr class="text-left font-bold text-foreground">
-                            <th class="h-8 px-3 w-14">Pos</th>
+                            <th class="h-8 px-2 w-16 text-center">Urutan</th>
                             <th class="h-8 px-3">Title &amp; Meta</th>
                             <th class="h-8 px-2 text-center w-10"></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-border">
+                    <tbody id="headlineQueueTableBody" class="divide-y divide-border">
                         <?php if (empty($headlines)): ?>
                             <tr>
                                 <td colspan="3" class="p-8 text-center text-muted-foreground text-xs">
@@ -217,8 +219,17 @@
                             </tr>
                         <?php else: ?>
                             <?php $pos = 1; foreach ($headlines as $hl): ?>
-                            <tr class="hover:bg-muted/40 transition-colors">
-                                <td class="px-3 py-2.5 font-mono font-bold text-primary text-center">#<?= $pos++ ?></td>
+                            <tr class="headline-draggable-row hover:bg-muted/50 transition-all cursor-grab active:cursor-grabbing select-none" 
+                                draggable="true" 
+                                data-article-id="<?= (int)$hl['id'] ?>">
+                                <td class="px-2 py-2.5 text-center">
+                                    <div class="inline-flex items-center justify-center gap-1">
+                                        <span class="text-muted-foreground/50 hover:text-foreground cursor-grab">
+                                            <i data-lucide="grip-vertical" class="size-3.5"></i>
+                                        </span>
+                                        <span class="headline-pos-badge font-mono font-bold text-primary text-xs">#<?= $pos++ ?></span>
+                                    </div>
+                                </td>
                                 <td class="px-3 py-2.5">
                                     <span class="block font-medium text-foreground line-clamp-2 leading-snug" title="<?= esc($hl['title']) ?>">
                                         <?= esc($hl['title']) ?>
@@ -244,7 +255,7 @@
                 </table>
             </div>
 
-            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
+            <button type="submit" id="saveHeadlineOrderBtn" class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
                 <i data-lucide="save" class="size-4"></i>
                 <span>SIMPAN URUTAN HEADLINE</span>
             </button>

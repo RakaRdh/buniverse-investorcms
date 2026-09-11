@@ -55,8 +55,8 @@ if (!$crumb) {
 
         <!-- Theme Toggle Switcher Button (Lucide Icons: Sun / Moon) -->
         <button type="button" onclick="toggleTheme()" id="globalThemeToggleBtn" class="inline-flex size-9 sm:size-10 items-center justify-center rounded-md text-foreground hover:bg-muted transition-colors" title="Ganti Tema (Dark / Light)" aria-label="Toggle Theme">
-            <i data-lucide="moon" class="size-4 sm:size-5 dark:hidden"></i>
-            <i data-lucide="sun" class="size-4 sm:size-5 hidden dark:block"></i>
+            <i data-lucide="moon" class="size-4 sm:size-5 theme-icon-moon"></i>
+            <i data-lucide="sun" class="size-4 sm:size-5 theme-icon-sun"></i>
         </button>
 
         <!-- Help Button -->

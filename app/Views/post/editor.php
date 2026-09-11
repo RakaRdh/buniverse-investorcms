@@ -335,7 +335,7 @@
                             Penulis tidak ditemukan. Nama yang Anda ketik akan didaftarkan sebagai penulis baru.
                         </div>
                     </div>
-                    <span class="text-[10px] text-muted-foreground mt-0.5 block">Ketik untuk menyaring nama atau klik tanda panah untuk melihat semua penulis</span>
+                    <span class="text-[10px] text-muted-foreground mt-0.5 block">Mendukung multiple authors: pilih dari dropdown atau ketik nama dipisahkan koma (contoh: Raka Herdika, Natasha Khairunisa)</span>
                 </div>
             </div>
 
@@ -372,14 +372,19 @@
                     </label>
                     <select name="kanal" id="kanalSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="onKanalChange(this.value)" required>
                         <option value="">-- Pilih Kanal --</option>
-                        <?php foreach ($kanals as $kn): ?>
-                            <?php 
+                        <?php 
+                            $sessionRole = strtolower(session('user_role') ?? 'admin');
+                            foreach ($kanals as $kn): 
+                                // Legacy rule: non-administrator cannot select commercial channel
+                                if ($sessionRole !== 'administrator' && (strtolower($kn['name']) === 'commercial' || strtolower($kn['slug'] ?? '') === 'commercial')) {
+                                    continue;
+                                }
                                 $currKanal = strtolower(trim($article['kanal'] ?? ($article['category'] ?? '')));
                                 $knName = strtolower(trim($kn['name']));
                                 $knSlug = strtolower(trim($kn['slug'] ?? ''));
                                 $knNameHyphen = str_replace(' ', '-', $knName);
                                 $isSelected = ($currKanal === $knName || $currKanal === $knSlug || $currKanal === $knNameHyphen || str_starts_with($currKanal, $knName) || str_starts_with($knName, $currKanal));
-                            ?>
+                        ?>
                             <option value="<?= esc($kn['name']) ?>" <?= $isSelected ? 'selected' : '' ?>>
                                 <?= esc($kn['name']) ?>
                             </option>

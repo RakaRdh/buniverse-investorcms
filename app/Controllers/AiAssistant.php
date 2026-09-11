@@ -129,6 +129,7 @@ class AiAssistant extends BaseController
     public function generateTags()
     {
         $input = $this->parseInput();
+        $title = $input['title'] ?? '';
         $body = $input['body'] ?? '';
         $articleId = !empty($input['article_id']) ? (int)$input['article_id'] : null;
 
@@ -141,38 +142,83 @@ class AiAssistant extends BaseController
 
         $startTime = microtime(true);
         try {
-            $tags = $this->gemini->generateTags($body);
+            $keywordModel = new \App\Models\KeywordModel();
+            
+            // 1. Scan DB for relevant keyword candidates based on title & body content
+            $candidateKeywords = $keywordModel->getRelevantCandidates(trim($title . ' ' . $body), 80);
+
+            // 2. Call Gemini with candidates grounding
+            $rawTags = $this->gemini->generateTags($body, $title, $candidateKeywords);
+
+            // 3. Classify which tags matched existing keywords vs newly generated
+            $matchedFromDb = [];
+            $newGenerated = [];
+            $finalTags = [];
+
+            if (!empty($rawTags)) {
+                $existingRows = $keywordModel->select('id, keyword, slug')
+                    ->whereIn('keyword', $rawTags)
+                    ->findAll();
+
+                $existingMap = [];
+                foreach ($existingRows as $row) {
+                    $existingMap[mb_strtolower(trim($row['keyword']))] = $row['keyword'];
+                }
+
+                foreach ($rawTags as $tag) {
+                    $tagClean = trim($tag);
+                    if (empty($tagClean)) continue;
+
+                    $tagLower = mb_strtolower($tagClean);
+                    if (isset($existingMap[$tagLower])) {
+                        $canonical = $existingMap[$tagLower];
+                        $matchedFromDb[] = $canonical;
+                        $finalTags[] = $canonical;
+                    } else {
+                        $newGenerated[] = $tagClean;
+                        $finalTags[] = $tagClean;
+                    }
+                }
+            }
+
+            $finalTags = array_values(array_unique($finalTags));
+            $matchedFromDb = array_values(array_unique($matchedFromDb));
+            $newGenerated = array_values(array_unique($newGenerated));
+
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $logId = $this->logAiGeneration([
-                'article_id'         => $articleId,
-                'action_type'        => 'tags',
-                'input_title'        => null,
+                'article_id'          => $articleId,
+                'action_type'         => 'tags',
+                'input_title'         => $title ?: null,
                 'input_body_snapshot' => mb_substr($body, 0, 500),
-                'generated_result'   => implode(', ', $tags),
-                'model_name'         => $this->gemini->getLastModelUsed() ?: $this->gemini->getPrimaryModel(),
-                'latency_ms'         => $latency,
-                'error_message'      => null
+                'generated_result'    => implode(', ', $finalTags),
+                'model_name'          => $this->gemini->getLastModelUsed() ?: $this->gemini->getPrimaryModel(),
+                'latency_ms'          => $latency,
+                'error_message'       => null
             ]);
 
             return $this->response->setJSON([
                 'status' => 'success',
                 'data'   => [
-                    'tags'   => $tags,
-                    'model'  => $this->gemini->getLastModelUsed(),
-                    'log_id' => $logId,
+                    'tags'             => $finalTags,
+                    'matched_from_db'  => $matchedFromDb,
+                    'new_generated'    => $newGenerated,
+                    'candidates_count' => count($candidateKeywords),
+                    'model'            => $this->gemini->getLastModelUsed(),
+                    'log_id'           => $logId,
                 ]
             ]);
         } catch (\Throwable $e) {
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $this->logAiGeneration([
-                'article_id'         => $articleId,
-                'action_type'        => 'tags',
-                'input_title'        => null,
+                'article_id'          => $articleId,
+                'action_type'         => 'tags',
+                'input_title'         => $title ?: null,
                 'input_body_snapshot' => mb_substr($body, 0, 500),
-                'generated_result'   => null,
-                'model_name'         => $this->gemini->getLastModelUsed() ?: $this->gemini->getPrimaryModel(),
-                'latency_ms'         => $latency,
-                'error_message'      => $e->getMessage()
+                'generated_result'    => null,
+                'model_name'          => $this->gemini->getLastModelUsed() ?: $this->gemini->getPrimaryModel(),
+                'latency_ms'          => $latency,
+                'error_message'       => $e->getMessage()
             ]);
 
             return $this->response->setJSON([

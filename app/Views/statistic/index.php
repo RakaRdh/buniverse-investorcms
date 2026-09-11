@@ -1,19 +1,46 @@
 <?= $this->extend('layouts/main') ?>
 
+<?= $this->section('styles') ?>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 
 <!-- PageHeader Responsive -->
 <div class="mb-6">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
             <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl leading-tight">Audience Statistics &amp; Traffic Analytics</h1>
             <p class="mt-1 text-xs sm:text-sm text-muted-foreground">Ikhtisar metrik audiens, momentum kanal berita, dan distribusi performa platform Investor.id.</p>
         </div>
-        <div class="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1 text-xs font-medium self-start sm:self-auto">
-            <button type="button" id="btnStatToday" onclick="switchStatisticPeriod('today')" class="stat-period-btn rounded-md bg-background px-2.5 py-1 text-foreground shadow-xs transition-all font-semibold">Today</button>
-            <button type="button" id="btnStat7d" onclick="switchStatisticPeriod('7d')" class="stat-period-btn rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground transition-all">Last 7 Days</button>
-            <button type="button" id="btnStatMtd" onclick="switchStatisticPeriod('mtd')" class="stat-period-btn rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground transition-all">Month to Date</button>
-        </div>
+
+        <!-- Filter Period & Custom Range Controls -->
+        <form method="get" action="<?= base_url('statistic') ?>" id="statFilterForm" class="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+            <input type="hidden" name="preset" id="statPresetInput" value="<?= esc($preset ?? 'today') ?>">
+
+            <!-- Quick Preset Tabs -->
+            <div class="flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1 text-xs font-medium">
+                <button type="button" id="btnStatToday" onclick="switchStatisticPeriod('today')" class="stat-period-btn rounded-md px-2.5 py-1 transition-all <?= ($preset ?? 'today') === 'today' ? 'bg-background text-foreground shadow-xs font-semibold' : 'text-muted-foreground hover:text-foreground' ?>">Today</button>
+                <button type="button" id="btnStat7d" onclick="switchStatisticPeriod('7d')" class="stat-period-btn rounded-md px-2.5 py-1 transition-all <?= ($preset ?? '') === '7d' ? 'bg-background text-foreground shadow-xs font-semibold' : 'text-muted-foreground hover:text-foreground' ?>">Last 7 Days</button>
+                <button type="button" id="btnStatMtd" onclick="switchStatisticPeriod('mtd')" class="stat-period-btn rounded-md px-2.5 py-1 transition-all <?= ($preset ?? '') === 'mtd' ? 'bg-background text-foreground shadow-xs font-semibold' : 'text-muted-foreground hover:text-foreground' ?>">Month to Date</button>
+                <button type="button" id="btnStatCustom" onclick="toggleCustomInputs()" class="stat-period-btn rounded-md px-2.5 py-1 transition-all <?= ($preset ?? '') === 'custom' ? 'bg-background text-foreground shadow-xs font-semibold' : 'text-muted-foreground hover:text-foreground' ?>">
+                    <span class="inline-flex items-center gap-1">
+                        <i data-lucide="calendar" class="size-3"></i>
+                        <span>Custom</span>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Custom Date Range Picker Inputs -->
+            <div id="customDateRangeBox" class="flex items-center gap-1.5 rounded-lg border border-input bg-background px-2.5 py-1 text-xs shadow-xs <?= ($preset ?? '') === 'custom' ? '' : 'hidden' ?>">
+                <input type="text" name="from" id="statDateFrom" value="<?= esc($fromDate ?? '') ?>" class="h-6 w-24 bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer" placeholder="YYYY-MM-DD">
+                <span class="text-muted-foreground font-medium px-0.5">s/d</span>
+                <input type="text" name="to" id="statDateTo" value="<?= esc($toDate ?? '') ?>" class="h-6 w-24 bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer" placeholder="YYYY-MM-DD">
+                <button type="submit" id="btnSubmitCustomRange" class="inline-flex h-6 items-center justify-center rounded bg-[#2B6CB0] px-2.5 text-[11px] font-bold text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
+                    Filter
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -117,8 +144,10 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 window.serverTrafficDatasets = <?= json_encode($trafficDatasets ?? null) ?>;
+const activePreset = <?= json_encode($preset ?? 'today') ?>;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
@@ -158,10 +187,26 @@ const statTrafficDatasets = window.serverTrafficDatasets || {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize flatpickr date pickers for custom filtering
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr('#statDateFrom', {
+            dateFormat: 'Y-m-d',
+            allowInput: true
+        });
+        flatpickr('#statDateTo', {
+            dateFormat: 'Y-m-d',
+            allowInput: true
+        });
+    }
+
     if (window.ApexCharts) {
         const isDark = document.documentElement.classList.contains('dark');
+        const initialData = (activePreset === 'custom' && statTrafficDatasets.custom) 
+            ? statTrafficDatasets.custom 
+            : (statTrafficDatasets[activePreset] || statTrafficDatasets.today);
+
         trafficChart = new ApexCharts(document.querySelector("#trafficChart"), {
-            series: statTrafficDatasets.today.series,
+            series: initialData.series,
             chart: { 
                 type: 'line', 
                 height: 280, 
@@ -172,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
             colors: isDark ? ['#60A5FA', '#38BDF8'] : ['#1F4E79', '#3991CF'],
             stroke: { curve: 'smooth', width: 2.5 },
             xaxis: { 
-                categories: statTrafficDatasets.today.categories,
+                categories: initialData.categories,
                 labels: { style: { colors: '#94A3B8', fontSize: '11px', fontFamily: 'Inter, sans-serif' } }
             },
             yaxis: {
@@ -216,7 +261,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function switchStatisticPeriod(periodKey) {
-    if (!statTrafficDatasets[periodKey] || !trafficChart) return;
+    const customBox = document.getElementById('customDateRangeBox');
+    if (customBox) customBox.classList.add('hidden');
+
+    const presetInput = document.getElementById('statPresetInput');
+    if (presetInput) presetInput.value = periodKey;
 
     document.querySelectorAll('.stat-period-btn').forEach(btn => {
         btn.classList.remove('bg-background', 'text-foreground', 'shadow-xs', 'font-semibold');
@@ -230,11 +279,37 @@ function switchStatisticPeriod(periodKey) {
         activeBtn.classList.remove('text-muted-foreground');
     }
 
+    if (!statTrafficDatasets[periodKey] || !trafficChart) return;
     const selected = statTrafficDatasets[periodKey];
     trafficChart.updateOptions({
         xaxis: { categories: selected.categories }
     });
     trafficChart.updateSeries(selected.series);
+}
+
+function toggleCustomInputs() {
+    const customBox = document.getElementById('customDateRangeBox');
+    if (!customBox) return;
+
+    const isHidden = customBox.classList.contains('hidden');
+    if (isHidden) {
+        customBox.classList.remove('hidden');
+        document.querySelectorAll('.stat-period-btn').forEach(btn => {
+            btn.classList.remove('bg-background', 'text-foreground', 'shadow-xs', 'font-semibold');
+            btn.classList.add('text-muted-foreground');
+        });
+        const customBtn = document.getElementById('btnStatCustom');
+        if (customBtn) {
+            customBtn.classList.add('bg-background', 'text-foreground', 'shadow-xs', 'font-semibold');
+            customBtn.classList.remove('text-muted-foreground');
+        }
+        const presetInput = document.getElementById('statPresetInput');
+        if (presetInput) presetInput.value = 'custom';
+        const fromInput = document.getElementById('statDateFrom');
+        if (fromInput) fromInput.focus();
+    } else {
+        customBox.classList.add('hidden');
+    }
 }
 </script>
 <?= $this->endSection() ?>

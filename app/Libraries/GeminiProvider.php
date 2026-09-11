@@ -110,24 +110,46 @@ class GeminiProvider
 
     /**
      * Generate 3 - 5 relevant tags/keywords (comma separated)
+     * Prioritizes existing candidate keywords from the database if provided
      */
-    public function generateTags(string $body): array
+    public function generateTags(string $body, string $title = '', array $existingKeywords = []): array
     {
         if (empty($this->apiKey)) {
             throw new \RuntimeException("Gemini API Key is not configured in .env.");
         }
 
         $prompt = "Tentukan 3 sampai 5 tag kata kunci (keywords) pasar modal, emiten, atau ekonomi yang paling relevan dalam Bahasa Indonesia berdasarkan isi artikel berikut.\n\n";
+        if (!empty(trim($title))) {
+            $prompt .= "Judul Artikel:\n" . trim($title) . "\n\n";
+        }
         $prompt .= "Isi Artikel:\n" . strip_tags($body) . "\n\n";
-        $prompt .= "Ketentuan Penting:\n";
-        $prompt .= "1. Tag harus singkat (1-2 kata per tag, misal: Saham BBCA, IHSG, Bank Mandiri, Dividen).\n";
-        $prompt .= "2. Tulis tag dipisahkan dengan koma, contoh: Saham, Perbankan, Laba Bersih\n";
-        $prompt .= "3. Tulis HANYA daftar tag saja tanpa teks tambahan apapun.\n";
-        $prompt .= "4. Tulis hasil HANYA berupa teks biasa tanpa format markdown seperti tebal (**) atau miring (*).\n\n";
+
+        if (!empty($existingKeywords)) {
+            $candidateSample = array_slice($existingKeywords, 0, 70);
+            $prompt .= "Daftar Kata Kunci yang SUDAH TERDAFTAR di Database Redaksi kami:\n";
+            $prompt .= "[" . implode(', ', $candidateSample) . "]\n\n";
+            $prompt .= "Ketentuan Penting (SANGAT KRUSIAL):\n";
+            $prompt .= "1. PRIORITAS UTAMA: Periksa dan gunakan kata kunci dari 'Daftar Kata Kunci yang SUDAH TERDAFTAR di Database' di atas jika ada yang relevan dan cocok dengan isi artikel.\n";
+            $prompt .= "2. HANYA JIKA tidak ada kata kunci di daftar database yang cocok, atau artikel ini membahas entitas/emiten/istilah baru yang spesifik (misal nama emiten IPO baru atau istilah baru), kamu DIPERBOLEHKAN membuat kata kunci baru.\n";
+            $prompt .= "3. Tag harus singkat (1-2 kata per tag, misal: Saham BBCA, IHSG, Bank Mandiri, Dividen).\n";
+            $prompt .= "4. Tulis tag dipisahkan dengan koma, contoh: Saham, Perbankan, Laba Bersih\n";
+            $prompt .= "5. Tulis HANYA daftar tag saja tanpa pengantar, penutup, nomor, atau tanda kurung.\n";
+            $prompt .= "6. Tulis hasil HANYA berupa teks biasa tanpa format markdown seperti tebal (**) atau miring (*).\n\n";
+        } else {
+            $prompt .= "Ketentuan Penting:\n";
+            $prompt .= "1. Prioritaskan kata kunci standar industri finansial, bursa efek, atau perbankan yang umum dan konsisten.\n";
+            $prompt .= "2. Tag harus singkat (1-2 kata per tag, misal: Saham BBCA, IHSG, Bank Mandiri, Dividen).\n";
+            $prompt .= "3. Tulis tag dipisahkan dengan koma, contoh: Saham, Perbankan, Laba Bersih\n";
+            $prompt .= "4. Tulis HANYA daftar tag saja tanpa teks tambahan apapun.\n";
+            $prompt .= "5. Tulis hasil HANYA berupa teks biasa tanpa format markdown seperti tebal (**) atau miring (*).\n\n";
+        }
         $prompt .= "Daftar Tag:";
 
         $raw = $this->callWithFallback($prompt, 300);
-        $tags = array_map('trim', explode(',', $raw));
+        $tags = array_map(function($t) {
+            $clean = trim(trim($t), " \t\n\r\0\x0B\"'#[]•-*");
+            return $clean;
+        }, explode(',', $raw));
         return array_values(array_filter($tags, fn($t) => !empty($t)));
     }
 

@@ -61,8 +61,16 @@ class ArticleModel extends Model
                 ANY_VALUE(c.label) AS category_slug,
                 ANY_VALUE(c.parent) AS category_parent_id,
                 GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author,
-                COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium,
-                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail,
+                CASE 
+                    WHEN LOWER(COALESCE(ANY_VALUE(nm_prem_legacy.metaval), "")) IN ("true", "1") THEN "1"
+                    WHEN COALESCE(ANY_VALUE(nm_prem.metaval), "0") = "1" THEN "1"
+                    ELSE "0"
+                END AS is_premium,
+                COALESCE(
+                    NULLIF(ANY_VALUE(m.filename), ""),
+                    ANY_VALUE(nm_thumb.metaval),
+                    "/img/investor_placeholder.jpg"
+                ) AS thumbnail,
                 COALESCE(ANY_VALUE(nm_head.metaval), "none") AS headline_type,
                 COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
                 n.editlock AS editlock,
@@ -76,7 +84,10 @@ class ArticleModel extends Model
             ->join('category c_parent', 'c_parent.categoryID = c.parent', 'left')
             ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
             ->join('authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
+            ->join('articlemeta nm_prem_legacy', 'nm_prem_legacy.articleID = n.articleID AND nm_prem_legacy.metakey = "premium"', 'left')
             ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
             ->join('articlemeta nm_head', 'nm_head.articleID = n.articleID AND nm_head.metakey = "headline_type"', 'left')
             ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
@@ -210,8 +221,17 @@ class ArticleModel extends Model
                 ANY_VALUE(c.label) AS category_slug,
                 ANY_VALUE(c.categoryID) AS category_id,
                 GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author,
-                COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium,
-                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail,
+                CASE 
+                    WHEN LOWER(COALESCE(ANY_VALUE(nm_prem_legacy.metaval), "")) IN ("true", "1") THEN "1"
+                    WHEN COALESCE(ANY_VALUE(nm_prem.metaval), "0") = "1" THEN "1"
+                    ELSE "0"
+                END AS is_premium,
+                COALESCE(
+                    NULLIF(ANY_VALUE(m.filename), ""),
+                    ANY_VALUE(nm_thumb.metaval),
+                    "/img/investor_placeholder.jpg"
+                ) AS thumbnail,
+                ANY_VALUE(ma_thumb.mediaID) AS media_id,
                 COALESCE(ANY_VALUE(nm_head.metaval), "none") AS headline_type,
                 COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
                 COALESCE(ANY_VALUE(nm_source.metaval), "Investor.id / Riset") AS source,
@@ -223,7 +243,10 @@ class ArticleModel extends Model
             ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
             ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
             ->join('authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
+            ->join('articlemeta nm_prem_legacy', 'nm_prem_legacy.articleID = n.articleID AND nm_prem_legacy.metakey = "premium"', 'left')
             ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
             ->join('articlemeta nm_head', 'nm_head.articleID = n.articleID AND nm_head.metakey = "headline_type"', 'left')
             ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
@@ -272,7 +295,7 @@ class ArticleModel extends Model
     /**
      * Create Article with taxonomy linkages & metadata
      */
-    public function createArticle(array $data, int $authorId, int $categoryId, array $tags = [], array $points = []): int
+    public function createArticle(array $data, int|array $authorId, int $categoryId, array $tags = [], array $points = []): int
     {
         $this->db->transStart();
 
@@ -300,17 +323,54 @@ class ArticleModel extends Model
         ]);
         $articleId = (int)$this->insertID();
 
-        // Link Kategori
+        // Link Kategori (Master Kanal & Sub-Kanal jika ada)
         $this->db->table('articlecategory')->insert([
             'articleID'  => $articleId,
             'categoryID' => $categoryId,
         ]);
 
-        // Link Penulis
-        $this->db->table('articleauthor')->insert([
-            'articleID' => $articleId,
-            'authorID'  => $authorId,
-        ]);
+        // Link Sub-Kanal ke articlecategory jika sub_kanal valid dan berbeda
+        if (!empty($data['sub_kanal_id']) && (int)$data['sub_kanal_id'] > 0 && (int)$data['sub_kanal_id'] !== $categoryId) {
+            $this->db->table('articlecategory')->insert([
+                'articleID'  => $articleId,
+                'categoryID' => (int)$data['sub_kanal_id'],
+            ]);
+        }
+
+        // Link Penulis (mendukung multiple authors / co-authors)
+        $this->db->table('articleauthor')->where('articleID', $articleId)->delete();
+        $authorIds = is_array($authorId) ? $authorId : [$authorId];
+        $authorIds = array_values(array_unique(array_filter(array_map('intval', $authorIds))));
+        foreach ($authorIds as $aId) {
+            if ($aId > 0) {
+                $this->db->table('articleauthor')->insert([
+                    'articleID' => $articleId,
+                    'authorID'  => $aId,
+                ]);
+            }
+        }
+
+        // Link Media Thumbnail (Sinkronisasi ke tabel mediaarticle dengan position = 1)
+        $this->db->table('mediaarticle')->where('articleID', $articleId)->where('position', 1)->delete();
+        $mediaId = !empty($data['media_id']) ? (int)$data['media_id'] : 0;
+        $thumbUrl = $data['thumbnail'] ?? '';
+        if ($mediaId <= 0 && !empty($thumbUrl)) {
+            $matchedMedia = $this->db->table('media')
+                ->where('filename', $thumbUrl)
+                ->orWhere('filename', basename($thumbUrl))
+                ->get()->getRowArray();
+            if ($matchedMedia) {
+                $mediaId = (int)$matchedMedia['mediaID'];
+            }
+        }
+        if ($mediaId > 0) {
+            $this->db->table('mediaarticle')->insert([
+                'mediaID'   => $mediaId,
+                'articleID' => $articleId,
+                'position'  => 1,
+                'caption'   => $data['thumbnail_caption'] ?? $data['title'] ?? '',
+            ]);
+        }
 
         // Meta entries
         $metaEntries = [
@@ -364,7 +424,7 @@ class ArticleModel extends Model
     /**
      * Update Article & audit trail history
      */
-    public function updateArticle(int $id, array $data, int $authorId, int $categoryId, array $tags = [], array $points = [], int $editorId = 1): bool
+    public function updateArticle(int $id, array $data, int|array $authorId, int $categoryId, array $tags = [], array $points = [], int $editorId = 1): bool
     {
         $oldArticle = $this->find($id);
         if (!$oldArticle) return false;
@@ -401,19 +461,53 @@ class ArticleModel extends Model
             'articleDate' => $articleDate,
         ]);
 
-        // 3. Update Category Link
+        // 3. Update Category Link (Master Kanal & Sub-Kanal jika ada)
         $this->db->table('articlecategory')->where('articleID', $id)->delete();
         $this->db->table('articlecategory')->insert([
             'articleID'  => $id,
             'categoryID' => $categoryId,
         ]);
+        if (!empty($data['sub_kanal_id']) && (int)$data['sub_kanal_id'] > 0 && (int)$data['sub_kanal_id'] !== $categoryId) {
+            $this->db->table('articlecategory')->insert([
+                'articleID'  => $id,
+                'categoryID' => (int)$data['sub_kanal_id'],
+            ]);
+        }
 
-        // 4. Update Author Link
+        // 4. Update Author Links (mendukung multiple authors / co-authors)
         $this->db->table('articleauthor')->where('articleID', $id)->delete();
-        $this->db->table('articleauthor')->insert([
-            'articleID' => $id,
-            'authorID'  => $authorId,
-        ]);
+        $authorIds = is_array($authorId) ? $authorId : [$authorId];
+        $authorIds = array_values(array_unique(array_filter(array_map('intval', $authorIds))));
+        foreach ($authorIds as $aId) {
+            if ($aId > 0) {
+                $this->db->table('articleauthor')->insert([
+                    'articleID' => $id,
+                    'authorID'  => $aId,
+                ]);
+            }
+        }
+
+        // 4b. Sync Media Thumbnail (Sinkronisasi ke tabel mediaarticle dengan position = 1)
+        $this->db->table('mediaarticle')->where('articleID', $id)->where('position', 1)->delete();
+        $mediaId = !empty($data['media_id']) ? (int)$data['media_id'] : 0;
+        $thumbUrl = $data['thumbnail'] ?? '';
+        if ($mediaId <= 0 && !empty($thumbUrl)) {
+            $matchedMedia = $this->db->table('media')
+                ->where('filename', $thumbUrl)
+                ->orWhere('filename', basename($thumbUrl))
+                ->get()->getRowArray();
+            if ($matchedMedia) {
+                $mediaId = (int)$matchedMedia['mediaID'];
+            }
+        }
+        if ($mediaId > 0) {
+            $this->db->table('mediaarticle')->insert([
+                'mediaID'   => $mediaId,
+                'articleID' => $id,
+                'position'  => 1,
+                'caption'   => $data['thumbnail_caption'] ?? $data['title'] ?? '',
+            ]);
+        }
 
         // 5. Update Metadata
         $metaKeys = ['thumbnail', 'is_premium', 'headline_type', 'upper_deck', 'news_source', 'kanal', 'sub_kanal'];
@@ -474,24 +568,31 @@ class ArticleModel extends Model
      * Mencatat penghapusan pada audit trail articlehistory dan merilis editlock
      * Tabel: article (W), articlehistory (W)
      */
-    public function deleteArticle(int $id, ?int $editorId = null): bool
+    public function deleteArticle(int $id, ?int $editorId = null, string $reason = '', string $notes = ''): bool
     {
         $oldArticle = $this->db->table('article')->where('articleID', $id)->get()->getRowArray();
         if (!$oldArticle) return false;
 
         $this->db->transStart();
 
+        $effectiveEditor = $editorId ?: (session('user_id') ?: 1);
+
+        $statusAfter = 'Deleted';
+        if (!empty($reason)) {
+            $statusAfter .= ' [' . $reason . (!empty($notes) ? ' - ' . $notes : '') . ']';
+        }
+
         // 1. Audit trail in articlehistory
         $this->db->table('articlehistory')->insert([
             'timestamp'    => date('Y-m-d H:i:s'),
             'articleID'    => $id,
-            'editorID'     => $editorId ?: (session('user_id') ?: 1),
+            'editorID'     => $effectiveEditor,
             'title_prev'   => $oldArticle['headline'],
             'title_after'  => $oldArticle['headline'],
             'content_prev' => $oldArticle['body'],
             'content_after'=> $oldArticle['body'],
             'status_prev'  => $oldArticle['status'],
-            'status_after' => 'Deleted',
+            'status_after' => $statusAfter,
         ]);
 
         // 2. Soft delete & release editlock
@@ -501,6 +602,19 @@ class ArticleModel extends Model
                 'status'   => 'Deleted',
                 'editlock' => null
             ]);
+
+        // 3. Activity log for editorial audit
+        try {
+            $activityLog = new \App\Models\ActivityLogModel();
+            $activityLog->logAction((int)$effectiveEditor, 'delete', 'article', [
+                'article_id' => $id,
+                'title'      => $oldArticle['headline'],
+                'reason'     => $reason,
+                'notes'      => $notes
+            ]);
+        } catch (\Throwable $e) {
+            // Non-blocking for activity log
+        }
 
         $this->db->transComplete();
         return $this->db->transStatus();
@@ -780,7 +894,7 @@ class ArticleModel extends Model
     /**
      * Dynamic Traffic Analytics Datasets (Today, 7 Days, MTD/Monthly)
      */
-    public function getTrafficChartData(): array
+    public function getTrafficChartData(?string $customFrom = null, ?string $customTo = null): array
     {
         $todayStr = date('Y-m-d');
 
@@ -848,7 +962,7 @@ class ArticleModel extends Model
             $mSearch[$mIdx] = (int)round($v * 0.42);
         }
 
-        return [
+        $result = [
             'today' => [
                 'categories' => $todayHours,
                 'series'     => [
@@ -871,6 +985,67 @@ class ArticleModel extends Model
                 ],
             ],
         ];
+
+        // 4. CUSTOM DATE RANGE TRAFFIC
+        if (!empty($customFrom) && !empty($customTo)) {
+            $fromTime = strtotime($customFrom);
+            $toTime = strtotime($customTo);
+            if ($toTime < $fromTime) {
+                $temp = $fromTime;
+                $fromTime = $toTime;
+                $toTime = $temp;
+            }
+
+            $diffDays = (int)round(($toTime - $fromTime) / 86400);
+            $customCat = [];
+            $customDirect = [];
+            $customSearch = [];
+
+            // Cap interval display up to 60 steps for readable chart
+            $step = max(1, (int)ceil(($diffDays + 1) / 30));
+            $curr = $fromTime;
+            while ($curr <= $toTime) {
+                $d = date('Y-m-d', $curr);
+                $customCat[] = date('d M', $curr);
+                $customDirect[$d] = 0;
+                $customSearch[$d] = 0;
+                $curr = strtotime("+{$step} days", $curr);
+            }
+
+            $cRows = $this->db->table('article')
+                ->select('DATE(articleDate) as d, SUM(COALESCE(viewed, 0)) as total_v')
+                ->where('DATE(articleDate) >=', date('Y-m-d', $fromTime))
+                ->where('DATE(articleDate) <=', date('Y-m-d', $toTime))
+                ->groupBy('DATE(articleDate)')
+                ->get()->getResultArray();
+
+            foreach ($cRows as $r) {
+                $d = $r['d'];
+                $v = (int)$r['total_v'];
+                if (isset($customDirect[$d])) {
+                    $customDirect[$d] = (int)round($v * 0.58);
+                    $customSearch[$d] = (int)round($v * 0.42);
+                } else {
+                    // Fallback to closest slot
+                    $keys = array_keys($customDirect);
+                    if (!empty($keys)) {
+                        $lastSlot = end($keys);
+                        $customDirect[$lastSlot] += (int)round($v * 0.58);
+                        $customSearch[$lastSlot] += (int)round($v * 0.42);
+                    }
+                }
+            }
+
+            $result['custom'] = [
+                'categories' => $customCat,
+                'series'     => [
+                    ['name' => 'Direct & App Visitors', 'data' => array_values($customDirect)],
+                    ['name' => 'Search & Syndication', 'data' => array_values($customSearch)],
+                ],
+            ];
+        }
+
+        return $result;
     }
 
     /**

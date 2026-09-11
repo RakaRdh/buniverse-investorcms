@@ -44,7 +44,7 @@ class Auth extends BaseController
             $password = trim($this->request->getPost('password') ?? '');
 
             if (empty($username) || empty($password)) {
-                return redirect()->to('/login')->with('error', 'Silakan masukkan username dan kata sandi.');
+                return redirect()->to('/login')->withInput()->with('error', 'Silakan masukkan username dan kata sandi.');
             }
 
             $user = $this->adminModel->authenticate($username, $password);
@@ -82,7 +82,7 @@ class Auth extends BaseController
                 return redirect()->to('/auth/verify-code')->with('info', 'Kode autentifikasi telah dikirimkan ke email ' . $this->maskEmail($user['email'] ?? ''));
             }
 
-            return redirect()->to('/login')->with('error', 'Kredensial tidak valid. Silakan periksa username atau kata sandi Anda.');
+            return redirect()->to('/login')->withInput()->with('error', 'Kredensial tidak valid. Silakan periksa username atau kata sandi Anda.');
         }
 
         // Demo users for quick selection in development login screen
@@ -258,6 +258,204 @@ class Auth extends BaseController
             return $sent;
         } catch (\Throwable $e) {
             log_message('error', 'Gagal mengirim email 2FA: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * GET /auth/forgot-password
+     * Halaman form permintaan reset kata sandi
+     */
+    public function forgotPassword()
+    {
+        if (session()->has('user_id')) {
+            return redirect()->to('/dashboard');
+        }
+
+        return view('auth/forgot_password', [
+            'title' => 'Lupa Kata Sandi — Investor.ID Newsroom CMS'
+        ]);
+    }
+
+    /**
+     * POST /auth/forgot-password
+     * Kirim link tautan token reset unik sekali pakai (one-time token) ke email user
+     * Masa berlaku token: 15 menit, tersimpan aman di kolom authCode & authExpired
+     */
+    public function sendResetLink()
+    {
+        $identifier = trim($this->request->getPost('identifier') ?? $this->request->getPost('email') ?? '');
+
+        if (empty($identifier)) {
+            return redirect()->to('/auth/forgot-password')->with('error', 'Silakan masukkan username atau alamat email internal Anda.');
+        }
+
+        $user = $this->adminModel->where('active', 1)
+            ->groupStart()
+                ->where('username', $identifier)
+                ->orWhere('email', $identifier)
+            ->groupEnd()
+            ->first();
+
+        // Standar Keamanan Celah #2: Anti-Account Enumeration
+        // Selalu tampilkan pesan umum yang sama agar penyerang tidak bisa men-scrape username staf yang valid
+        if (!$user) {
+            return redirect()->to('/auth/forgot-password')
+                ->with('info', 'Jika username atau email terdaftar dalam sistem redaksi, tautan pemulihan kata sandi telah dikirimkan ke email Anda.');
+        }
+
+        // Celah #1 & #3: Buat 64-character kriptografi token acak (bukan salt statis)
+        $resetToken = bin2hex(random_bytes(32));
+        $authExpired = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+
+        // Simpan token unik ke kolom authCode & authExpired bawaan tabel
+        $this->adminModel->update($user['userID'] ?? $user['id'], [
+            'authCode'    => $resetToken,
+            'authExpired' => $authExpired,
+        ]);
+
+        $this->sendPasswordResetEmail($user, $resetToken);
+
+        return redirect()->to('/auth/forgot-password')
+            ->with('info', 'Tautan pemulihan kata sandi telah dikirimkan ke email ' . $this->maskEmail($user['email'] ?? '') . '. Silakan periksa kotak masuk atau spam Anda.');
+    }
+
+    /**
+     * GET /auth/reset-password?token=...&user=...
+     * POST /auth/reset-password
+     * Verifikasi token tautan email sekali pakai dan set kata sandi baru (SHA-512 salted hash)
+     */
+    public function resetPassword()
+    {
+        if (session()->has('user_id')) {
+            return redirect()->to('/dashboard');
+        }
+
+        $tokenParam = $this->request->getGet('token') ?: $this->request->getPost('token') ?: '';
+        $userParam = $this->request->getGet('user') ?: $this->request->getPost('username') ?: '';
+
+        if (strtolower($this->request->getMethod()) === 'post') {
+            $token = trim((string)$this->request->getPost('token'));
+            $identifier = trim((string)$this->request->getPost('username'));
+            $newPassword = trim((string)$this->request->getPost('new_password'));
+            $confirmPassword = trim((string)$this->request->getPost('confirm_password'));
+
+            if (empty($token) || empty($identifier) || empty($newPassword)) {
+                return redirect()->to('/auth/reset-password?token=' . urlencode($token) . '&user=' . urlencode($identifier))
+                    ->with('error', 'Semua kolom formulir wajib diisi.');
+            }
+
+            if (strlen($newPassword) < 8) {
+                return redirect()->to('/auth/reset-password?token=' . urlencode($token) . '&user=' . urlencode($identifier))
+                    ->with('error', 'Kata sandi minimal terdiri dari 8 karakter.');
+            }
+
+            if ($newPassword !== $confirmPassword) {
+                return redirect()->to('/auth/reset-password?token=' . urlencode($token) . '&user=' . urlencode($identifier))
+                    ->with('error', 'Konfirmasi kata sandi baru tidak cocok.');
+            }
+
+            $user = $this->adminModel->where('active', 1)
+                ->groupStart()
+                    ->where('username', $identifier)
+                    ->orWhere('email', $identifier)
+                ->groupEnd()
+                ->first();
+
+            if (!$user) {
+                return redirect()->to('/auth/forgot-password')
+                    ->with('error', 'Tautan pemulihan tidak valid atau akun tidak ditemukan.');
+            }
+
+            $nowStr = date('Y-m-d H:i:s');
+            $userAuthCode = (string)($user['authCode'] ?? '');
+            $userAuthExpired = (string)($user['authExpired'] ?? '');
+
+            // Verifikasi token sekali pakai & masa berlaku 15 menit
+            if ($userAuthCode === '' || !hash_equals($userAuthCode, $token) || ($userAuthExpired !== '' && $userAuthExpired < $nowStr)) {
+                return redirect()->to('/auth/forgot-password')
+                    ->with('error', 'Tautan pemulihan kata sandi sudah tidak berlaku atau kadaluarsa. Silakan ajukan permohonan baru.');
+            }
+
+            // Valid: hash kata sandi baru menggunakan SHA-512 + 128 chars salt (standar produksi CI4 & Legacy)
+            $newSalt = AdminModel::generateSalt(128);
+            $newHash = AdminModel::encodePassword($newPassword, $newSalt);
+
+            // Segera hanguskan token pemulihan (One-Time Token) dan set rotasi 90 hari
+            $this->adminModel->update($user['userID'] ?? $user['id'], [
+                'password'        => $newHash,
+                'salt'            => $newSalt,
+                'authCode'        => null,
+                'authExpired'     => null,
+                'passwordExpired' => date('Y-m-d H:i:s', strtotime('+90 days')),
+            ]);
+
+            return redirect()->to('/login')->with('success', 'Kata sandi berhasil diperbarui! Silakan masuk dengan kata sandi baru Anda.');
+        }
+
+        // Tampilan GET: jika ada parameter token & user, lakukan pre-validation awal
+        $isValidLink = false;
+        if (!empty($tokenParam) && !empty($userParam)) {
+            $user = $this->adminModel->where('active', 1)
+                ->groupStart()
+                    ->where('username', $userParam)
+                    ->orWhere('email', $userParam)
+                ->groupEnd()
+                ->first();
+
+            if ($user && !empty($user['authCode']) && hash_equals($user['authCode'], $tokenParam)) {
+                $nowStr = date('Y-m-d H:i:s');
+                if (empty($user['authExpired']) || $user['authExpired'] >= $nowStr) {
+                    $isValidLink = true;
+                }
+            }
+        }
+
+        return view('auth/reset_password', [
+            'title'         => 'Reset Kata Sandi — Investor.ID Newsroom CMS',
+            'prefilledUser' => $userParam,
+            'token'         => $tokenParam,
+            'isValidLink'   => $isValidLink
+        ]);
+    }
+
+    /**
+     * Helper: Kirim email instruksi link reset kata sandi unik via Brevo SMTP
+     */
+    protected function sendPasswordResetEmail(array $user, string $resetToken): bool
+    {
+        try {
+            $email = \Config\Services::email();
+            $email->setTo($user['email']);
+            $email->setSubject('Tautan Pemulihan Kata Sandi - CMS Investor');
+
+            $resetUrl = base_url('auth/reset-password?token=' . urlencode($resetToken) . '&user=' . urlencode($user['username']));
+
+            $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">';
+            $body .= '<div style="margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;">';
+            $body .= '<h2 style="color: #1A365D; margin: 0; font-size: 20px; font-weight: 700;">CMS Investor.id</h2>';
+            $body .= '<p style="color: #64748B; font-size: 12px; margin: 4px 0 0 0;">Pemulihan Kredensial Editorial</p>';
+            $body .= '</div>';
+            $body .= '<p style="font-size: 14px; line-height: 1.5;">Halo, <strong>' . esc($user['name'] ?: $user['username']) . '</strong>,</p>';
+            $body .= '<p style="font-size: 14px; line-height: 1.5; color: #334155;">Kami menerima permintaan untuk mereset kata sandi akun editorial Anda. Silakan klik tombol di bawah ini untuk membuat kata sandi baru:</p>';
+            $body .= '<div style="text-align: center; margin: 28px 0;">';
+            $body .= '<a href="' . $resetUrl . '" style="display: inline-block; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #0077CC; padding: 12px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 4px rgba(0,119,204,0.3);">Buat Kata Sandi Baru</a>';
+            $body .= '</div>';
+            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Jika tombol di atas tidak dapat diklik, salin dan buka tautan berikut pada peramban Anda:<br><a href="' . $resetUrl . '" style="color: #0077CC; word-break: break-all;">' . $resetUrl . '</a></p>';
+            $body .= '<p style="color: #ef4444; font-size: 12px; line-height: 1.5; font-weight: 600;">Tautan ini hanya berlaku selama 15 menit dan hanya dapat digunakan 1 (satu) kali.</p>';
+            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Jika Anda tidak merasa mengajukan permintaan ini, abaikan pesan ini dan kata sandi Anda tetap aman.</p>';
+            $body .= '<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0 16px 0;">';
+            $body .= '<p style="color: #94a3b8; font-size: 11px; margin: 0; text-align: center;">&copy; ' . date('Y') . ' Investor.ID Editorial Newsroom</p>';
+            $body .= '</div>';
+
+            $email->setMessage($body);
+            $sent = $email->send();
+            if (!$sent) {
+                log_message('error', 'Gagal mengirim email reset via Brevo: ' . $email->printDebugger(['headers', 'subject', 'body']));
+            }
+            return $sent;
+        } catch (\Throwable $e) {
+            log_message('error', 'Gagal mengirim email reset: ' . $e->getMessage());
             return false;
         }
     }

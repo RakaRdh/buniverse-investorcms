@@ -21,9 +21,24 @@ setup('authenticate as master admin', async ({ page }) => {
 
   // Submit form
   await Promise.all([
-    page.waitForNavigation({ waitUntil: 'networkidle' }),
+    page.waitForNavigation({ waitUntil: 'networkidle' }).catch(() => {}),
     page.click('button[type="submit"]'),
   ]);
+
+  // Check if redirected to 2FA verify-code screen
+  if (page.url().includes('/auth/verify-code')) {
+    const inputs = page.locator('.otp-digit');
+    const count = await inputs.count();
+    if (count === 6) {
+      for (let i = 0; i < 6; i++) {
+        await inputs.nth(i).fill('1');
+      }
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle' }).catch(() => {}),
+        page.click('button[type="submit"]'),
+      ]);
+    }
+  }
 
   // Verify redirected to dashboard or contains dashboard content
   await expect(page).toHaveURL(/.*dashboard.*/);

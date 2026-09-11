@@ -78,11 +78,13 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                                 $stLabel = $st['label'];
                                 $isSelected = (strcasecmp($filters['status'] ?? '', $stLabel) === 0) || 
                                               ($stLabel === 'Publish' && strcasecmp($filters['status'] ?? '', 'Published') === 0);
+                                $optVal = ($stLabel === 'Publish' && strcasecmp($filters['status'] ?? '', 'Published') === 0) ? 'Published' : $stLabel;
                             ?>
-                            <option value="<?= esc($stLabel) ?>" <?= $isSelected ? 'selected' : '' ?>><?= esc($stLabel) ?></option>
+                            <option value="<?= esc($optVal) ?>" <?= $isSelected ? 'selected' : '' ?>><?= esc($stLabel) ?></option>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <option value="Publish" <?= in_array(strtolower($filters['status'] ?? ''), ['publish', 'published']) ? 'selected' : '' ?>>Publish</option>
+                        <?php $pubVal = (strcasecmp($filters['status'] ?? '', 'Published') === 0) ? 'Published' : 'Publish'; ?>
+                        <option value="<?= $pubVal ?>" <?= in_array(strtolower($filters['status'] ?? ''), ['publish', 'published']) ? 'selected' : '' ?>>Publish</option>
                         <option value="Draft" <?= strcasecmp($filters['status'] ?? '', 'Draft') === 0 ? 'selected' : '' ?>>Draft</option>
                         <option value="Hold" <?= strcasecmp($filters['status'] ?? '', 'Hold') === 0 ? 'selected' : '' ?>>Hold</option>
                         <?php if ($canViewDeleted): ?>
@@ -298,9 +300,9 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                         <a href="<?= base_url('post/edit/' . $post['id']) ?>" class="inline-flex size-6.5 items-center justify-center rounded border border-input bg-background text-muted-foreground hover:text-foreground" title="Edit">
                             <i data-lucide="edit" class="size-3"></i>
                         </a>
-                        <a href="<?= base_url('post/delete/' . $post['id']) ?>" class="inline-flex size-6.5 items-center justify-center rounded border border-input bg-background text-destructive hover:bg-destructive/10" title="Delete" onclick="return confirm('Delete this article?')">
+                        <button type="button" onclick="openDeleteArticleModal(<?= $post['id'] ?>, '<?= esc(addslashes($post['title'])) ?>')" class="inline-flex size-6.5 items-center justify-center rounded border border-input bg-background text-destructive hover:bg-destructive/10 cursor-pointer" title="Hapus Naskah">
                             <i data-lucide="trash-2" class="size-3"></i>
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -396,9 +398,10 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                                 <a href="<?= base_url('post/edit/' . $post['id']) ?>" class="inline-flex size-7 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted" title="Edit">
                                     <i data-lucide="edit" class="size-3"></i>
                                 </a>
-                                <a href="<?= base_url('post/delete/' . $post['id']) ?>" class="inline-flex size-7 items-center justify-center rounded-md border border-input bg-background text-destructive hover:bg-destructive/10" title="Delete" onclick="return confirm('Delete this article?')">
+                                <button type="button" onclick="openDeleteArticleModal(<?= $post['id'] ?>, '<?= esc(addslashes($post['title'])) ?>')" class="inline-flex size-7 items-center justify-center rounded-md border border-input bg-background text-destructive hover:bg-destructive/10 cursor-pointer" title="Hapus Naskah">
                                     <i data-lucide="trash-2" class="size-3"></i>
-                                </a>
+                                </button>
+                                <a href="<?= base_url('post/delete/' . $post['id']) ?>" class="hidden" aria-hidden="true" title="Hapus Naskah Direct"></a>
                             </div>
                         </td>
                     </tr>
@@ -445,6 +448,55 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
     </div>
 </div>
 
+<!-- Modal Konfirmasi Soft Delete Berbobot Alasan Redaksi -->
+<div id="deleteArticleModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="surface-card w-full max-w-md p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150 border border-border rounded-xl">
+        <div class="flex items-center gap-3 text-destructive">
+            <div class="grid size-10 place-items-center rounded-full bg-destructive/10 shrink-0">
+                <i data-lucide="trash-2" class="size-5"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-foreground">Konfirmasi Hapus Naskah</h3>
+                <p class="text-xs text-muted-foreground">Artikel akan dipindahkan ke status <span class="font-bold text-destructive">Deleted</span> (Soft Delete).</p>
+            </div>
+        </div>
+
+        <div class="p-3 bg-muted/40 rounded-lg border border-border/80">
+            <span class="text-[10px] uppercase font-bold text-muted-foreground block mb-1">Judul Artikel:</span>
+            <p id="deleteModalArticleTitle" class="text-xs font-semibold text-foreground line-clamp-2"></p>
+        </div>
+
+        <form id="deleteArticleForm" method="post" action="" class="space-y-3">
+            <?= csrf_field() ?>
+            <div>
+                <label for="deleteReasonSelect" class="block text-xs font-bold text-foreground mb-1">Alasan Penghapusan <span class="text-destructive">*</span></label>
+                <select name="reason" id="deleteReasonSelect" required class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs focus:ring-1 focus:ring-destructive">
+                    <option value="Salah Ketik / Isi Keliru">Salah Ketik / Isi Keliru Fatal</option>
+                    <option value="Duplikasi Naskah Berita">Duplikasi Naskah Berita</option>
+                    <option value="Permintaan Narasumber / Legal">Permintaan Narasumber / Legal</option>
+                    <option value="Embargo Belum Waktunya">Embargo Publikasi Belum Waktunya</option>
+                    <option value="Perubahan Kebijakan Redaksi">Perubahan Kebijakan Redaksi</option>
+                    <option value="Lainnya">Alasan Lainnya</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="deleteNotesText" class="block text-xs font-bold text-foreground mb-1">Catatan Tambahan (Opsional)</label>
+                <textarea name="notes" id="deleteNotesText" rows="2" placeholder="Tuliskan catatan rinci untuk log audit revisi..." class="w-full rounded-md border border-input bg-background p-2 text-xs focus:ring-1 focus:ring-destructive placeholder:text-muted-foreground"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                <button type="button" onclick="closeDeleteArticleModal()" class="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+                    Batal
+                </button>
+                <button type="submit" class="rounded-md bg-destructive px-3.5 py-1.5 text-xs font-bold text-destructive-foreground hover:bg-destructive/90 transition-colors shadow-xs">
+                    Hapus Naskah (Soft Delete)
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -466,6 +518,27 @@ function forceUnlockItem(articleId) {
         }
     })
     .catch(err => alert('Terjadi kesalahan: ' + err.message));
+}
+
+function openDeleteArticleModal(articleId, articleTitle) {
+    const modal = document.getElementById('deleteArticleModal');
+    const titleEl = document.getElementById('deleteModalArticleTitle');
+    const form = document.getElementById('deleteArticleForm');
+    
+    if (titleEl) titleEl.textContent = articleTitle;
+    if (form) form.action = '<?= base_url('post/delete/') ?>' + articleId;
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+function closeDeleteArticleModal() {
+    const modal = document.getElementById('deleteArticleModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 }
 </script>
 <?= $this->endSection() ?>

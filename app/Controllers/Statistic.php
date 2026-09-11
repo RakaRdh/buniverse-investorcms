@@ -18,6 +18,36 @@ class Statistic extends BaseController
 
     public function index()
     {
+        $preset = $this->request->getGet('preset') ?: 'today';
+        $fromDate = $this->request->getGet('from');
+        $toDate = $this->request->getGet('to');
+
+        if (!empty($fromDate) && !empty($toDate)) {
+            $preset = 'custom';
+            $fromTimestamp = strtotime($fromDate);
+            $toTimestamp = strtotime($toDate);
+            if ($toTimestamp < $fromTimestamp) {
+                $temp = $fromDate;
+                $fromDate = $toDate;
+                $toDate = $temp;
+            }
+        } else {
+            if ($preset === 'custom') {
+                $fromDate = date('Y-m-d', strtotime('-14 days'));
+                $toDate = date('Y-m-d');
+            } elseif ($preset === '7d') {
+                $fromDate = date('Y-m-d', strtotime('-6 days'));
+                $toDate = date('Y-m-d');
+            } elseif ($preset === 'mtd') {
+                $fromDate = date('Y-m-01');
+                $toDate = date('Y-m-d');
+            } else {
+                $preset = 'today';
+                $fromDate = date('Y-m-d');
+                $toDate = date('Y-m-d');
+            }
+        }
+
         $metrics = $this->articleModel->getDashboardMetrics();
         $kanals = $this->categoryModel->getKanalTree();
         $recentArticles = $this->articleModel->getArticlesWithRelations([], 1, 20)['data'];
@@ -34,7 +64,7 @@ class Statistic extends BaseController
 
         $catLabels = array_column($catDistribution, 'name');
         $catSeries = array_map('intval', array_column($catDistribution, 'count'));
-        $trafficDatasets = $this->articleModel->getTrafficChartData();
+        $trafficDatasets = $this->articleModel->getTrafficChartData($fromDate, $toDate);
 
         // Dynamic read time calculated from avg word count of published articles
         $totalWords = 0;
@@ -68,17 +98,43 @@ class Statistic extends BaseController
             $premiumArticlesCount = 14;
         }
 
+        // Adjust metrics for custom range if selected
+        $totalPageviews = $metrics['rawViews'] + 1400000;
+        $publishedCount = $metrics['published'];
+        if ($preset === 'custom') {
+            $customViews = (int)($this->articleModel->db->table('article')
+                ->selectSum('viewed', 'v')
+                ->where('DATE(articleDate) >=', $fromDate)
+                ->where('DATE(articleDate) <=', $toDate)
+                ->get()->getRow()->v ?? 0);
+            if ($customViews > 0) {
+                $totalPageviews = $customViews;
+            }
+
+            $customPub = (int)$this->articleModel->db->table('article')
+                ->where('DATE(articleDate) >=', $fromDate)
+                ->where('DATE(articleDate) <=', $toDate)
+                ->whereIn('LOWER(status)', ['publish', 'published'])
+                ->countAllResults();
+            if ($customPub > 0) {
+                $publishedCount = $customPub;
+            }
+        }
+
         return view('statistic/index', [
             'title'           => 'Audience Analytics & Traffic Statistics',
             'breadcrumb'      => 'Insights / Statistic',
             'posts'           => $recentArticles,
             'kanals'          => $kanals,
+            'preset'          => $preset,
+            'fromDate'        => $fromDate,
+            'toDate'          => $toDate,
             'metrics'         => [
-                'totalPageviews'     => number_format($metrics['rawViews'] + 1400000),
+                'totalPageviews'     => number_format($totalPageviews),
                 'rawTotalViews'      => number_format($metrics['rawViews']),
                 'premiumSubscribers' => $premiumSubscribersStr,
                 'premiumArticles'    => $premiumArticlesCount,
-                'publishedCount'     => $metrics['published'],
+                'publishedCount'     => $publishedCount,
                 'avgReadTime'        => $avgReadTimeStr,
             ],
             'chartData'       => [

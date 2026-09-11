@@ -81,4 +81,39 @@ final class AdminModelTest extends CIUnitTestCase
         $this->assertArrayHasKey('status', $admins[0]);
         $this->assertArrayHasKey('last_active', $admins[0]);
     }
+
+    public function testAutoUpgradeFromMd5ToSha512(): void
+    {
+        $testUsername = 'test_legacy_user_' . time();
+        $plainPass = 'legacySecret123';
+        $md5Hash = md5($plainPass);
+
+        // Insert legacy user with MD5 hash
+        $userId = $this->model->insert([
+            'username' => $testUsername,
+            'name'     => 'Legacy User',
+            'alias'    => 'LGU',
+            'slug'     => 'legacy-user',
+            'email'    => $testUsername . '@investor.id',
+            'password' => $md5Hash,
+            'salt'     => '',
+            'active'   => 1,
+            'roleName' => 'editor'
+        ]);
+        $this->assertGreaterThan(0, $userId);
+
+        // Authenticate should succeed via Strategy 4 and auto-upgrade to SHA-512
+        $auth = $this->model->authenticate($testUsername, $plainPass);
+        $this->assertNotNull($auth);
+        $this->assertSame($testUsername, $auth['username']);
+
+        // Check updated record has 128-char salt and SHA-512 hash
+        $updated = $this->model->find($userId);
+        $this->assertSame(128, strlen($updated['salt']));
+        $this->assertSame(128, strlen($updated['password']));
+        $this->assertNotSame($md5Hash, $updated['password']);
+
+        // Cleanup
+        $this->model->delete($userId);
+    }
 }

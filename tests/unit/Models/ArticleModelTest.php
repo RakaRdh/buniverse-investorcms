@@ -154,4 +154,74 @@ final class ArticleModelTest extends CIUnitTestCase
         $this->assertCount(2, $traffic['today']['series']);
         $this->assertSame('Direct & App Visitors', $traffic['today']['series'][0]['name']);
     }
+
+    public function testAcquireReleaseAndForceUnlockEditLock(): void
+    {
+        $sample = $this->model->first();
+        $this->assertNotNull($sample);
+        $articleId = (int)$sample['articleID'];
+
+        // 1. Acquire lock as User 1
+        $lock1 = $this->model->acquireLock($articleId, 1);
+        $this->assertTrue($lock1['locked']);
+        $this->assertTrue($lock1['is_owner']);
+
+        // 2. User 2 tries to acquire lock -> locked by User 1
+        $lock2 = $this->model->acquireLock($articleId, 2);
+        $this->assertTrue($lock2['locked']);
+        $this->assertFalse($lock2['is_owner']);
+        $this->assertNotNull($lock2['locked_by']);
+
+        // 3. User 1 releases lock
+        $released = $this->model->releaseLock($articleId, 1);
+        $this->assertTrue($released);
+
+        // 4. Force unlock by admin
+        $this->model->acquireLock($articleId, 2);
+        $forced = $this->model->forceUnlock($articleId);
+        $this->assertTrue($forced);
+
+        // Verify lock is cleared
+        $afterUnlock = $this->model->acquireLock($articleId, 1);
+        $this->assertTrue($afterUnlock['is_owner']);
+        $this->model->releaseLock($articleId, 1);
+    }
+
+    public function testGetArticleStatusesByRolePermissions(): void
+    {
+        // 1. Administrator sees all statuses including Deleted
+        $adminStatuses = $this->model->getArticleStatuses('administrator');
+        $adminLabels = array_column($adminStatuses, 'label');
+        $this->assertContains('Deleted', $adminLabels);
+        $this->assertContains('Publish', $adminLabels);
+        $this->assertContains('Draft', $adminLabels);
+
+        // 2. Redpel sees all statuses including Deleted
+        $redpelStatuses = $this->model->getArticleStatuses('redpel');
+        $redpelLabels = array_column($redpelStatuses, 'label');
+        $this->assertContains('Deleted', $redpelLabels);
+
+        // 3. Editor / Author cannot see Deleted
+        $editorStatuses = $this->model->getArticleStatuses('editor');
+        $editorLabels = array_column($editorStatuses, 'label');
+        $this->assertNotContains('Deleted', $editorLabels);
+        $this->assertContains('Publish', $editorLabels);
+    }
+
+    public function testGetRevisionHistoryAndDetail(): void
+    {
+        $history = $this->model->getRevisionHistory(1, 10);
+        $this->assertIsArray($history);
+        $this->assertArrayHasKey('data', $history);
+        $this->assertArrayHasKey('total', $history);
+
+        if (!empty($history['data'])) {
+            $firstHistoryId = (int)$history['data'][0]['id'];
+            $detail = $this->model->getRevisionDetail($firstHistoryId);
+            $this->assertNotNull($detail);
+            $this->assertSame($firstHistoryId, (int)$detail['id']);
+            $this->assertArrayHasKey('title_prev', $detail);
+            $this->assertArrayHasKey('title_after', $detail);
+        }
+    }
 }

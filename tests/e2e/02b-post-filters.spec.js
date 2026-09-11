@@ -60,7 +60,7 @@ test.describe('02b - Post Editorial Filtering & Search', () => {
     const searchInput = page.locator('input[name="q"]');
     await expect(searchInput).toHaveValue('IHSG');
 
-    const bodyText = await page.locator('table tbody').innerText();
+    const bodyText = await page.locator('table tbody').first().innerText();
     expect(bodyText.length).toBeGreaterThan(0);
   });
 

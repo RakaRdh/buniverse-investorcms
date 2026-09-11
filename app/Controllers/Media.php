@@ -165,7 +165,50 @@ class Media extends BaseController
 
     public function delete($id)
     {
-        $this->mediaModel->delete((int)$id);
-        return redirect()->to('/media')->with('success', 'Media asset removed.');
+        $id = (int)$id;
+        $media = $this->mediaModel->find($id);
+        if (!$media) {
+            return redirect()->to('/media')->with('error', 'Media asset tidak ditemukan.');
+        }
+
+        // 1. Reverse lookup: cek apakah foto ini sedang dipakai oleh artikel via mediaarticle
+        $usedArticles = $this->mediaModel->getArticlesUsingMedia($id);
+
+        // 2. Cek apakah filename foto ini dipakai sebagai thumbnail artikel
+        if (!empty($media['filename'])) {
+            $thumbArticles = $this->mediaModel->db->table('articlemeta am')
+                ->select('a.articleID as id, a.headline as title, a.status')
+                ->join('article a', 'a.articleID = am.articleID')
+                ->where('am.metakey', 'thumbnail')
+                ->where('am.metaval', $media['filename'])
+                ->get()->getResultArray();
+            foreach ($thumbArticles as $ta) {
+                if (!in_array($ta['id'], array_column($usedArticles, 'id'))) {
+                    $usedArticles[] = $ta;
+                }
+            }
+        }
+
+        // Jika media masih dipakai oleh artikel aktif, tolak penghapusan untuk melindungi integritas konten
+        if (!empty($usedArticles)) {
+            $articleTitles = array_map(fn($a) => '"' . mb_substr($a['title'], 0, 40) . '..."', array_slice($usedArticles, 0, 3));
+            $countTotal = count($usedArticles);
+            $msg = "Gagal menghapus: Foto ini sedang digunakan oleh {$countTotal} artikel redaksi (" . implode(', ', $articleTitles) . "). Lepaskan tautan foto dari artikel terkait sebelum menghapus media ini.";
+            return redirect()->to('/media')->with('error', $msg);
+        }
+
+        // Audit log penghapusan foto
+        $sessionUser = session()->get('user_id') ?: 1;
+        try {
+            $activityLog = new \App\Models\ActivityLogModel();
+            $activityLog->logAction((int)$sessionUser, 'delete', 'foto', [
+                'mediaID'    => $id,
+                'mediaTitle' => $media['mediaTitle'],
+                'filename'   => $media['filename'],
+            ]);
+        } catch (\Throwable $e) {}
+
+        $this->mediaModel->delete($id);
+        return redirect()->to('/media')->with('success', 'Media asset berhasil dihapus dari perpustakaan.');
     }
 }
