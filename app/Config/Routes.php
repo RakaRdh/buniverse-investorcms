@@ -92,6 +92,7 @@ $routes->get('/kanal/stats', 'Kanal::stats', ['filter' => 'role:master,admin']);
 // Mobile Apps Ecosystem (Master, Admin)
 $routes->get('/apps-version', 'Apps::version', ['filter' => 'role:master,admin']);
 $routes->post('/apps-version/save', 'Apps::saveVersion', ['filter' => 'role:master,admin']);
+$routes->get('/apps-version/delete/(:num)', 'Apps::deleteVersion/$1', ['filter' => 'role:master,admin']);
 
 $routes->get('/apps-push-notif', 'Apps::pushNotif', ['filter' => 'role:master,admin']);
 $routes->post('/apps-push-notif/create', 'Apps::createPushNotif', ['filter' => 'role:master,admin']);
@@ -123,6 +124,7 @@ $routes->get('/api/user/check-email', 'User::checkEmail');
 $routes->get('/user/profile', 'User::profile');
 $routes->post('/user/profile/update', 'User::updateProfile');
 $routes->post('/user/profile/change-password', 'User::changePasswordProfile');
+$routes->post('/user/profile/request-reset-email', 'User::requestResetEmail');
 
 // AI Editorial Assistant (Gemini)
 $routes->post('/api/ai/title', 'AiAssistant::generateTitle');

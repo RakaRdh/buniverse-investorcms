@@ -47,7 +47,10 @@
                     <td class="p-4"><span class="inline-flex items-center gap-1.5 rounded-md border border-success/25 bg-success/12 px-2 py-0.5 text-xs font-medium text-success capitalize"><span class="size-1.5 rounded-full bg-current"></span><?= esc($ver['status']) ?></span></td>
                     <td class="p-4 text-xs text-muted-foreground max-w-xs truncate"><?= esc($ver['changelog']) ?></td>
                     <td class="p-4 text-right">
-                        <button class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted"><i data-lucide="edit-3" class="size-3.5"></i></button>
+                        <div class="flex items-center justify-end gap-1.5">
+                            <button type="button" onclick="editVersionItem(<?= esc($ver['id']) ?>, '<?= esc(addslashes($ver['version'])) ?>', '<?= esc(addslashes($ver['key'])) ?>')" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted" title="Edit Versi"><i data-lucide="edit-3" class="size-3.5"></i></button>
+                            <a href="<?= base_url('apps-version/delete/' . $ver['id']) ?>" onclick="return confirm('Hapus konfigurasi versi ini dari database?')" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-destructive hover:bg-destructive/10" title="Hapus Versi"><i data-lucide="trash-2" class="size-3.5"></i></a>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -66,20 +69,15 @@
             </button>
         </div>
         <form method="post" action="<?= base_url('apps-version/save') ?>" class="space-y-4">
+            <?= csrf_field() ?>
+            <input type="hidden" name="id" id="modalVersionId" value="">
             <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Platform</label>
-                <select name="platform" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                    <option value="iOS (App Store)">iOS (App Store)</option>
-                    <option value="Android (Play Store)">Android (Play Store)</option>
-                </select>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Config Key</label>
+                <input type="text" name="key" id="modalVersionKey" value="version" required class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Version Number</label>
-                <input type="text" name="version" required placeholder="e.g. v4.3.1" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-            </div>
-            <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Changelog & Notes</label>
-                <textarea name="changelog" rows="3" placeholder="Key updates in this version..." class="flex w-full rounded-md border border-input bg-background p-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"></textarea>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Version Number (Value)</label>
+                <input type="text" name="version" id="modalVersionValue" required placeholder="e.g. 1.2.6" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             </div>
             <div class="flex justify-end gap-2 pt-2 border-t border-border">
                 <button type="button" onclick="document.getElementById('newVersionModal').style.display='none'" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
@@ -88,5 +86,14 @@
         </form>
     </div>
 </div>
+
+<script>
+function editVersionItem(id, version, key) {
+    document.getElementById('modalVersionId').value = id;
+    document.getElementById('modalVersionValue').value = version;
+    document.getElementById('modalVersionKey').value = key || 'version';
+    document.getElementById('newVersionModal').style.display = 'flex';
+}
+</script>
 
 <?= $this->endSection() ?>

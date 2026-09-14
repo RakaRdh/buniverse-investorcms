@@ -15,25 +15,59 @@ class Kanal extends BaseController
 
     public function master()
     {
-        $kanals = $this->categoryModel->getKanalTree();
+        $allKanals = $this->categoryModel->getKanalTree();
+        
+        $page = max(1, (int)($this->request->getGet('page') ?? 1));
+        $perPage = 10;
+        $totalItems = count($allKanals);
+        $totalPages = max(1, (int)ceil($totalItems / $perPage));
+        if ($page > $totalPages) $page = $totalPages;
+        $offset = ($page - 1) * $perPage;
+
+        $pagedKanals = array_slice($allKanals, $offset, $perPage);
 
         return view('kanal/master', [
             'title'      => 'Master Kanal Management',
             'breadcrumb' => 'Kanal / Master Kanal',
-            'kanals'     => $kanals
+            'kanals'     => $pagedKanals,
+            'pagination' => [
+                'page'       => $page,
+                'perPage'    => $perPage,
+                'totalItems' => $totalItems,
+                'totalPages' => $totalPages,
+                'from'       => $totalItems > 0 ? $offset + 1 : 0,
+                'to'         => min($offset + $perPage, $totalItems),
+            ]
         ]);
     }
 
     public function subKanal()
     {
         $kanals = $this->categoryModel->getKanalTree();
-        $subList = $this->categoryModel->getSubKanalsList();
+        $allSubs = $this->categoryModel->getSubKanalsList();
+
+        $page = max(1, (int)($this->request->getGet('page') ?? 1));
+        $perPage = 10;
+        $totalItems = count($allSubs);
+        $totalPages = max(1, (int)ceil($totalItems / $perPage));
+        if ($page > $totalPages) $page = $totalPages;
+        $offset = ($page - 1) * $perPage;
+
+        $pagedSubs = array_slice($allSubs, $offset, $perPage);
 
         return view('kanal/sub_kanal', [
             'title'      => 'Sub Kanal Management',
             'breadcrumb' => 'Kanal / Sub Kanal',
             'kanals'     => $kanals,
-            'subKanals'  => $subList
+            'subKanals'  => $pagedSubs,
+            'pagination' => [
+                'page'       => $page,
+                'perPage'    => $perPage,
+                'totalItems' => $totalItems,
+                'totalPages' => $totalPages,
+                'from'       => $totalItems > 0 ? $offset + 1 : 0,
+                'to'         => min($offset + $perPage, $totalItems),
+            ]
         ]);
     }
 

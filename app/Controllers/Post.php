@@ -194,7 +194,10 @@ class Post extends BaseController
         $sessionUser = session()->get('user_id') ?: 1;
 
         $title = $this->request->getPost('title');
-        $kanalName = $this->request->getPost('kanal') ?? 'Market';
+        $kanalName = trim($this->request->getPost('kanal') ?? '');
+        if (empty($kanalName)) {
+            return redirect()->back()->withInput()->with('error', 'Kanal berita wajib dipilih sebelum menyimpan artikel.');
+        }
         $rawSubKanal = $this->request->getPost('sub_kanal');
         if (is_array($rawSubKanal)) {
             $subKanal = implode(', ', array_filter($rawSubKanal));
@@ -353,7 +356,10 @@ class Post extends BaseController
         }
 
         $title = $this->request->getPost('title');
-        $kanalName = $this->request->getPost('kanal') ?? 'Market';
+        $kanalName = trim($this->request->getPost('kanal') ?? '');
+        if (empty($kanalName)) {
+            return redirect()->back()->withInput()->with('error', 'Kanal berita wajib dipilih sebelum memperbarui artikel.');
+        }
         $rawSubKanal = $this->request->getPost('sub_kanal');
         if (is_array($rawSubKanal)) {
             $subKanal = implode(', ', array_filter($rawSubKanal));

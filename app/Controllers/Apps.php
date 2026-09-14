@@ -19,31 +19,25 @@ class Apps extends BaseController
 
     public function version()
     {
-        // Version settings (kept lightweight)
-        $versions = [
-            [
-                'id'           => 1,
+        // Fetch version records from live `apps` table
+        $db = \Config\Database::connect();
+        $dbVersions = $db->table('apps')->get()->getResultArray();
+
+        $versions = [];
+        foreach ($dbVersions as $row) {
+            $versions[] = [
+                'id'           => $row['id'],
+                'key'          => $row['key'] ?? 'version',
                 'app'          => 'Investor.id Mobile',
-                'platform'     => 'iOS (App Store)',
-                'version'      => 'v4.2.1',
-                'build'        => '4210',
-                'release_date' => '28 Aug 2026',
-                'status'       => 'Published',
+                'platform'     => 'iOS & Android (Unified API)',
+                'version'      => $row['value'],
+                'build'        => 'v' . str_replace('.', '', $row['value']),
+                'release_date' => 'Live Database Config',
+                'status'       => 'Active',
                 'mandatory'    => false,
-                'changelog'    => 'New live market widget, performance optimization on push alerts.'
-            ],
-            [
-                'id'           => 2,
-                'app'          => 'Investor.id Mobile',
-                'platform'     => 'Android (Play Store)',
-                'version'      => 'v4.2.0',
-                'build'        => '4205',
-                'release_date' => '25 Aug 2026',
-                'status'       => 'Published',
-                'mandatory'    => false,
-                'changelog'    => 'Added dark mode support, stock watchlist sync improvements.'
-            ]
-        ];
+                'changelog'    => 'Mobile API version config record'
+            ];
+        }
 
         return view('apps/version', [
             'title'      => 'Apps — Version Management',
@@ -54,7 +48,37 @@ class Apps extends BaseController
 
     public function saveVersion()
     {
-        return redirect()->to('/apps-version')->with('success', 'Mobile app version release created.');
+        $id = (int)$this->request->getPost('id');
+        $version = trim($this->request->getPost('version') ?? '');
+        $key = trim($this->request->getPost('key') ?: 'version');
+
+        if (empty($version)) {
+            return redirect()->to('/apps-version')->with('error', 'Nomor versi tidak boleh kosong.');
+        }
+
+        $db = \Config\Database::connect();
+        if ($id > 0) {
+            $db->table('apps')->where('id', $id)->update([
+                'key'   => $key,
+                'value' => $version
+            ]);
+            $msg = 'Versi mobile app berhasil diperbarui di database.';
+        } else {
+            $db->table('apps')->insert([
+                'key'   => $key,
+                'value' => $version
+            ]);
+            $msg = 'Versi mobile app baru berhasil ditambahkan ke database.';
+        }
+
+        return redirect()->to('/apps-version')->with('success', $msg);
+    }
+
+    public function deleteVersion(int $id)
+    {
+        $db = \Config\Database::connect();
+        $db->table('apps')->where('id', $id)->delete();
+        return redirect()->to('/apps-version')->with('success', 'Data konfigurasi versi berhasil dihapus dari database.');
     }
 
     public function pushNotif()

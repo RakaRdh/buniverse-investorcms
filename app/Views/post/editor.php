@@ -1,8 +1,7 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('styles') ?>
-<!-- Quill.js CDN & Flatpickr CDN -->
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+<!-- Flatpickr CDN & Editor Styles -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="/css/pages/post.css">
 <link rel="stylesheet" href="/css/pages/editor.css">
@@ -292,30 +291,36 @@
                     <input type="text" readonly value="<?= esc(session('user_name') ?? 'Raka Herdika') ?>" class="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm cursor-not-allowed">
                 </div>
                 <div class="relative" id="authorAutosuggestContainer">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5" for="authorInput">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5" for="authorSearchInput">
                         Penulis (Author By Line) <span class="text-destructive">*</span>
                     </label>
                     <?php
                         $currentAuthor = trim(rtrim($article['author'] ?? session('user_name') ?? 'Natasha Khairunisa', '*)'));
                     ?>
-                    <div class="relative flex items-center h-9 w-full rounded-md border border-input bg-background focus-within:ring-1 focus-within:ring-ring focus-within:border-ring shadow-sm transition-all px-2.5">
-                        <input type="text" 
-                               name="author" 
-                               id="authorInput" 
-                               required 
-                               autocomplete="off"
-                               value="<?= esc($currentAuthor) ?>"
-                               placeholder="Ketik untuk mencari penulis..."
-                               onfocus="openAuthorDropdown()"
-                               oninput="filterAuthorDropdown(this.value)"
-                               class="flex-1 bg-transparent border-0 p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0">
-                        <button type="button" 
-                                onclick="toggleAuthorDropdown()" 
-                                class="ml-1 size-7 shrink-0 inline-flex items-center justify-center text-muted-foreground hover:text-foreground rounded transition-colors" 
-                                title="Buka daftar penulis">
-                            <i data-lucide="chevron-down" id="authorDropdownArrow" class="size-3.5 transition-transform duration-150"></i>
-                        </button>
+                    <!-- Multi-Author Integrated Tag-Like Wrapper (Finding D2) -->
+                    <div id="authorInputWrapper" class="flex flex-wrap items-center gap-1.5 p-1.5 border border-input rounded-md focus-within:border-primary focus-within:ring-1 focus-within:ring-primary bg-background min-h-[38px] transition-all cursor-text shadow-2xs" onclick="document.getElementById('authorSearchInput').focus()">
+                        <div id="authorBadgesContainer" class="flex flex-wrap items-center gap-1.5">
+                            <!-- Badges rendered dynamically via JS -->
+                        </div>
+                        <div class="flex-1 flex items-center min-w-[140px]">
+                            <input type="text" 
+                                   id="authorSearchInput" 
+                                   autocomplete="off" 
+                                   placeholder="Ketik atau pilih nama penulis..." 
+                                   onfocus="openAuthorDropdown()" 
+                                   oninput="filterAuthorDropdown(this.value)" 
+                                   class="w-full bg-transparent border-none p-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0">
+                            <button type="button" 
+                                    onclick="toggleAuthorDropdown(event)" 
+                                    class="ml-1 size-6 shrink-0 inline-flex items-center justify-center text-muted-foreground hover:text-foreground rounded transition-colors" 
+                                    title="Buka daftar penulis">
+                                <i data-lucide="chevron-down" id="authorDropdownArrow" class="size-3.5 transition-transform duration-150"></i>
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- Hidden input submitted with the form -->
+                    <input type="hidden" name="author" id="authorHiddenInput" value="<?= esc($currentAuthor) ?>" required>
 
                     <!-- Autosuggest Dropdown Menu -->
                     <div id="authorSuggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-background border border-border rounded-lg shadow-xl z-50 max-h-56 overflow-y-auto divide-y divide-border/60 custom-sidebar-scroll animate-in fade-in duration-150">
@@ -327,15 +332,15 @@
                                      data-author="<?= esc(strtolower($authorCleanName)) ?>" 
                                      onclick="selectAuthorName('<?= esc(addslashes($authorCleanName)) ?>')">
                                     <span class="font-medium"><?= esc($authorCleanName) ?></span>
-                                    <i data-lucide="check" class="size-3 text-primary opacity-0 author-check-icon"></i>
+                                    <i data-lucide="plus" class="size-3 text-primary"></i>
                                 </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                         <div id="authorNoResults" class="p-3 text-xs text-muted-foreground italic text-center hidden">
-                            Penulis tidak ditemukan. Nama yang Anda ketik akan didaftarkan sebagai penulis baru.
+                            Penulis tidak ditemukan. Tekan Enter untuk menambahkan nama yang diketik.
                         </div>
                     </div>
-                    <span class="text-[10px] text-muted-foreground mt-0.5 block">Mendukung multiple authors: pilih dari dropdown atau ketik nama dipisahkan koma (contoh: Raka Herdika, Natasha Khairunisa)</span>
+                    <span class="text-[10px] text-muted-foreground mt-0.5 block">Pilih satu atau beberapa penulis dari dropdown atau ketik lalu tekan Enter.</span>
                 </div>
             </div>
 
@@ -371,7 +376,7 @@
                         Kanal <span class="text-destructive">*</span>
                     </label>
                     <select name="kanal" id="kanalSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onchange="onKanalChange(this.value)" required>
-                        <option value="">-- Pilih Kanal --</option>
+                        <option value="" disabled <?= empty($article['kanal']) ? 'selected' : '' ?>>-- Pilih Kanal (Wajib) --</option>
                         <?php 
                             $sessionRole = strtolower(session('user_role') ?? 'admin');
                             foreach ($kanals as $kn): 
@@ -502,7 +507,7 @@
                         <i data-lucide="line-chart" class="size-3 text-accent"></i>
                         <span>Embed Chart</span>
                     </button>
-                    <button type="button" onclick="openMediaChooserModal('quill')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
+                    <button type="button" onclick="openMediaChooserModal('ckeditor')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
                         <i data-lucide="image" class="size-3 text-primary"></i>
                         <span>Insert Media</span>
                     </button>
@@ -524,10 +529,12 @@
                     </button>
                 </div>
 
-                <!-- Quill WYSIWYG Container (Min height 550px) -->
-                <div id="quillEditor" class="min-h-[550px]"></div>
-                <!-- Hidden input that holds the HTML value for POST submit -->
-                <input type="hidden" name="content" id="hiddenContentInput" value="<?= esc($article['content'] ?? '') ?>">
+                <!-- CKEditor 4 WYSIWYG Editor Container (100% Identical Toolbar to Pasted image 20260911143610.png) -->
+                <div class="rounded-lg overflow-hidden border border-border bg-card shadow-xs">
+                    <textarea id="articleEditor" name="content" class="w-full min-h-[550px]"><?= esc($article['content'] ?? '') ?></textarea>
+                </div>
+                <!-- Hidden input for backward compatibility if needed -->
+                <input type="hidden" id="hiddenContentInput" value="<?= esc($article['content'] ?? '') ?>">
             </div>
 
             <!-- I. Kata Kunci / Keyword Integrated Input System (Matching PortalBerita) -->
@@ -948,8 +955,8 @@ window.__ARTICLE_CURRENT_SUBKANAL__ = <?= json_encode($article['sub_kanal'] ?? '
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<!-- Quill.js CDN & Flatpickr CDN -->
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.min.js"></script>
+<!-- CKEditor 4 Full Suite CDN & Flatpickr CDN -->
+<script src="https://cdn.ckeditor.com/4.22.1/full-all/ckeditor.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="/js/pages/editor.js"></script>
 <?php if ($isEdit && !empty($article['id'])): ?>

@@ -293,6 +293,38 @@ html.sidebar-pre-collapsed #desktopSidebar .nav-item-link {
   animation: spin 0.75s linear infinite;
 }
 
+/* Windows Caret & Blinking Cursor Visibility Fix (Finding D3) */
+input, textarea, [contenteditable="true"], .cke_editable, .ql-editor {
+  caret-color: #0F172A !important;
+}
+.dark input, .dark textarea, .dark [contenteditable="true"], .dark .cke_editable, .dark .ql-editor {
+  caret-color: #38BDF8 !important;
+}
+
+/* Standardized Image Figure & Centered Caption Styling (Finding D9 & D11) */
+.article-body figure, figure.cms-embedded-image {
+  display: block;
+  text-align: center !important;
+  margin: 1.5rem auto !important;
+  max-width: 100% !important;
+}
+.article-body figure img, figure.cms-embedded-image img {
+  display: block;
+  margin: 0 auto !important;
+  border-radius: 0.5rem;
+  max-width: 100%;
+  height: auto;
+}
+.article-body figure figcaption, figure.cms-embedded-image figcaption {
+  display: block !important;
+  text-align: center !important;
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+  color: #64748B !important;
+  font-style: italic !important;
+  margin-top: 0.5rem !important;
+}
+
 /* Embed Chart Layout Helpers (Guaranteed layout without Tailwind grid dependence) */
 .chart-form-row {
   display: flex;

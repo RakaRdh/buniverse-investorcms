@@ -337,6 +337,58 @@ class User extends BaseController
     }
 
     /**
+     * Minta link konfirmasi perubahan password via email resmi staf
+     */
+    public function requestResetEmail()
+    {
+        $userId = session()->get('user_id') ?: 1;
+        $user = $this->adminModel->find($userId);
+
+        if (!$user || empty($user['email'])) {
+            return redirect()->to('/user/profile')->with('error', 'Alamat email pengguna tidak ditemukan.');
+        }
+
+        $resetToken = (string)random_int(100000, 999999);
+        $authExpired = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+
+        $this->adminModel->update($userId, [
+            'authCode'    => (int)$resetToken,
+            'authExpired' => $authExpired,
+        ]);
+
+        try {
+            $email = \Config\Services::email();
+            $email->setTo($user['email']);
+            $email->setSubject('Konfirmasi Perubahan Kata Sandi - CMS Investor');
+            $resetUrl = base_url('auth/reset-password?token=' . urlencode($resetToken) . '&user=' . urlencode($user['username']));
+            
+            $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">';
+            $body .= '<div style="margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;">';
+            $body .= '<h2 style="color: #1A365D; margin: 0; font-size: 20px; font-weight: 700;">CMS Investor.id</h2>';
+            $body .= '<p style="color: #64748B; font-size: 12px; margin: 4px 0 0 0;">Konfirmasi Perubahan Kata Sandi</p>';
+            $body .= '</div>';
+            $body .= '<p style="font-size: 14px; line-height: 1.5;">Halo, <strong>' . esc($user['name'] ?: $user['username']) . '</strong>,</p>';
+            $body .= '<p style="font-size: 14px; line-height: 1.5; color: #334155;">Anda telah meminta tautan konfirmasi untuk memperbarui kata sandi akun editorial Anda. Silakan klik tombol di bawah ini:</p>';
+            $body .= '<div style="text-align: center; margin: 24px 0;">';
+            $body .= '<div style="margin-bottom: 16px;"><span style="display: inline-block; font-size: 28px; font-weight: 800; font-family: monospace; letter-spacing: 6px; padding: 10px 24px; background-color: #EBF8FF; color: #2B6CB0; border-radius: 8px; border: 1.5px dashed #2B6CB0;">' . $resetToken . '</span></div>';
+            $body .= '<a href="' . $resetUrl . '" style="display: inline-block; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #0077CC; padding: 12px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 4px rgba(0,119,204,0.3);">Konfirmasi & Set Sandi Baru</a>';
+            $body .= '</div>';
+            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Atau salin tautan berikut ke peramban Anda:<br><a href="' . $resetUrl . '" style="color: #0077CC; word-break: break-all;">' . $resetUrl . '</a></p>';
+            $body .= '<p style="color: #ef4444; font-size: 12px; line-height: 1.5; font-weight: 600;">Tautan ini hanya berlaku selama 15 menit.</p>';
+            $body .= '<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0 16px 0;">';
+            $body .= '<p style="color: #94a3b8; font-size: 11px; margin: 0; text-align: center;">&copy; ' . date('Y') . ' Investor.ID Editorial Newsroom</p>';
+            $body .= '</div>';
+
+            $email->setMessage($body);
+            $email->send();
+        } catch (\Throwable $e) {
+            log_message('error', 'Gagal kirim email reset dari profile: ' . $e->getMessage());
+        }
+
+        return redirect()->to('/user/profile')->with('success', 'Tautan dan kode verifikasi perubahan kata sandi telah dikirimkan ke email resmi Anda (' . $user['email'] . '). Silakan periksa inbox.');
+    }
+
+    /**
      * POST /user/toggle-status/{id}
      * Block/Unblock user account (Flip active 0 <-> 1)
      * Replika legacy: Administrator::blockUser() & Administrator::unblockUser()

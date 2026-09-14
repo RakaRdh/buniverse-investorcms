@@ -4,16 +4,19 @@ namespace App\Controllers;
 
 use App\Models\ArticleModel;
 use App\Models\AdminModel;
+use App\Models\AuthorModel;
 
 class StatisticReport extends BaseController
 {
     protected ArticleModel $articleModel;
     protected AdminModel $adminModel;
+    protected AuthorModel $authorModel;
 
     public function __construct()
     {
         $this->articleModel = new ArticleModel();
         $this->adminModel = new AdminModel();
+        $this->authorModel = new AuthorModel();
     }
 
     public function index()
@@ -53,8 +56,20 @@ class StatisticReport extends BaseController
             $curr = strtotime('+1 day', $curr);
         }
 
-        // Get users list
-        $allUsers = $this->adminModel->select('
+        // 1. Get Distinct Authors from `authors` table (Finding D8 fix)
+        $rawAuthors = $this->authorModel->select('authorID AS id, authorName AS name, email')->findAll();
+        $authorList = array_map(function($a) {
+            return [
+                'id'       => $a['id'],
+                'name'     => trim(rtrim($a['name'], '*)')),
+                'raw_name' => $a['name'],
+                'email'    => $a['email'] ?? '',
+                'role'     => 'Author'
+            ];
+        }, $rawAuthors);
+
+        // 2. Get Editors from `useradministrator` table
+        $editorUsers = $this->adminModel->select('
                 userID AS id,
                 name,
                 username,
@@ -62,11 +77,8 @@ class StatisticReport extends BaseController
                 roleName AS role
             ')->findAll();
 
-        $authorUsers = array_filter($allUsers, fn($u) => in_array(strtolower($u['role'] ?? ''), ['editor', 'redpel', 'riset']));
-        $editorUsers = array_filter($allUsers, fn($u) => in_array(strtolower($u['role'] ?? ''), ['administrator', 'redpel', 'editor']));
-
-        // Build matrices (Author & Editor)
-        $fullAuthorMatrix = $this->buildMatrix($authorUsers, $dateColumns, $fromDate, $toDate, true);
+        // Build matrices (Author & Editor segregations)
+        $fullAuthorMatrix = $this->buildMatrix($authorList, $dateColumns, $fromDate, $toDate, true);
         $fullEditorMatrix = $this->buildMatrix($editorUsers, $dateColumns, $fromDate, $toDate, false);
 
         // Pagination for matrix rows
@@ -133,17 +145,13 @@ class StatisticReport extends BaseController
             }
 
             if ($isAuthor) {
-                // Author query matching author link or byline
+                // Author query matching author link by authorID or authorName
                 $res = $db->table('article n')
                     ->select('DATE(n.articleDate) AS pdate, COUNT(DISTINCT n.articleID) AS cnt, SUM(n.viewed) AS vsum')
-                    ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
-                    ->join('authors a', 'a.authorID = nal.authorID', 'left')
+                    ->join('articleauthor nal', 'nal.articleID = n.articleID', 'inner')
+                    ->where('nal.authorID', $u['id'])
                     ->where('n.articleDate >=', $fromDate . ' 00:00:00')
                     ->where('n.articleDate <=', $toDate . ' 23:59:59')
-                    ->groupStart()
-                        ->like('a.authorName', $u['name'])
-                        ->orWhere('n.userID', $u['id'])
-                    ->groupEnd()
                     ->groupBy('DATE(n.articleDate)')
                     ->get()->getResultArray();
             } else {

@@ -160,7 +160,9 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
                         $rawTime = !empty($st['create_date']) ? $st['create_date'] : ($st['publish_date'] ?? '');
                         $timestamp = !empty($rawTime) ? strtotime($rawTime) : time();
                         $timeOnly = $timestamp ? date('H:i', $timestamp) : 'Baru';
-                        $authorFirst = explode(' ', $st['author'])[0];
+                        // Use Editor name (useradministrator) instead of Author (Finding D7 fix)
+                        $editorFullName = !empty($st['post_by_name']) ? $st['post_by_name'] : (!empty($st['post_by']) ? $st['post_by'] : 'Editor');
+                        $editorFirst = explode(' ', trim($editorFullName))[0];
                         $statusLower = strtolower($st['status'] ?? 'published');
                         $actionVerb = match($statusLower) {
                             'draft' => 'drafted',
@@ -172,7 +174,7 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
                 <div class="flex items-start gap-2.5">
                     <span class="font-semibold text-muted-foreground whitespace-nowrap font-mono text-[11px]"><?= esc($timeOnly) ?></span>
                     <p class="text-foreground truncate">
-                        <strong><?= esc($authorFirst) ?></strong> <?= esc($actionVerb) ?> 
+                        <strong title="Editor: <?= esc($editorFullName) ?>"><?= esc($editorFirst) ?></strong> <?= esc($actionVerb) ?> 
                         <a href="<?= base_url('post/edit/' . $st['id']) ?>" class="hover:text-primary transition-colors italic truncate" title="<?= esc($st['title']) ?>">
                             "<?= esc(mb_strimwidth($st['title'], 0, 32, '...')) ?>"
                         </a>

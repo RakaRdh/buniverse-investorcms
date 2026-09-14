@@ -62,6 +62,36 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Pagination Footer -->
+    <?php if (isset($pagination)): ?>
+    <div class="flex items-center justify-between border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
+        <div>
+            Menampilkan <strong class="text-foreground"><?= $pagination['from'] ?></strong> - <strong class="text-foreground"><?= $pagination['to'] ?></strong> dari <strong class="text-foreground"><?= $pagination['totalItems'] ?></strong> master kanal
+        </div>
+        <div class="flex items-center gap-1">
+            <?php if ($pagination['page'] > 1): ?>
+                <a href="<?= base_url('kanal/master?page=' . ($pagination['page'] - 1)) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Sebelumnya</a>
+            <?php else: ?>
+                <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Sebelumnya</span>
+            <?php endif; ?>
+
+            <?php for ($p = 1; $p <= $pagination['totalPages']; $p++): ?>
+                <?php if ($p == $pagination['page']): ?>
+                    <span class="rounded-md bg-primary px-2.5 py-1 font-bold text-primary-foreground"><?= $p ?></span>
+                <?php else: ?>
+                    <a href="<?= base_url('kanal/master?page=' . $p) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors"><?= $p ?></a>
+                <?php endif; ?>
+            <?php endfor; ?>
+
+            <?php if ($pagination['page'] < $pagination['totalPages']): ?>
+                <a href="<?= base_url('kanal/master?page=' . ($pagination['page'] + 1)) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Berikutnya</a>
+            <?php else: ?>
+                <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Berikutnya</span>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <!-- Modal Tambah Master Kanal -->

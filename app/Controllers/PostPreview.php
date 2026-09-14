@@ -128,14 +128,19 @@ class PostPreview extends BaseController
             $stockSymbols = array_unique($matches[1]);
         }
 
+        $rawSubKanal = $this->request->getPost('sub_kanal');
+        $subKanalStr = is_array($rawSubKanal) ? implode(', ', array_filter($rawSubKanal)) : (string)($rawSubKanal ?? '');
+        $kanalStr = (string)($this->request->getPost('kanal') ?: 'Market');
+        $categoryStr = !empty($subKanalStr) ? ($kanalStr . ' ' . $subKanalStr) : $kanalStr;
+
         $article = [
             'id'            => 0,
             'title'         => $title,
             'upper_deck'    => $this->request->getPost('upper_deck') ?: '',
             'author'        => $this->request->getPost('author') ?: 'Redaksi Investor.id',
-            'category'      => $this->request->getPost('sub_kanal') ? ($this->request->getPost('kanal') . ' ' . $this->request->getPost('sub_kanal')) : ($this->request->getPost('kanal') ?: 'Market'),
-            'kanal'         => $this->request->getPost('kanal') ?: 'Market',
-            'sub_kanal'     => $this->request->getPost('sub_kanal') ?: '',
+            'category'      => $categoryStr,
+            'kanal'         => $kanalStr,
+            'sub_kanal'     => $subKanalStr,
             'sumber_berita' => $this->request->getPost('source') ?: ($this->request->getPost('sumber_berita') ?: 'Investor.id / Riset'),
             'publish_date'  => $this->request->getPost('publish_date') ?: date('d M Y H:i'),
             'status'        => $this->request->getPost('status') ?: 'Draft',
@@ -310,19 +315,22 @@ class PostPreview extends BaseController
             $content
         );
 
-        // 2. Social Media & Document Embeds (Tokens and Placeholders)
+        // 2. Social Media & Document Embeds (Tokens and Shortcodes)
         $content = preg_replace_callback(
-            '/<div[^>]*data-embed-type=["\']socmed["\'][^>]*data-platform=["\']([^"\']+)["\'][^>]*data-url=["\']([^"\']+)["\'][^>]*>.*?<\/div>/i',
+            '/::Embed Socmed:\s*([^\|:]+)(?:\s*\|\s*([^\|:]+))?(?:\s*\|\s*([^:]+))?::/i',
             function ($m) {
-                return $this->renderSocialEmbedBadge(strtolower(trim($m[1])), $m[2]);
+                $platform = strtolower(trim($m[1]));
+                $url = !empty($m[2]) ? trim($m[2]) : '#';
+                $caption = !empty($m[3]) ? trim($m[3]) : '';
+                return $this->renderSocialEmbedBadge($platform, $url, $caption);
             },
             $content
         );
 
         $content = preg_replace_callback(
-            '/::Embed Socmed:\s*([A-Za-z0-9_\-]+)::/i',
+            '/<div[^>]*data-embed-type=["\']socmed["\'][^>]*data-platform=["\']([^"\']+)["\'][^>]*data-url=["\']([^"\']+)["\'][^>]*>.*?<\/div>/i',
             function ($m) {
-                return $this->renderSocialEmbedBadge(strtolower(trim($m[1])), '#');
+                return $this->renderSocialEmbedBadge(strtolower(trim($m[1])), $m[2]);
             },
             $content
         );
@@ -345,9 +353,10 @@ class PostPreview extends BaseController
     /**
      * Render lightweight social/doc embed badge with native SVG branding
      */
-    protected function renderSocialEmbedBadge(string $platform, string $url): string
+    protected function renderSocialEmbedBadge(string $platform, string $url, string $caption = ''): string
     {
         $safeUrl = htmlspecialchars($url);
+        $safeCaption = htmlspecialchars($caption);
 
         // YouTube video embed
         if ($platform === 'youtube') {
@@ -355,8 +364,8 @@ class PostPreview extends BaseController
             if (!empty($ytMatch[1])) {
                 $videoId = htmlspecialchars($ytMatch[1]);
                 return '<div class="my-6 aspect-video w-full rounded-xl overflow-hidden shadow-xs border border-slate-200 bg-black">
-                    <iframe src="https://www.youtube-nocookie.com/embed/' . $videoId . '" class="w-full h-full border-0" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen title="YouTube Video"></iframe>
-                </div>';
+                    <iframe src="https://www.youtube-nocookie.com/embed/' . $videoId . '" class="w-full h-full border-0" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen title="' . ($safeCaption ?: 'YouTube Video') . '"></iframe>
+                </div>' . ($safeCaption ? '<p class="text-center text-[11px] text-slate-500 italic mt-1 font-sans">' . $safeCaption . '</p>' : '');
             }
         }
 
@@ -419,6 +428,8 @@ class PostPreview extends BaseController
             'svg'   => '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>'
         ];
 
+        $subLabel = $safeCaption ? $safeCaption : ($safeUrl !== '#' ? $safeUrl : 'Dokumen pendukung publikasi');
+
         return '
         <div class="my-5 p-4 rounded-xl border ' . $p['color'] . ' flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs font-sans">
             <div class="flex items-center gap-3">
@@ -427,7 +438,7 @@ class PostPreview extends BaseController
                 </div>
                 <div>
                     <h4 class="text-xs font-bold leading-tight">' . htmlspecialchars($p['name']) . '</h4>
-                    <p class="text-[11px] opacity-75 truncate max-w-xs sm:max-w-md mt-0.5">' . ($safeUrl !== '#' ? $safeUrl : 'Dokumen pendukung publikasi') . '</p>
+                    <p class="text-[11px] opacity-75 truncate max-w-xs sm:max-w-md mt-0.5">' . $subLabel . '</p>
                 </div>
             </div>
             ' . ($safeUrl !== '#' ? '<a href="' . $safeUrl . '" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg text-xs font-bold ' . $p['btn'] . ' hover:opacity-90 transition shrink-0 flex items-center gap-1.5 shadow-2xs">Buka Tautan <svg class="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>' : '') . '

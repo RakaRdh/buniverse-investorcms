@@ -116,7 +116,7 @@
 </div>
 
 <!-- Logout Alert Dialog Modal (Radix AlertDialog replica) -->
-<div id="logoutAlertDialog" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs hidden items-center justify-center p-4">
+<div id="logoutAlertDialog" class="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-xs hidden items-center justify-center p-4">
     <div class="surface-card w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
         <h3 class="text-lg font-semibold text-foreground">Log out of Investor.ID CMS?</h3>
         <p class="mt-2 text-sm text-muted-foreground">Unsaved drafts stay saved on the server. You will need to sign in again to continue editing.</p>
@@ -128,9 +128,9 @@
 </div>
 
 <!-- AI Loading Custom Modal (Matching PortalBerita/BackendCMS) -->
-<div id="aiLoadingModal" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-xs hidden items-center justify-center p-4">
+<div id="aiLoadingModal" class="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-xs hidden items-center justify-center p-4">
     <div class="bg-card text-card-foreground rounded-xl p-6 max-w-xs w-full border border-border shadow-2xl flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in-95 duration-150">
-        <div class="animate-spin rounded-full size-10 border-4 border-muted border-t-[#2B6CB0]"></div>
+        <div class="custom-spinner"></div>
         <p id="aiLoadingMessage" class="text-xs font-semibold text-foreground text-center leading-relaxed">Sedang memproses...</p>
     </div>
 </div>

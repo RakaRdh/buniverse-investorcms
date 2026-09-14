@@ -79,7 +79,7 @@ if (!$crumb) {
 
             <!-- Dropdown Menu Overlay -->
             <div id="userDropdownMenu" class="absolute right-0 top-full mt-2 hidden w-56 rounded-md border border-border bg-card p-1 text-foreground shadow-lg animate-in fade-in zoom-in-95 duration-100 z-50">
-                <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground"><?= esc(session('user_email') ?? 'user@investor.id') ?></div>
+                <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground truncate block max-w-full" title="<?= esc(session('user_email') ?? 'user@investor.id') ?>"><?= esc(session('user_email') ?? 'user@investor.id') ?></div>
                 <div class="my-1 h-px bg-border"></div>
                 <a href="<?= base_url('user/profile') ?>" class="flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted">
                     <i data-lucide="user" class="size-4 mr-2 text-muted-foreground"></i> My Profile

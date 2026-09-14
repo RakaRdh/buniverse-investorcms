@@ -136,3 +136,7 @@ node_modules/
 /results/
 /phpunit.xml
 
+# Local Audit Tools (contains local credentials)
+/audit_db_parity.php
+/audit_diff.md
+scratch/

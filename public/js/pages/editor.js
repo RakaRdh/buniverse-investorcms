@@ -2,46 +2,77 @@
  * Investor.id Newsroom CMS Post Editor Interactive Engine
  */
 
-let quill = null;
+let quill = null; // compatibility shim
+let ckEditorInstance = null;
 let fpPicker = null;
-let mediaChooserTarget = 'cover'; // 'cover' or 'quill'
+let mediaChooserTarget = 'cover'; // 'cover' or 'ckeditor'
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Initialize Quill WYSIWYG Editor with standard editorial toolbar
-    if (document.getElementById('quillEditor') && window.Quill) {
-        const toolbarOptions = [
-            [{ 'header': [1, 2, 3, 4, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            ['blockquote', 'code-block'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            [{ 'indent': '-1'}, { 'indent': '+1' }],
-            [{ 'align': [] }],
-            [{ 'direction': 'rtl' }],
-            ['link', 'image', 'video'],
-            ['clean']
-        ];
-
-        quill = new Quill('#quillEditor', {
-            theme: 'snow',
-            placeholder: 'Tulis atau paste isi konten berita secara lengkap di sini...',
-            modules: {
-                toolbar: toolbarOptions
-            }
+    // 1. Initialize CKEditor 4 WYSIWYG Editor (100% Identical Toolbar to Pasted image 20260911143610.png)
+    const editorTextarea = document.getElementById('articleEditor');
+    if (editorTextarea && window.CKEDITOR) {
+        // Configure CKEditor 4 toolbar matching legacy screenshot
+        ckEditorInstance = CKEDITOR.replace('articleEditor', {
+            versionCheck: false,
+            height: 520,
+            contentsCss: ['/css/newsroom.css'],
+            font_defaultLabel: 'Verdana',
+            fontSize_defaultLabel: '11px',
+            toolbar: [
+                { name: 'document', items: ['Source', '-', 'Save', 'NewPage', 'Preview', 'Print', '-', 'Templates'] },
+                { name: 'clipboard', items: ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Undo', 'Redo'] },
+                { name: 'editing', items: ['Find', 'Replace', '-', 'SelectAll', '-', 'Scayt'] },
+                { name: 'forms', items: ['Form', 'Checkbox', 'Radio', 'TextField', 'Textarea', 'Select', 'Button', 'ImageButton', 'HiddenField'] },
+                '/',
+                { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'CopyFormatting', 'RemoveFormat'] },
+                { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'CreateDiv', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-', 'BidiLtr', 'BidiRtl', 'Language'] },
+                { name: 'links', items: ['Link', 'Unlink', 'Anchor'] },
+                { name: 'insert', items: ['Image', 'Flash', 'Table', 'HorizontalRule', 'Smiley', 'SpecialChar', 'PageBreak', 'Iframe'] },
+                '/',
+                { name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize'] },
+                { name: 'colors', items: ['TextColor', 'BGColor'] },
+                { name: 'tools', items: ['Maximize', 'ShowBlocks'] },
+                { name: 'about', items: ['About'] }
+            ],
+            allowedContent: true,
+            extraAllowedContent: 'figure(*); figcaption(*); div(*)[*]; iframe(*)[*]; span(*)[*]; p(*)[*]; table(*)[*];',
+            removePlugins: 'exportpdf'
         });
 
-        // Sync initial content if editing
+        // Sync initial content to hidden input
         const hiddenContent = document.getElementById('hiddenContentInput');
-        if (hiddenContent && hiddenContent.value.trim()) {
-            quill.root.innerHTML = hiddenContent.value;
-        }
 
-        // On text change, update hidden input & mark dirty
-        quill.on('text-change', () => {
-            if (hiddenContent) {
-                hiddenContent.value = quill.root.innerHTML;
-            }
+        ckEditorInstance.on('change', () => {
+            const html = ckEditorInstance.getData();
+            if (hiddenContent) hiddenContent.value = html;
+            editorTextarea.value = html;
             markEditorDirty();
         });
+
+        // Shim quill object for backward compatibility with helper methods
+        quill = {
+            root: {
+                get innerHTML() { return ckEditorInstance ? ckEditorInstance.getData() : (editorTextarea ? editorTextarea.value : ''); },
+                set innerHTML(val) { if (ckEditorInstance) ckEditorInstance.setData(val); }
+            },
+            getText: function() {
+                if (!ckEditorInstance) return editorTextarea ? editorTextarea.value : '';
+                const temp = document.createElement('div');
+                temp.innerHTML = ckEditorInstance.getData();
+                return temp.textContent || temp.innerText || '';
+            },
+            getSelection: function() { return { index: 0 }; },
+            getLength: function() { return 0; },
+            insertText: function(idx, text) {
+                if (ckEditorInstance) ckEditorInstance.insertHtml(text.replace(/\n/g, '<br>'));
+            },
+            clipboard: {
+                dangerouslyPasteHTML: function(idx, html) {
+                    if (ckEditorInstance) ckEditorInstance.insertHtml(html);
+                }
+            },
+            setSelection: function() {}
+        };
     }
 
     // 2. Initialize Flatpickr Calendar for Scheduled Publish
@@ -81,13 +112,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 return false;
             }
-            isFormSubmitting = true;
-            if (quill) {
+            
+            // Sync CKEditor data directly
+            if (ckEditorInstance) {
+                const data = ckEditorInstance.getData();
+                editorTextarea.value = data;
                 const hiddenContent = document.getElementById('hiddenContentInput');
-                if (hiddenContent) {
-                    hiddenContent.value = quill.root.innerHTML;
-                }
+                if (hiddenContent) hiddenContent.value = data;
             }
+
+            // Sync Author Hidden Input Guard
+            syncAuthorBadgesToHidden();
+            const authorVal = document.getElementById('authorHiddenInput')?.value || '';
+            if (!authorVal.trim()) {
+                e.preventDefault();
+                alert('Silakan pilih atau ketik minimal satu Penulis (Author Byline).');
+                return false;
+            }
+
+            // Validate required Kanal
+            const kanalVal = document.getElementById('kanalSelect')?.value || '';
+            if (!kanalVal.trim()) {
+                e.preventDefault();
+                alert('Silakan pilih Kanal berita terlebih dahulu.');
+                return false;
+            }
+
+            isFormSubmitting = true;
             // Disable submit buttons to prevent double submissions
             form.querySelectorAll('button[type="submit"]').forEach(btn => {
                 btn.disabled = true;
@@ -115,10 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. Initialize Realtime Character Counters (Judul & Summary)
     initCharCounters();
 
-    // 7. Initialize Cover Image Drag-and-Drop & Auto-Save
+    // 7. Initialize Cover Image Drag-and-Drop, Auto-Save, Tag & Author Badges
     initCoverDropzone();
     initAutoSave();
     initTagAutocomplete();
+    initAuthorBadges();
 });
 
 function initCharCounters() {
@@ -460,19 +512,17 @@ function submitSocmedEmbed() {
     const range = quill.getSelection(true);
     const index = range ? range.index : quill.getLength();
 
-    const embedHtml = `
-        <div class="cms-embed-placeholder my-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 text-xs text-amber-700 dark:text-amber-300 font-sans flex items-center justify-between" data-embed-type="socmed" data-platform="${escapeHtml(platform)}" data-url="${escapeHtml(url)}" data-caption="${escapeHtml(caption)}">
-            <div class="flex items-center gap-2 min-w-0 pr-2">
-                <span class="rounded bg-amber-500 text-white px-2 py-0.5 text-[10px] font-bold uppercase shrink-0">${escapeHtml(platform)}</span>
-                <span class="truncate font-medium">${escapeHtml(caption || url)}</span>
-            </div>
-            <span class="text-[10px] font-mono text-amber-600/80 shrink-0">::Embed Socmed: ${escapeHtml(platform)}::</span>
-        </div>
-        <p><br></p>
-    `;
+    // Shortcode format: ::Embed Socmed: Platform | URL | Caption:: (Finding D5 fix)
+    const captionPart = caption ? ` | ${caption}` : '';
+    const shortcode = `::Embed Socmed: ${platform} | ${url}${captionPart}::`;
 
-    quill.clipboard.dangerouslyPasteHTML(index, embedHtml);
-    quill.setSelection(index + 1);
+    if (ckEditorInstance) {
+        ckEditorInstance.insertHtml(`<p>${escapeHtml(shortcode)}</p><p><br></p>`);
+    } else if (quill) {
+        quill.insertText(index, `\n${shortcode}\n\n`);
+        quill.setSelection(index + shortcode.length + 2);
+    }
+    markEditorDirty();
     closeEmbedSocmedModal();
     if (typeof showToast === 'function') {
         showToast(`Embed ${platform} berhasil disisipkan.`, 'success');
@@ -719,20 +769,23 @@ function filterMediaModalCards(query) {
 }
 
 function selectMediaImage(url, caption = '') {
-    if (mediaChooserTarget === 'quill') {
-        if (quill) {
+    if (mediaChooserTarget === 'quill' || mediaChooserTarget === 'ckeditor') {
+        const capText = (caption && caption.trim()) ? caption.trim() : 'Dokumentasi Investor.id / Riset';
+        const figureHtml = `
+            <figure style="text-align: center; margin: 18px auto; display: block; max-width: 100%;">
+                <img src="${url}" alt="${escapeHtml(capText)}" style="max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
+                <figcaption style="font-size: 11px; font-style: italic; color: #64748b; margin-top: 6px; text-align: center; font-family: Verdana, sans-serif; display: block;">${escapeHtml(capText)}</figcaption>
+            </figure>
+            <p><br></p>
+        `;
+        if (ckEditorInstance) {
+            ckEditorInstance.insertHtml(figureHtml);
+        } else if (quill) {
             const range = quill.getSelection(true);
             const index = range ? range.index : quill.getLength();
-            const capText = (caption && caption.trim()) ? caption.trim() : 'Dokumentasi Investor.id / Riset';
-            const html = `
-                <p class="ql-align-center my-3"><img src="${url}" class="rounded-lg max-w-full h-auto mx-auto shadow-sm" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';"></p>
-                <p class="ql-align-center" style="margin-top: -4px;"><em style="font-size: 11px; color: #64748b; font-style: italic; display: inline-block;">${escapeHtml(capText)}</em></p>
-                <p><br></p>
-            `;
-            quill.clipboard.dangerouslyPasteHTML(index, html);
-            quill.setSelection(index + 2);
-            markEditorDirty();
+            quill.clipboard.dangerouslyPasteHTML(index, figureHtml);
         }
+        markEditorDirty();
     } else {
         const input = document.getElementById('thumbnailInput');
         const preview = document.getElementById('imagePreview');
@@ -1381,7 +1434,7 @@ async function performAutoSave() {
     const kanalSelect = document.getElementById('kanalSelect');
     const thumbInput = document.getElementById('thumbnailInput');
     const tagsInput = document.getElementById('articleTagsInput');
-    const authorInput = document.getElementById('authorInput') || document.getElementById('authorSelect');
+    const authorHidden = document.getElementById('authorHiddenInput');
 
     const dot = document.getElementById('autosaveStatusDot');
     const text = document.getElementById('autosaveStatusText');
@@ -1396,7 +1449,7 @@ async function performAutoSave() {
         content: content,
         thumbnail: thumbInput ? thumbInput.value : '',
         kanal: kanalSelect ? kanalSelect.value : 'Market',
-        author: authorInput ? authorInput.value : '',
+        author: authorHidden ? authorHidden.value : '',
         tags: tagsInput ? tagsInput.value : ''
     };
 
@@ -1435,8 +1488,94 @@ async function performAutoSave() {
 }
 
 // =========================================================================
-// 10. Author Combobox / Autosuggest Engine
+// 10. Author Multi-Select Badge Pills Engine (Finding D2)
 // =========================================================================
+let chosenAuthors = [];
+
+function initAuthorBadges() {
+    const hidden = document.getElementById('authorHiddenInput');
+    if (hidden && hidden.value) {
+        chosenAuthors = hidden.value.split(',').map(a => a.trim().replace(/\*\)$/, '')).filter(Boolean);
+    }
+    renderAuthorBadges();
+
+    const searchInput = document.getElementById('authorSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const val = searchInput.value.trim();
+                if (val) {
+                    addAuthor(val);
+                }
+            } else if (e.key === 'Backspace' && searchInput.value === '' && chosenAuthors.length > 0) {
+                removeAuthor(chosenAuthors.length - 1);
+            }
+        });
+    }
+
+    // Click outside author dropdown to dismiss
+    document.addEventListener('click', (e) => {
+        const container = document.getElementById('authorAutosuggestContainer');
+        if (container && !container.contains(e.target)) {
+            closeAuthorDropdown();
+        }
+    });
+}
+
+function renderAuthorBadges() {
+    const container = document.getElementById('authorBadgesContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    chosenAuthors.forEach((author, idx) => {
+        const badge = document.createElement('span');
+        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 border border-primary/25 text-primary rounded-md font-semibold text-xs animate-in fade-in zoom-in-95 duration-150 select-none";
+        badge.innerHTML = `
+            <span>${escapeHtml(author)}</span>
+            <button type="button" onclick="removeAuthor(${idx})" class="text-primary/70 hover:text-primary hover:scale-125 transition-transform font-black text-sm leading-none ml-0.5" title="Hapus penulis">&times;</button>
+        `;
+        container.appendChild(badge);
+    });
+
+    syncAuthorBadgesToHidden();
+}
+
+function addAuthor(name) {
+    name = (name || '').trim().replace(/\*\)$/, '');
+    if (!name) return;
+
+    const existsIndex = chosenAuthors.findIndex(a => a.toLowerCase() === name.toLowerCase());
+    if (existsIndex === -1) {
+        chosenAuthors.push(name);
+        renderAuthorBadges();
+        markEditorDirty();
+    }
+
+    const searchInput = document.getElementById('authorSearchInput');
+    if (searchInput) searchInput.value = '';
+    closeAuthorDropdown();
+}
+
+function removeAuthor(idx) {
+    if (idx >= 0 && idx < chosenAuthors.length) {
+        chosenAuthors.splice(idx, 1);
+        renderAuthorBadges();
+        markEditorDirty();
+    }
+}
+
+function selectAuthorName(name) {
+    addAuthor(name);
+}
+
+function syncAuthorBadgesToHidden() {
+    const hidden = document.getElementById('authorHiddenInput');
+    if (hidden) {
+        hidden.value = chosenAuthors.join(', ');
+    }
+}
+
 function openAuthorDropdown() {
     const dd = document.getElementById('authorSuggestionsDropdown');
     const arrow = document.getElementById('authorDropdownArrow');
@@ -1451,11 +1590,12 @@ function closeAuthorDropdown() {
     if (arrow) arrow.classList.remove('rotate-180');
 }
 
-function toggleAuthorDropdown() {
+function toggleAuthorDropdown(e) {
+    if (e) e.stopPropagation();
     const dd = document.getElementById('authorSuggestionsDropdown');
     if (dd && dd.classList.contains('hidden')) {
         openAuthorDropdown();
-        const input = document.getElementById('authorInput');
+        const input = document.getElementById('authorSearchInput');
         if (input) input.focus();
     } else {
         closeAuthorDropdown();
@@ -1482,52 +1622,7 @@ function filterAuthorDropdown(val) {
         noResult.classList.toggle('hidden', hasMatch);
     }
     openAuthorDropdown();
-    markEditorDirty();
 }
-
-function selectAuthorName(name) {
-    const input = document.getElementById('authorInput');
-    if (input) {
-        const currentAuthors = input.value.split(',').map(a => a.trim()).filter(a => a.length > 0);
-        const existsIndex = currentAuthors.findIndex(a => a.toLowerCase() === name.toLowerCase());
-
-        if (existsIndex >= 0) {
-            // If already selected, toggle off (unless it's the only one)
-            if (currentAuthors.length > 1) {
-                currentAuthors.splice(existsIndex, 1);
-            }
-        } else {
-            // Add as primary or co-author
-            currentAuthors.push(name);
-        }
-
-        input.value = currentAuthors.join(', ');
-        markEditorDirty();
-    }
-
-    updateAuthorDropdownChecks();
-}
-
-function updateAuthorDropdownChecks() {
-    const input = document.getElementById('authorInput');
-    const selected = (input?.value || '').split(',').map(a => a.trim().toLowerCase()).filter(Boolean);
-    const items = document.querySelectorAll('.author-option-item');
-    items.forEach(item => {
-        const icon = item.querySelector('.author-check-icon');
-        const itemAuthor = (item.getAttribute('data-author') || '').toLowerCase();
-        if (icon) {
-            icon.classList.toggle('opacity-0', !selected.includes(itemAuthor));
-        }
-    });
-}
-
-// Click outside author dropdown to dismiss
-document.addEventListener('click', (e) => {
-    const container = document.getElementById('authorInput')?.closest('.relative');
-    if (container && !container.contains(e.target)) {
-        closeAuthorDropdown();
-    }
-});
 
 // =========================================================================
 // 11. Unsaved Changes Guard Modal

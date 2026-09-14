@@ -304,20 +304,20 @@ class Auth extends BaseController
                 ->with('info', 'Jika username atau email terdaftar dalam sistem redaksi, tautan pemulihan kata sandi telah dikirimkan ke email Anda.');
         }
 
-        // Celah #1 & #3: Buat 64-character kriptografi token acak (bukan salt statis)
-        $resetToken = bin2hex(random_bytes(32));
+        // Celah #1 & #3: Gunakan 6-digit numeric secure OTP yang kompatibel dengan kolom INT(11) di database
+        $resetToken = (string)random_int(100000, 999999);
         $authExpired = date('Y-m-d H:i:s', strtotime('+15 minutes'));
 
         // Simpan token unik ke kolom authCode & authExpired bawaan tabel
         $this->adminModel->update($user['userID'] ?? $user['id'], [
-            'authCode'    => $resetToken,
+            'authCode'    => (int)$resetToken,
             'authExpired' => $authExpired,
         ]);
 
         $this->sendPasswordResetEmail($user, $resetToken);
 
         return redirect()->to('/auth/forgot-password')
-            ->with('info', 'Tautan pemulihan kata sandi telah dikirimkan ke email ' . $this->maskEmail($user['email'] ?? '') . '. Silakan periksa kotak masuk atau spam Anda.');
+            ->with('info', 'Tautan dan kode pemulihan kata sandi telah dikirimkan ke email ' . $this->maskEmail($user['email'] ?? '') . '. Silakan periksa kotak masuk atau spam Anda.');
     }
 
     /**
@@ -438,10 +438,12 @@ class Auth extends BaseController
             $body .= '</div>';
             $body .= '<p style="font-size: 14px; line-height: 1.5;">Halo, <strong>' . esc($user['name'] ?: $user['username']) . '</strong>,</p>';
             $body .= '<p style="font-size: 14px; line-height: 1.5; color: #334155;">Kami menerima permintaan untuk mereset kata sandi akun editorial Anda. Silakan klik tombol di bawah ini untuk membuat kata sandi baru:</p>';
-            $body .= '<div style="text-align: center; margin: 28px 0;">';
+            $body .= '<div style="text-align: center; margin: 24px 0;">';
+            $body .= '<div style="margin-bottom: 16px;"><span style="display: inline-block; font-size: 28px; font-weight: 800; font-family: monospace; letter-spacing: 6px; padding: 10px 24px; background-color: #EBF8FF; color: #2B6CB0; border-radius: 8px; border: 1.5px dashed #2B6CB0;">' . $resetToken . '</span></div>';
             $body .= '<a href="' . $resetUrl . '" style="display: inline-block; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #0077CC; padding: 12px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 4px rgba(0,119,204,0.3);">Buat Kata Sandi Baru</a>';
             $body .= '</div>';
-            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Jika tombol di atas tidak dapat diklik, salin dan buka tautan berikut pada peramban Anda:<br><a href="' . $resetUrl . '" style="color: #0077CC; word-break: break-all;">' . $resetUrl . '</a></p>';
+            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Anda dapat mengklik tombol di atas atau memasukkan kode verifikasi <strong>' . $resetToken . '</strong> pada formulir reset kata sandi.</p>';
+            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Tautan alternatif:<br><a href="' . $resetUrl . '" style="color: #0077CC; word-break: break-all;">' . $resetUrl . '</a></p>';
             $body .= '<p style="color: #ef4444; font-size: 12px; line-height: 1.5; font-weight: 600;">Tautan ini hanya berlaku selama 15 menit dan hanya dapat digunakan 1 (satu) kali.</p>';
             $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Jika Anda tidak merasa mengajukan permintaan ini, abaikan pesan ini dan kata sandi Anda tetap aman.</p>';
             $body .= '<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0 16px 0;">';

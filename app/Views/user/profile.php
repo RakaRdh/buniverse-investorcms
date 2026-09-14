@@ -12,20 +12,6 @@
     </div>
 </div>
 
-<?php if (session()->getFlashdata('success')): ?>
-    <div class="mb-4 flex items-center gap-2 rounded-md bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-        <i data-lucide="check-circle" class="size-4 shrink-0"></i>
-        <span><?= esc(session()->getFlashdata('success')) ?></span>
-    </div>
-<?php endif; ?>
-
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="mb-4 flex items-center gap-2 rounded-md bg-rose-500/10 border border-rose-500/20 p-3 text-xs text-rose-600 dark:text-rose-400 font-medium">
-        <i data-lucide="alert-circle" class="size-4 shrink-0"></i>
-        <span><?= esc(session()->getFlashdata('error')) ?></span>
-    </div>
-<?php endif; ?>
-
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Profile Card Summary -->
     <div class="surface-card p-6 flex flex-col items-center text-center">
@@ -33,11 +19,12 @@
             $nameParts = explode(' ', $user['name'] ?? 'Staff Editorial');
             $initials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : ''));
         ?>
-        <div class="size-20 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary font-bold text-2xl shadow-inner mb-4">
+        <!-- Avatar Circle with generous breathing room (D21 fix) -->
+        <div class="size-32 sm:size-36 rounded-full bg-primary/10 border-2 border-primary/25 flex items-center justify-center text-primary font-bold text-2xl sm:text-3xl tracking-wider shadow-inner mb-4 select-none p-6">
             <?= esc($initials) ?>
         </div>
         <h2 class="text-base font-bold text-foreground"><?= esc($user['name'] ?? '-') ?></h2>
-        <span class="text-xs text-muted-foreground mt-0.5"><?= esc($user['email'] ?? '-') ?></span>
+        <span class="text-xs text-muted-foreground mt-0.5 truncate max-w-[200px] block" title="<?= esc($user['email'] ?? '-') ?>"><?= esc($user['email'] ?? '-') ?></span>
         
         <div class="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 capitalize">
             <i data-lucide="shield" class="size-3.5"></i>
@@ -73,7 +60,7 @@
             <?= csrf_field() ?>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Name (Disabled) -->
+                <!-- Full Name (Disabled) -->
                 <div>
                     <label class="block text-xs font-semibold text-muted-foreground mb-1.5">Nama Lengkap</label>
                     <input type="text" value="<?= esc($user['name'] ?? '') ?>" disabled class="flex h-9 w-full rounded-md border border-input bg-muted/60 px-3 py-1 text-xs text-muted-foreground cursor-not-allowed shadow-none">
@@ -130,7 +117,7 @@
             </div>
         </form>
 
-        <!-- Change Password Section -->
+        <!-- Change Password Section (D14 & D19) -->
         <div class="mt-8 pt-6 border-t border-border/60">
             <div class="mb-4">
                 <h3 class="text-sm font-bold text-foreground flex items-center gap-2">
@@ -145,15 +132,30 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-muted-foreground mb-1.5">Kata Sandi Saat Ini</label>
-                        <input type="password" name="current_password" required placeholder="••••••••••••" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-mono">
+                        <div class="relative">
+                            <input type="password" id="current_password" name="current_password" required placeholder="••••••••••••" class="flex h-9 w-full rounded-md border border-input bg-background pl-3 pr-9 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-mono">
+                            <button type="button" onclick="togglePasswordVisibility('current_password', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1" title="Lihat kata sandi">
+                                <i data-lucide="eye" class="size-3.5"></i>
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-muted-foreground mb-1.5">Kata Sandi Baru</label>
-                        <input type="password" name="new_password" required minlength="8" placeholder="Minimal 8 karakter" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-mono">
+                        <div class="relative">
+                            <input type="password" id="new_password" name="new_password" required minlength="8" placeholder="Minimal 8 karakter" class="flex h-9 w-full rounded-md border border-input bg-background pl-3 pr-9 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-mono">
+                            <button type="button" onclick="togglePasswordVisibility('new_password', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1" title="Lihat kata sandi">
+                                <i data-lucide="eye" class="size-3.5"></i>
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-muted-foreground mb-1.5">Konfirmasi Sandi Baru</label>
-                        <input type="password" name="confirm_password" required minlength="8" placeholder="Ulangi sandi baru" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-mono">
+                        <div class="relative">
+                            <input type="password" id="confirm_password" name="confirm_password" required minlength="8" placeholder="Ulangi sandi baru" class="flex h-9 w-full rounded-md border border-input bg-background pl-3 pr-9 py-1 text-xs text-foreground shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary font-mono">
+                            <button type="button" onclick="togglePasswordVisibility('confirm_password', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1" title="Lihat kata sandi">
+                                <i data-lucide="eye" class="size-3.5"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -164,8 +166,22 @@
                     </button>
                 </div>
             </form>
+
         </div>
     </div>
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPass = input.type === 'password';
+    input.type = isPass ? 'text' : 'password';
+    btn.innerHTML = isPass ? '<i data-lucide="eye-off" class="size-3.5 text-primary"></i>' : '<i data-lucide="eye" class="size-3.5"></i>';
+    if (window.lucide) lucide.createIcons();
+}
+</script>
 <?= $this->endSection() ?>

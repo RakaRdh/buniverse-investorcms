@@ -35,10 +35,10 @@
             </div>
         </div>
         <div class="flex items-center justify-between border-t border-border p-4">
-            <span class="text-xs text-muted-foreground">Status: <strong class="text-foreground"><?= esc($f['status']) ?></strong></span>
+            <span class="text-xs text-muted-foreground">Posisi: <strong class="text-foreground capitalize"><?= esc($f['position'] ?? 'top') ?></strong></span>
             <div class="flex gap-2">
-                <button type="button" class="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted"><i data-lucide="arrow-up" class="size-3.5"></i> Up</button>
-                <button type="button" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted"><i data-lucide="edit-3" class="size-3.5"></i></button>
+                <button type="button" onclick="editFeatureCard(<?= htmlspecialchars(json_encode($f), ENT_QUOTES, 'UTF-8') ?>)" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:text-foreground hover:bg-muted" title="Edit Feature"><i data-lucide="edit-3" class="size-3.5"></i></button>
+                <a href="<?= base_url('apps-feature-content/delete/' . $f['id']) ?>" onclick="return confirm('Hapus feature card ini?')" class="inline-flex size-8 items-center justify-center rounded-md border border-input bg-background text-destructive hover:bg-destructive/10" title="Hapus Feature"><i data-lucide="trash-2" class="size-3.5"></i></a>
             </div>
         </div>
     </div>
@@ -49,30 +49,56 @@
 <div id="newFeatureModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.6); z-index: 99; align-items: center; justify-content: center; padding: 1rem;">
     <div class="surface-card w-full max-w-md p-6 shadow-2xl space-y-4">
         <div class="flex items-center justify-between border-b border-border pb-3">
-            <h3 class="text-sm font-bold text-foreground">New App Feature Banner</h3>
+            <h3 class="text-sm font-bold text-foreground" id="featureModalTitle">New App Feature Banner</h3>
             <button type="button" onclick="document.getElementById('newFeatureModal').style.display='none'" class="text-muted-foreground hover:text-foreground">
                 <i data-lucide="x" class="size-4"></i>
             </button>
         </div>
         <form method="post" action="<?= base_url('apps-feature-content/save') ?>" class="space-y-4">
+            <?= csrf_field() ?>
+            <input type="hidden" name="id" id="featureId" value="">
             <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Banner Title</label>
-                <input type="text" name="title" required placeholder="e.g. Masterclass Investasi Saham Pemula" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Tipe Konten</label>
+                <select name="type" id="featureType" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                    <option value="banner">Banner (Link ke Artikel / URL)</option>
+                    <option value="tag">Tag (Kategori Khusus / Tag)</option>
+                </select>
             </div>
             <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Badge Label</label>
-                <input type="text" name="badge" required placeholder="e.g. Special Report, Academy" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Judul / Headline</label>
+                <input type="text" name="title" id="featureTitle" required placeholder="e.g. Masterclass Investasi Saham Pemula" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Badge Tag (Opsional jika tipe tag)</label>
+                <input type="text" name="badge" id="featureBadge" placeholder="e.g. Special Report, Dividen" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Target Link URL (Untuk Banner)</label>
+                <input type="text" name="link_url" id="featureLinkUrl" placeholder="/artikel/... atau https://..." class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             </div>
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Image URL</label>
-                <input type="url" name="image" placeholder="https://images.unsplash.com/..." class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                <input type="text" name="image" id="featureImage" placeholder="/img/... atau https://..." class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             </div>
             <div class="flex justify-end gap-2 pt-2 border-t border-border">
                 <button type="button" onclick="document.getElementById('newFeatureModal').style.display='none'" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
-                <button type="submit" class="rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground hover:bg-primary/90">Save Feature</button>
+                <button type="submit" class="rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground hover:bg-primary/90">Simpan Feature</button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+function editFeatureCard(data) {
+    document.getElementById('featureId').value = data.id || '';
+    document.getElementById('featureTitle').value = data.title || '';
+    document.getElementById('featureType').value = data.type || 'banner';
+    document.getElementById('featureBadge').value = data.badge || '';
+    document.getElementById('featureLinkUrl').value = data.target_url || '';
+    document.getElementById('featureImage').value = data.image || '';
+    document.getElementById('featureModalTitle').textContent = 'Edit App Feature Card';
+    document.getElementById('newFeatureModal').style.display = 'flex';
+}
+</script>
 
 <?= $this->endSection() ?>

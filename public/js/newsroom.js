@@ -128,6 +128,7 @@ document.addEventListener('click', (e) => {
 
 // Logout Dialog
 function openLogoutModal() {
+    toggleMobileNav(false);
     const dialog = document.getElementById('logoutAlertDialog');
     if (dialog) {
         dialog.classList.remove('hidden');
