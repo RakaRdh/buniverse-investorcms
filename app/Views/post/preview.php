@@ -488,5 +488,161 @@
             }
         }
     </script>
+
+    <!-- Chart.js Engine for Embedded Editorial Data Charts -->
+    <script src="/js/chart.umd.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js library not loaded.');
+                return;
+            }
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.06)';
+
+            document.querySelectorAll('canvas[id^="custom_chart_"]').forEach(canvas => {
+                try {
+                    const ctx = canvas.getContext('2d');
+                    const style = canvas.dataset.type || 'line';
+                    const yTitle = canvas.dataset.ytitle || 'Nilai';
+                    let labels = [];
+                    let values = [];
+
+                    try {
+                        labels = JSON.parse(canvas.dataset.labels || '[]');
+                    } catch (e) {
+                        labels = [];
+                    }
+                    try {
+                        values = JSON.parse(canvas.dataset.values || '[]');
+                    } catch (e) {
+                        values = [];
+                    }
+
+                    if (!labels.length) labels = ['2021', '2022', '2023', '2024', '2025', '2026'];
+                    if (!values.length) values = [45, 60, 75, 90, 110, 135];
+
+                    let config = {};
+
+                    if (style === 'line') {
+                        config = {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: yTitle,
+                                    data: values,
+                                    borderColor: '#2563eb',
+                                    backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                                    borderWidth: 2.5,
+                                    fill: true,
+                                    tension: 0.35,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6,
+                                    pointBackgroundColor: '#2563eb'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { padding: 8, cornerRadius: 6 }
+                                },
+                                scales: {
+                                    x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+                                    y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } }
+                                }
+                            }
+                        };
+                    } else if (style === 'bar-horizontal') {
+                        config = {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: yTitle,
+                                    data: values,
+                                    backgroundColor: 'rgba(13, 148, 136, 0.82)',
+                                    hoverBackgroundColor: 'rgba(15, 118, 110, 0.95)',
+                                    borderRadius: 4
+                                }]
+                            },
+                            options: {
+                                indexAxis: 'y',
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { padding: 8, cornerRadius: 6 }
+                                },
+                                scales: {
+                                    x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+                                    y: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } }
+                                }
+                            }
+                        };
+                    } else if (style === 'pie') {
+                        config = {
+                            type: 'pie',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    data: values,
+                                    backgroundColor: [
+                                        'rgba(37, 99, 235, 0.85)',
+                                        'rgba(13, 148, 136, 0.85)',
+                                        'rgba(245, 158, 11, 0.85)',
+                                        'rgba(139, 92, 246, 0.85)',
+                                        'rgba(236, 72, 153, 0.85)',
+                                        'rgba(16, 185, 129, 0.85)'
+                                    ]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 }, color: textColor } }
+                                }
+                            }
+                        };
+                    } else { // bar-vertical
+                        config = {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: yTitle,
+                                    data: values,
+                                    backgroundColor: 'rgba(37, 99, 235, 0.82)',
+                                    hoverBackgroundColor: 'rgba(29, 78, 216, 0.95)',
+                                    borderRadius: 4
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { padding: 8, cornerRadius: 6 }
+                                },
+                                scales: {
+                                    x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+                                    y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } }
+                                }
+                            }
+                        };
+                    }
+
+                    new Chart(ctx, config);
+                } catch (e) {
+                    console.error('Error initializing chart:', e);
+                }
+            });
+        });
+    </script>
 </body>
 </html>

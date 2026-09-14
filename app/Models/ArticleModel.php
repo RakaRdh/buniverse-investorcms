@@ -232,6 +232,8 @@ class ArticleModel extends Model
                     "/img/investor_placeholder.jpg"
                 ) AS thumbnail,
                 ANY_VALUE(ma_thumb.mediaID) AS media_id,
+                COALESCE(ANY_VALUE(nm_thumb_caption.metaval), ANY_VALUE(ma_thumb.caption), NULLIF(TRIM(ANY_VALUE(m.caption)), ""), "") AS thumbnail_caption,
+                COALESCE(ANY_VALUE(nm_thumb_desc.metaval), NULLIF(TRIM(ANY_VALUE(m.description)), ""), ANY_VALUE(ma_thumb.caption), NULLIF(TRIM(ANY_VALUE(m.caption)), ""), "") AS thumbnail_description,
                 COALESCE(ANY_VALUE(nm_head.metaval), "none") AS headline_type,
                 COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
                 COALESCE(ANY_VALUE(nm_source.metaval), "Investor.id / Riset") AS source,
@@ -248,6 +250,8 @@ class ArticleModel extends Model
             ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
             ->join('articlemeta nm_prem_legacy', 'nm_prem_legacy.articleID = n.articleID AND nm_prem_legacy.metakey = "premium"', 'left')
             ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('articlemeta nm_thumb_desc', 'nm_thumb_desc.articleID = n.articleID AND nm_thumb_desc.metakey = "thumbnail_description"', 'left')
+            ->join('articlemeta nm_thumb_caption', 'nm_thumb_caption.articleID = n.articleID AND nm_thumb_caption.metakey = "thumbnail_caption"', 'left')
             ->join('articlemeta nm_head', 'nm_head.articleID = n.articleID AND nm_head.metakey = "headline_type"', 'left')
             ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
             ->join('articlemeta nm_source', 'nm_source.articleID = n.articleID AND nm_source.metakey = "news_source"', 'left')
@@ -374,13 +378,15 @@ class ArticleModel extends Model
 
         // Meta entries
         $metaEntries = [
-            'thumbnail'     => $data['thumbnail'] ?? '/img/investor_placeholder.jpg',
-            'is_premium'    => (string)($data['is_premium'] ?? 0),
-            'headline_type' => $data['headline_type'] ?? 'none',
-            'upper_deck'    => $data['upper_deck'] ?? '',
-            'news_source'   => $data['source'] ?? 'Investor.id / Riset',
-            'kanal'         => $data['kanal'] ?? '',
-            'sub_kanal'     => $data['sub_kanal'] ?? '',
+            'thumbnail'             => $data['thumbnail'] ?? '/img/investor_placeholder.jpg',
+            'thumbnail_description' => $data['thumbnail_description'] ?? $data['thumbnail_caption'] ?? '',
+            'thumbnail_caption'     => $data['thumbnail_caption'] ?? '',
+            'is_premium'            => (string)($data['is_premium'] ?? 0),
+            'headline_type'         => $data['headline_type'] ?? 'none',
+            'upper_deck'            => $data['upper_deck'] ?? '',
+            'news_source'           => $data['source'] ?? 'Investor.id / Riset',
+            'kanal'                 => $data['kanal'] ?? '',
+            'sub_kanal'             => $data['sub_kanal'] ?? '',
         ];
 
         foreach ($metaEntries as $k => $v) {
@@ -510,20 +516,22 @@ class ArticleModel extends Model
         }
 
         // 5. Update Metadata
-        $metaKeys = ['thumbnail', 'is_premium', 'headline_type', 'upper_deck', 'news_source', 'kanal', 'sub_kanal'];
+        $metaKeys = ['thumbnail', 'thumbnail_description', 'thumbnail_caption', 'is_premium', 'headline_type', 'upper_deck', 'news_source', 'kanal', 'sub_kanal'];
         $this->db->table('articlemeta')
             ->where('articleID', $id)
             ->whereIn('metakey', array_merge($metaKeys, ['point']))
             ->delete();
 
         $metaEntries = [
-            'thumbnail'     => $data['thumbnail'] ?? '/img/investor_placeholder.jpg',
-            'is_premium'    => (string)($data['is_premium'] ?? 0),
-            'headline_type' => $data['headline_type'] ?? 'none',
-            'upper_deck'    => $data['upper_deck'] ?? '',
-            'news_source'   => $data['source'] ?? 'Investor.id / Riset',
-            'kanal'         => $data['kanal'] ?? '',
-            'sub_kanal'     => $data['sub_kanal'] ?? '',
+            'thumbnail'             => $data['thumbnail'] ?? '/img/investor_placeholder.jpg',
+            'thumbnail_description' => $data['thumbnail_description'] ?? $data['thumbnail_caption'] ?? '',
+            'thumbnail_caption'     => $data['thumbnail_caption'] ?? '',
+            'is_premium'            => (string)($data['is_premium'] ?? 0),
+            'headline_type'         => $data['headline_type'] ?? 'none',
+            'upper_deck'            => $data['upper_deck'] ?? '',
+            'news_source'           => $data['source'] ?? 'Investor.id / Riset',
+            'kanal'                 => $data['kanal'] ?? '',
+            'sub_kanal'             => $data['sub_kanal'] ?? '',
         ];
 
         foreach ($metaEntries as $k => $v) {
@@ -642,14 +650,14 @@ class ArticleModel extends Model
     }
 
     /**
-     * Dashboard Metrics calculation via SQL aggregates
+     * Dashboard Metrics calculation via SQL aggregates (scoped to user if $userId provided, except total views)
      */
-    public function getDashboardMetrics(): array
+    public function getDashboardMetrics(?int $userId = null): array
     {
         $todayStr = date('Y-m-d');
         $yesterdayStr = date('Y-m-d', strtotime('-1 day'));
 
-        $res = $this->db->table('article')
+        $builder = $this->db->table('article')
             ->select('
                 COUNT(*) AS total,
                 SUM(CASE WHEN LOWER(status) IN ("publish", "published") THEN 1 ELSE 0 END) AS published,
@@ -657,17 +665,26 @@ class ArticleModel extends Model
                 SUM(CASE WHEN LOWER(status) IN ("hold", "scheduled", "review") THEN 1 ELSE 0 END) AS hold,
                 SUM(CASE WHEN LOWER(status) = "deleted" THEN 1 ELSE 0 END) AS deleted,
                 SUM(COALESCE(viewed, 0)) AS total_views
-            ')
-            ->get()->getRowArray();
+            ');
 
-        // Articles published today vs yesterday
-        $todayCount = (int)$this->db->table('article')
-            ->where('DATE(articleDate)', $todayStr)
-            ->countAllResults();
+        if ($userId !== null && $userId > 0) {
+            $builder->where('userID', $userId);
+        }
 
-        $yesterdayCount = (int)$this->db->table('article')
-            ->where('DATE(articleDate)', $yesterdayStr)
-            ->countAllResults();
+        $res = $builder->get()->getRowArray();
+
+        // Articles published today vs yesterday (by user if $userId provided)
+        $todayQuery = $this->db->table('article')->where('DATE(articleDate)', $todayStr);
+        if ($userId !== null && $userId > 0) {
+            $todayQuery->where('userID', $userId);
+        }
+        $todayCount = (int)$todayQuery->countAllResults();
+
+        $yesterdayQuery = $this->db->table('article')->where('DATE(articleDate)', $yesterdayStr);
+        if ($userId !== null && $userId > 0) {
+            $yesterdayQuery->where('userID', $userId);
+        }
+        $yesterdayCount = (int)$yesterdayQuery->countAllResults();
 
         if ($yesterdayCount > 0) {
             $diffPct = round((($todayCount - $yesterdayCount) / $yesterdayCount) * 100, 1);
@@ -681,7 +698,7 @@ class ArticleModel extends Model
         $totalWorkflow = max(1, $publishedCnt + (int)($res['scheduled'] ?? 0) + (int)($res['review'] ?? 0));
         $onTimePct = min(99, max(85, round(($publishedCnt / $totalWorkflow) * 100))) . '%';
 
-        // Views growth rate (comparing last 7 days vs previous 7 days)
+        // Views growth rate (comparing last 7 days vs previous 7 days) - ALWAYS GLOBAL
         $past7Views = (int)($this->db->table('article')
             ->selectSum('viewed', 'v')
             ->where('articleDate >=', date('Y-m-d 00:00:00', strtotime('-6 days')))
@@ -700,18 +717,46 @@ class ArticleModel extends Model
             $viewsGrowthStr = '+18.4%';
         }
 
+        // Total global views (always global per user request)
+        $globalViews = (int)($this->db->table('article')->selectSum('viewed', 'v')->get()->getRow()->v ?? 0);
+
         return [
             'todayArticles'   => (int)($res['total'] ?? 0),
             'published'       => $publishedCnt,
             'drafts'          => (int)($res['drafts'] ?? 0),
             'scheduled'       => (int)($res['scheduled'] ?? 0),
             'review'          => (int)($res['review'] ?? 0),
-            'totalViews'      => number_format((int)($res['total_views'] ?? 0) + 1200000),
-            'rawViews'        => (int)($res['total_views'] ?? 0),
+            'totalViews'      => number_format($globalViews + 1200000),
+            'rawViews'        => $globalViews,
             'todayGrowth'     => $todayGrowthStr,
             'onTimeDelivery'  => $onTimePct,
             'viewsGrowth'     => $viewsGrowthStr,
         ];
+    }
+
+    /**
+     * Active Drafts for current user to quickly resume editing
+     */
+    public function getUserActiveDrafts(int $userId, int $limit = 5): array
+    {
+        return $this->db->table('article n')
+            ->select('
+                n.articleID AS id,
+                n.headline AS title,
+                n.status AS status,
+                n.createdAt AS create_date,
+                n.articleDate AS publish_date,
+                COALESCE(ANY_VALUE(c.categoryName), "Market") AS category
+            ')
+            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->where('n.userID', $userId)
+            ->where('LOWER(n.status)', 'draft')
+            ->where('n.status !=', 'Deleted')
+            ->groupBy('n.articleID')
+            ->orderBy('n.createdAt', 'DESC')
+            ->limit($limit)
+            ->get()->getResultArray();
     }
 
     /**
@@ -777,7 +822,7 @@ class ArticleModel extends Model
     /**
      * Dynamic Publishing & Drafts Chart Activity (Today, 7 Days, 30 Days)
      */
-    public function getPublishingChartData(): array
+    public function getPublishingChartData(?int $userId = null): array
     {
         $todayStr = date('Y-m-d');
 
@@ -786,11 +831,13 @@ class ArticleModel extends Model
         $todayPublished = array_fill(0, count($todayHours), 0);
         $todayDrafts = array_fill(0, count($todayHours), 0);
 
-        $todayRows = $this->db->table('article')
+        $todayQuery = $this->db->table('article')
             ->select('HOUR(articleDate) as h, LOWER(status) as st, COUNT(*) as cnt')
-            ->where('DATE(articleDate)', $todayStr)
-            ->groupBy(['HOUR(articleDate)', 'LOWER(status)'])
-            ->get()->getResultArray();
+            ->where('DATE(articleDate)', $todayStr);
+        if ($userId !== null && $userId > 0) {
+            $todayQuery->where('userID', $userId);
+        }
+        $todayRows = $todayQuery->groupBy(['HOUR(articleDate)', 'LOWER(status)'])->get()->getResultArray();
 
         foreach ($todayRows as $row) {
             $h = (int)$row['h'];
@@ -818,11 +865,13 @@ class ArticleModel extends Model
         }
 
         $since7d = date('Y-m-d 00:00:00', strtotime('-6 days'));
-        $rows7d = $this->db->table('article')
+        $query7d = $this->db->table('article')
             ->select('DATE(articleDate) as d, LOWER(status) as st, COUNT(*) as cnt')
-            ->where('articleDate >=', $since7d)
-            ->groupBy(['DATE(articleDate)', 'LOWER(status)'])
-            ->get()->getResultArray();
+            ->where('articleDate >=', $since7d);
+        if ($userId !== null && $userId > 0) {
+            $query7d->where('userID', $userId);
+        }
+        $rows7d = $query7d->groupBy(['DATE(articleDate)', 'LOWER(status)'])->get()->getResultArray();
 
         foreach ($rows7d as $r) {
             $d = $r['d'];
@@ -850,17 +899,23 @@ class ArticleModel extends Model
         $days30Drafts = [];
 
         foreach ($weeks as $w) {
-            $wPub = $this->db->table('article')
+            $pubQ = $this->db->table('article')
                 ->where('DATE(articleDate) >=', $w['from'])
                 ->where('DATE(articleDate) <=', $w['to'])
-                ->whereIn('LOWER(status)', ['publish', 'published'])
-                ->countAllResults();
+                ->whereIn('LOWER(status)', ['publish', 'published']);
+            if ($userId !== null && $userId > 0) {
+                $pubQ->where('userID', $userId);
+            }
+            $wPub = $pubQ->countAllResults();
 
-            $wDraft = $this->db->table('article')
+            $draftQ = $this->db->table('article')
                 ->where('DATE(articleDate) >=', $w['from'])
                 ->where('DATE(articleDate) <=', $w['to'])
-                ->whereIn('LOWER(status)', ['draft', 'review', 'hold'])
-                ->countAllResults();
+                ->whereIn('LOWER(status)', ['draft', 'review', 'hold']);
+            if ($userId !== null && $userId > 0) {
+                $draftQ->where('userID', $userId);
+            }
+            $wDraft = $draftQ->countAllResults();
 
             $days30Published[] = $wPub;
             $days30Drafts[] = $wDraft;

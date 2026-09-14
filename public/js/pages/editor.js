@@ -11,33 +11,163 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize CKEditor 4 WYSIWYG Editor (100% Identical Toolbar to Pasted image 20260911143610.png)
     const editorTextarea = document.getElementById('articleEditor');
     if (editorTextarea && window.CKEDITOR) {
-        // Configure CKEditor 4 toolbar matching legacy screenshot
+        // Inject Dark Mode and Cursor CSS rules directly into CKEditor's iframe styles
+        CKEDITOR.addCss(`
+            html {
+                color-scheme: light;
+            }
+            html.dark {
+                color-scheme: dark;
+            }
+            body.cke_editable {
+                font-family: Verdana, 'Lucida Grande', Tahoma, Arial, sans-serif;
+                font-size: 13px;
+                line-height: 1.75;
+                padding: 20px;
+                margin: 0;
+                cursor: text;
+                caret-color: #0f172a !important;
+                transition: background-color 0.2s ease, color 0.2s ease;
+            }
+            body.cke_editable {
+                background-color: #ffffff;
+                color: #1e293b;
+            }
+            html.dark body.cke_editable,
+            body.cke_editable.dark,
+            body.cke_editable.dark-mode {
+                background-color: #0f172a !important;
+                color: #f1f5f9 !important;
+                caret-color: #38bdf8 !important;
+            }
+            html.dark body.cke_editable a,
+            body.cke_editable.dark-mode a {
+                color: #60a5fa !important;
+                text-decoration: underline;
+            }
+            body.cke_editable blockquote {
+                background-color: #f0f7ff !important;
+                border-left: 4px solid #2B6CB0 !important;
+                color: #1e3a8a !important;
+                padding: 10px 16px !important;
+                margin: 14px 0 !important;
+                border-radius: 0 6px 6px 0 !important;
+                font-family: inherit !important;
+                font-size: 13px !important;
+                line-height: 1.6 !important;
+                box-shadow: 0 1px 2px rgba(43, 108, 176, 0.05);
+            }
+            html.dark body.cke_editable blockquote,
+            body.cke_editable.dark blockquote,
+            body.cke_editable.dark-mode blockquote {
+                background-color: rgba(30, 41, 59, 0.75) !important;
+                border-left: 4px solid #60a5fa !important;
+                color: #cbd5e1 !important;
+                padding: 10px 16px !important;
+                margin: 14px 0 !important;
+                border-radius: 0 6px 6px 0 !important;
+            }
+            html.dark body.cke_editable table,
+            body.cke_editable.dark-mode table {
+                border-color: #334155 !important;
+            }
+            html.dark body.cke_editable th,
+            html.dark body.cke_editable td,
+            body.cke_editable.dark-mode th,
+            body.cke_editable.dark-mode td {
+                border-color: #334155 !important;
+                color: #f1f5f9 !important;
+            }
+            html.dark body.cke_editable figcaption,
+            body.cke_editable.dark-mode figcaption {
+                color: #94a3b8 !important;
+                font-size: 11px !important;
+                margin-top: 6px;
+            }
+            html.dark body.cke_editable [style*="color: #333333"],
+            html.dark body.cke_editable [style*="color:#333333"],
+            html.dark body.cke_editable [style*="color: #000000"],
+            html.dark body.cke_editable [style*="color:#000000"],
+            html.dark body.cke_editable [style*="color: black"],
+            body.cke_editable.dark-mode [style*="color: #333333"],
+            body.cke_editable.dark-mode [style*="color:#333333"],
+            body.cke_editable.dark-mode [style*="color: #000000"],
+            body.cke_editable.dark-mode [style*="color:#000000"],
+            body.cke_editable.dark-mode [style*="color: black"] {
+                color: #e2e8f0 !important;
+            }
+        `);
+
+        // Configure CKEditor 4 toolbar matching user screenshot (2 rows clean toolbar)
         ckEditorInstance = CKEDITOR.replace('articleEditor', {
             versionCheck: false,
             height: 520,
-            contentsCss: ['/css/newsroom.css'],
+            contentsCss: ['/css/newsroom.css', '/css/pages/editor.css'],
             font_defaultLabel: 'Verdana',
             fontSize_defaultLabel: '11px',
             toolbar: [
-                { name: 'document', items: ['Source', '-', 'Save', 'NewPage', 'Preview', 'Print', '-', 'Templates'] },
-                { name: 'clipboard', items: ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Undo', 'Redo'] },
-                { name: 'editing', items: ['Find', 'Replace', '-', 'SelectAll', '-', 'Scayt'] },
-                { name: 'forms', items: ['Form', 'Checkbox', 'Radio', 'TextField', 'Textarea', 'Select', 'Button', 'ImageButton', 'HiddenField'] },
+                { name: 'clipboard', items: ['PasteText', 'PasteFromWord', '-', 'RemoveFormat', '-', 'Undo', 'Redo'] },
                 '/',
-                { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'CopyFormatting', 'RemoveFormat'] },
-                { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'CreateDiv', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-', 'BidiLtr', 'BidiRtl', 'Language'] },
-                { name: 'links', items: ['Link', 'Unlink', 'Anchor'] },
-                { name: 'insert', items: ['Image', 'Flash', 'Table', 'HorizontalRule', 'Smiley', 'SpecialChar', 'PageBreak', 'Iframe'] },
-                '/',
-                { name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize'] },
-                { name: 'colors', items: ['TextColor', 'BGColor'] },
-                { name: 'tools', items: ['Maximize', 'ShowBlocks'] },
-                { name: 'about', items: ['About'] }
+                { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike'] },
+                { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'CreateDiv', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-', 'BidiLtr', 'BidiRtl'] },
+                { name: 'links', items: ['Link', 'Unlink'] },
+                { name: 'insert', items: ['Image', 'Table', 'SpecialChar'] },
+                { name: 'document', items: ['Source'] }
             ],
             allowedContent: true,
-            extraAllowedContent: 'figure(*); figcaption(*); div(*)[*]; iframe(*)[*]; span(*)[*]; p(*)[*]; table(*)[*];',
+            extraAllowedContent: 'figure(*); figcaption(*); blockquote(*)[*]; div(*)[*]; iframe(*)[*]; span(*)[*]; p(*)[*]; table(*)[*];',
             removePlugins: 'exportpdf'
         });
+
+        // Theme synchronization function for CKEditor 4
+        function syncCkEditorTheme() {
+            if (!ckEditorInstance) return;
+            const isDark = document.documentElement.classList.contains('dark');
+            
+            if (ckEditorInstance.document && ckEditorInstance.document.$) {
+                const iframeDoc = ckEditorInstance.document.$;
+                const htmlEl = iframeDoc.documentElement;
+                const bodyEl = iframeDoc.body;
+                
+                if (htmlEl) {
+                    if (isDark) {
+                        htmlEl.classList.add('dark');
+                        htmlEl.style.colorScheme = 'dark';
+                    } else {
+                        htmlEl.classList.remove('dark');
+                        htmlEl.style.colorScheme = 'light';
+                    }
+                }
+                if (bodyEl) {
+                    if (isDark) {
+                        bodyEl.classList.add('dark', 'dark-mode');
+                        bodyEl.style.backgroundColor = '#0f172a';
+                        bodyEl.style.color = '#f1f5f9';
+                        bodyEl.style.caretColor = '#38bdf8';
+                    } else {
+                        bodyEl.classList.remove('dark', 'dark-mode');
+                        bodyEl.style.backgroundColor = '#ffffff';
+                        bodyEl.style.color = '#1e293b';
+                        bodyEl.style.caretColor = '#0f172a';
+                    }
+                }
+            }
+        }
+
+        ckEditorInstance.on('instanceReady', syncCkEditorTheme);
+        ckEditorInstance.on('mode', syncCkEditorTheme);
+        window.addEventListener('newsroom_theme_change', syncCkEditorTheme);
+
+        // Observe class changes on html element to sync instantly
+        const themeObserver = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                if (mutation.attributeName === 'class') {
+                    syncCkEditorTheme();
+                    break;
+                }
+            }
+        });
+        themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
         // Sync initial content to hidden input
         const hiddenContent = document.getElementById('hiddenContentInput');
@@ -68,7 +198,10 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             clipboard: {
                 dangerouslyPasteHTML: function(idx, html) {
-                    if (ckEditorInstance) ckEditorInstance.insertHtml(html);
+                    const content = (typeof idx === 'string' && html === undefined) ? idx : html;
+                    if (ckEditorInstance && content) {
+                        ckEditorInstance.insertHtml(content);
+                    }
                 }
             },
             setSelection: function() {}
@@ -88,14 +221,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. Status Change Listener (Show/Hide Scheduled Date & Time Sliders)
+    // 3. Status Change Listener (Show Scheduled Date & Time Sliders when status === 'Publish')
     const statusSelect = document.getElementById('workflowStatusSelect');
     if (statusSelect) {
         statusSelect.addEventListener('change', (e) => {
-            toggleScheduledSection(e.target.value === 'Scheduled');
+            toggleScheduledSection(e.target.value === 'Publish' || e.target.value === 'Scheduled');
             markEditorDirty();
         });
-        toggleScheduledSection(statusSelect.value === 'Scheduled');
+        toggleScheduledSection(statusSelect.value === 'Publish' || statusSelect.value === 'Scheduled');
     }
 
     // 4. Form Submit sync guard & dirty state
@@ -281,6 +414,37 @@ function onMinuteInputChange(val) {
     updateFullPublishDate();
 }
 
+function setPublishNow() {
+    const now = new Date();
+    const dateInput = document.getElementById('scheduledDateInput');
+    if (fpPicker) {
+        fpPicker.setDate(now);
+    } else if (dateInput) {
+        const d = String(now.getDate()).padStart(2, '0');
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        dateInput.value = `${d} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    }
+
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+
+    const hourInput = document.getElementById('hourInputNumber');
+    const hourSlider = document.getElementById('hourSlider');
+    if (hourInput) hourInput.value = hour;
+    if (hourSlider) hourSlider.value = hour;
+
+    const minuteInput = document.getElementById('minuteInputNumber');
+    const minuteSlider = document.getElementById('minuteSlider');
+    if (minuteInput) minuteInput.value = minute;
+    if (minuteSlider) minuteSlider.value = minute;
+
+    updateFullPublishDate();
+    markEditorDirty();
+    if (typeof showToast === 'function') {
+        showToast('Waktu publikasi disetel ke saat ini (Publish Now).', 'info');
+    }
+}
+
 function updateFullPublishDate() {
     const dateInput = document.getElementById('scheduledDateInput');
     const hourInput = document.getElementById('hourInputNumber');
@@ -288,11 +452,17 @@ function updateFullPublishDate() {
     const fullPublishInput = document.getElementById('publishDateHiddenInput');
     const displayLabel = document.getElementById('publishDateDisplay');
 
-    const dateStr = dateInput ? dateInput.value : '';
+    let dateVal = dateInput ? dateInput.value.trim() : '';
+    if (!dateVal) {
+        const now = new Date();
+        const d = String(now.getDate()).padStart(2, '0');
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        dateVal = `${d} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    }
     const hourVal = hourInput ? String(hourInput.value).padStart(2, '0') : '09';
     const minVal = minuteInput ? String(minuteInput.value).padStart(2, '0') : '00';
 
-    const fullStr = `${dateStr} ${hourVal}:${minVal}`;
+    const fullStr = `${dateVal} ${hourVal}:${minVal}`;
     if (fullPublishInput) fullPublishInput.value = fullStr;
     if (displayLabel) displayLabel.textContent = fullStr;
 }
@@ -463,21 +633,40 @@ function filterChartModalList(query) {
     });
 }
 
-function insertSelectedChart(title, symbol, type, source) {
-    if (!quill) return;
-    const range = quill.getSelection(true);
-    const index = range ? range.index : quill.getLength();
-    
-    // Output clean user-requested shortcode: ::(keterangan chart)::
-    const chartLabel = title ? title.trim() : (symbol ? ('Grafik ' + symbol) : 'Grafik Finansial');
-    const embedCode = `::(${chartLabel})::`;
+function insertSelectedChart(idOrTitle, title, symbol, type, source) {
+    let chartId = '';
+    let chartTitle = '';
+    let chartSymbol = '';
 
-    quill.insertText(index, `\n${embedCode}\n`);
-    quill.setSelection(index + embedCode.length + 2);
+    // Handle both 5-param (id, title, symbol, type, source) and legacy 4-param (title, symbol, type, source)
+    if (arguments.length >= 5 || (typeof idOrTitle === 'number' || (typeof idOrTitle === 'string' && /^\d+$/.test(idOrTitle)))) {
+        chartId = idOrTitle || '';
+        chartTitle = (title || '').trim();
+        chartSymbol = (symbol || '').trim();
+    } else {
+        chartTitle = (idOrTitle || '').trim();
+        chartSymbol = (title || '').trim();
+    }
+
+    if (!chartTitle) {
+        chartTitle = chartSymbol ? `Grafik ${chartSymbol}` : 'Grafik Finansial';
+    }
+
+    const idAttr = chartId ? ` id="${chartId}"` : '';
+    const symbolAttr = chartSymbol ? ` symbol="${chartSymbol}"` : '';
+    const embedCode = `<blockquote>[embed type=chart${idAttr}${symbolAttr} title="${chartTitle}"]${chartTitle}[/embed]</blockquote>`;
+
+    if (ckEditorInstance) {
+        ckEditorInstance.insertHtml(`${embedCode}<p><br></p>`);
+    } else if (quill) {
+        const range = quill.getSelection(true);
+        const index = range ? range.index : quill.getLength();
+        quill.clipboard.dangerouslyPasteHTML(index, `${embedCode}<p><br></p>`);
+    }
     markEditorDirty();
     closeEmbedChartModal();
     if (typeof showToast === 'function') {
-        showToast(`Chart "${chartLabel}" berhasil disisipkan.`, 'success');
+        showToast(`Chart "${chartTitle}" berhasil disisipkan.`, 'success');
     }
 }
 
@@ -499,7 +688,6 @@ function closeEmbedSocmedModal() {
 }
 
 function submitSocmedEmbed() {
-    if (!quill) return;
     const platform = document.getElementById('socmedPlatformSelect')?.value || 'Social Media';
     const url = document.getElementById('socmedUrlInput')?.value?.trim();
     const caption = document.getElementById('socmedCaptionInput')?.value?.trim();
@@ -509,18 +697,24 @@ function submitSocmedEmbed() {
         return;
     }
 
-    const range = quill.getSelection(true);
-    const index = range ? range.index : quill.getLength();
+    // Determine normalized embed type matching production
+    let embedType = 'socmed';
+    const pLower = platform.toLowerCase();
+    if (pLower.includes('youtube')) embedType = 'youtube';
+    else if (pLower.includes('instagram')) embedType = 'instagram';
+    else if (pLower.includes('twitter') || pLower.includes('x')) embedType = 'twitter';
+    else if (pLower.includes('tiktok')) embedType = 'tiktok';
+    else if (pLower.includes('drive')) embedType = 'googledrive';
+    else if (pLower.includes('scribd')) embedType = 'scribd';
 
-    // Shortcode format: ::Embed Socmed: Platform | URL | Caption:: (Finding D5 fix)
-    const captionPart = caption ? ` | ${caption}` : '';
-    const shortcode = `::Embed Socmed: ${platform} | ${url}${captionPart}::`;
+    const embedCode = `<blockquote>[embed type=${embedType}]${url}${caption ? ' | ' + caption : ''}[/embed]</blockquote>`;
 
     if (ckEditorInstance) {
-        ckEditorInstance.insertHtml(`<p>${escapeHtml(shortcode)}</p><p><br></p>`);
+        ckEditorInstance.insertHtml(`${embedCode}<p><br></p>`);
     } else if (quill) {
-        quill.insertText(index, `\n${shortcode}\n\n`);
-        quill.setSelection(index + shortcode.length + 2);
+        const range = quill.getSelection(true);
+        const index = range ? range.index : quill.getLength();
+        quill.clipboard.dangerouslyPasteHTML(index, `${embedCode}<p><br></p>`);
     }
     markEditorDirty();
     closeEmbedSocmedModal();
@@ -547,10 +741,9 @@ function closeEmbedGoogleDocModal() {
 }
 
 function submitGoogleDocEmbed() {
-    if (!quill) return;
     const docType = document.getElementById('googleDocTypeSelect')?.value || 'Doc';
     const url = document.getElementById('googleDocUrlInput')?.value?.trim();
-    const title = document.getElementById('googleDocTitleInput')?.value?.trim() || '';
+    const title = document.getElementById('googleDocTitleInput')?.value?.trim() || (docType === 'Doc' ? 'Google Document' : 'Google Spreadsheet');
 
     if (!url) {
         alert('Silakan masukkan link/URL Google Doc atau Google Sheet terlebih dahulu.');
@@ -562,15 +755,16 @@ function submitGoogleDocEmbed() {
         return;
     }
 
-    const range = quill.getSelection(true);
-    const index = range ? range.index : quill.getLength();
+    const embedType = docType === 'Sheet' ? 'googlesheet' : 'googledoc';
+    const embedCode = `<blockquote>[embed type=${embedType} url="${url}"]${title}[/embed]</blockquote>`;
 
-    // Shortcode format: ::Google Doc: URL | Title:: or ::Google Sheet: URL | Title::
-    const titlePart = title ? ` | ${title}` : '';
-    const shortcode = `::Google ${docType}: ${url}${titlePart}::`;
-
-    quill.insertText(index, `\n${shortcode}\n`);
-    quill.setSelection(index + shortcode.length + 2);
+    if (ckEditorInstance) {
+        ckEditorInstance.insertHtml(`${embedCode}<p><br></p>`);
+    } else if (quill) {
+        const range = quill.getSelection(true);
+        const index = range ? range.index : quill.getLength();
+        quill.clipboard.dangerouslyPasteHTML(index, `${embedCode}<p><br></p>`);
+    }
     markEditorDirty();
     closeEmbedGoogleDocModal();
     if (typeof showToast === 'function') {
@@ -700,7 +894,6 @@ function closeEmbedStockModal() {
 }
 
 function submitStockEmbed() {
-    if (!quill) return;
     const ticker = (document.getElementById('stockTickerInput')?.value || '').toUpperCase().trim();
     const styleType = document.getElementById('stockChartTypeSelect')?.value || 'tradingview_full';
 
@@ -709,25 +902,19 @@ function submitStockEmbed() {
         return;
     }
 
-    const range = quill.getSelection(true);
-    const index = range ? range.index : quill.getLength();
+    const embedCode = `<blockquote>[embed type=stock]${ticker}[/embed]</blockquote>`;
 
-    const embedHtml = `
-        <div class="cms-embed-placeholder my-3 p-3 rounded-lg border border-indigo-500/30 bg-indigo-500/5 text-xs text-indigo-700 dark:text-indigo-300 font-sans flex items-center justify-between" data-embed-type="stock_chart" data-symbol="${escapeHtml(ticker)}" data-style="${escapeHtml(styleType)}">
-            <div class="flex items-center gap-2">
-                <span class="rounded bg-indigo-600 text-white px-2 py-0.5 text-[10px] font-bold font-mono">IDX:${escapeHtml(ticker)}</span>
-                <span class="font-semibold">Live Stock Chart Widget</span>
-            </div>
-            <span class="text-[10px] font-mono text-indigo-500/80">::Stock Chart: ${escapeHtml(ticker)}::</span>
-        </div>
-        <p><br></p>
-    `;
-
-    quill.clipboard.dangerouslyPasteHTML(index, embedHtml);
-    quill.setSelection(index + 1);
+    if (ckEditorInstance) {
+        ckEditorInstance.insertHtml(`${embedCode}<p><br></p>`);
+    } else if (quill) {
+        const range = quill.getSelection(true);
+        const index = range ? range.index : quill.getLength();
+        quill.clipboard.dangerouslyPasteHTML(index, `${embedCode}<p><br></p>`);
+    }
+    markEditorDirty();
     closeEmbedStockModal();
     if (typeof showToast === 'function') {
-        showToast(`Placeholder Stock Chart "${ticker}" berhasil disisipkan.`, 'success');
+        showToast(`Stock Chart "${ticker}" berhasil disisipkan.`, 'success');
     }
 }
 
@@ -768,13 +955,17 @@ function filterMediaModalCards(query) {
     if (countEl) countEl.textContent = visibleCount;
 }
 
-function selectMediaImage(url, caption = '') {
+function selectMediaImage(url, caption = '', description = '') {
+    const rawCaption = (caption && caption.trim()) ? caption.trim() : '';
+    const rawDesc = (description && description.trim()) ? description.trim() : rawCaption;
+    const finalCaption = rawCaption || rawDesc || 'Dokumentasi Investor.id';
+    const finalDesc = rawDesc || rawCaption || 'Dokumentasi Investor.id';
+
     if (mediaChooserTarget === 'quill' || mediaChooserTarget === 'ckeditor') {
-        const capText = (caption && caption.trim()) ? caption.trim() : 'Dokumentasi Investor.id / Riset';
         const figureHtml = `
             <figure style="text-align: center; margin: 18px auto; display: block; max-width: 100%;">
-                <img src="${url}" alt="${escapeHtml(capText)}" style="max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
-                <figcaption style="font-size: 11px; font-style: italic; color: #64748b; margin-top: 6px; text-align: center; font-family: Verdana, sans-serif; display: block;">${escapeHtml(capText)}</figcaption>
+                <img src="${url}" alt="${escapeHtml(finalCaption)}" style="max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
+                <figcaption style="font-size: 11px; font-style: italic; color: #64748b; margin-top: 6px; text-align: center; font-family: Verdana, sans-serif; display: block;">${escapeHtml(finalCaption)}</figcaption>
             </figure>
             <p><br></p>
         `;
@@ -789,14 +980,20 @@ function selectMediaImage(url, caption = '') {
     } else {
         const input = document.getElementById('thumbnailInput');
         const preview = document.getElementById('imagePreview');
+        const descInput = document.getElementById('thumbnailDescriptionInput');
+        const capInput = document.getElementById('thumbnailCaptionInput');
+
         if (input) input.value = url;
         if (preview) preview.src = url;
+        if (descInput) descInput.value = finalDesc;
+        if (capInput) capInput.value = finalCaption;
+
         markEditorDirty();
     }
 
     closeMediaChooserModal();
     if (typeof showToast === 'function') {
-        showToast('Gambar berhasil disisipkan ke artikel.', 'success');
+        showToast('Gambar berhasil dipilih.', 'success');
     }
 }
 
@@ -872,13 +1069,16 @@ function filterArticleModalList() {
 }
 
 function insertSelectedArticleLink(title, url, summary) {
-    if (quill) {
+    const html = `<blockquote><p><strong>Baca Juga: </strong><a href="${url}" target="_blank">${title}</a></p></blockquote><p><br></p>`;
+    if (ckEditorInstance) {
+        ckEditorInstance.insertHtml(html);
+    } else if (quill) {
         const range = quill.getSelection(true);
         const index = range ? range.index : quill.getLength();
-        const html = `<blockquote><p><strong>Baca Juga: </strong><a href="${url}" target="_blank">${title}</a></p></blockquote><p><br></p>`;
         quill.clipboard.dangerouslyPasteHTML(index, html);
         quill.setSelection(index + 1);
     }
+    markEditorDirty();
     closeArticleLinkModal();
     if (typeof showToast === 'function') {
         showToast('Link artikel "Baca Juga" berhasil disisipkan.', 'success');
@@ -887,15 +1087,22 @@ function insertSelectedArticleLink(title, url, summary) {
 
 // 10B. Sumber Berita & Poin Utama Handlers
 function handleSourceChange(val) {
+    const customWrapper = document.getElementById('customSourceWrapper');
     const customInput = document.getElementById('customSourceInput');
+    const badge = document.getElementById('customSourceBadge');
+
     if (!customInput) return;
-    if (val === 'Lainnya') {
-        customInput.classList.remove('hidden');
+
+    if (val === 'OTHERS' || val === 'Lainnya') {
+        if (customWrapper) customWrapper.classList.remove('hidden');
+        if (badge) badge.classList.remove('hidden');
         customInput.focus();
     } else {
-        customInput.classList.add('hidden');
+        if (customWrapper) customWrapper.classList.add('hidden');
+        if (badge) badge.classList.add('hidden');
         customInput.value = val;
     }
+    markEditorDirty();
 }
 
 function addPointRow(val = '') {
@@ -1140,16 +1347,21 @@ async function executeScrapeArticle() {
         if (json.status === 'success') {
             const data = json.data;
 
-            // 1. Insert content to Quill editor
-            if (quill && data.body) {
-                quill.clipboard.dangerouslyPasteHTML(data.body);
-                const hiddenContent = document.getElementById('hiddenContentInput');
-                if (hiddenContent) {
-                    hiddenContent.value = quill.root.innerHTML;
+            // 1. Set article body content into CKEditor 4
+            if (data.body) {
+                if (ckEditorInstance) {
+                    ckEditorInstance.setData(data.body);
+                } else if (quill) {
+                    quill.clipboard.dangerouslyPasteHTML(data.body);
                 }
+
+                const editorEl = document.getElementById('articleEditor');
+                const hiddenEl = document.getElementById('hiddenContentInput');
+                if (editorEl) editorEl.value = data.body;
+                if (hiddenEl) hiddenEl.value = data.body;
             }
 
-            // 2. Set thumbnail / cover image & persist cache
+            // 2. Set thumbnail / cover image & preview
             if (data.thumbnail_url) {
                 const coverInput = document.getElementById('thumbnailInput');
                 const coverPreview = document.getElementById('imagePreview');
@@ -1158,18 +1370,51 @@ async function executeScrapeArticle() {
                 if (coverPreview) {
                     coverPreview.src = data.thumbnail_url;
                 }
-
-                markEditorDirty();
             }
 
-            // 3. Set source if input exists
-            const sourceInput = document.querySelector('input[name="source"]');
-            if (sourceInput && !sourceInput.value) {
-                sourceInput.value = 'Antara News / Rilis Pers';
+            // 3. Set thumbnail description & caption
+            const descInput = document.getElementById('thumbnailDescriptionInput');
+            const capInput = document.getElementById('thumbnailCaptionInput');
+
+            if (descInput && data.thumbnail_description) {
+                descInput.value = data.thumbnail_description;
             }
+            if (capInput && data.thumbnail_caption) {
+                capInput.value = data.thumbnail_caption;
+            }
+
+            // 4. Set article title if currently empty
+            const titleInput = document.getElementById('articleTitleInput');
+            if (titleInput && !titleInput.value.trim() && data.title) {
+                titleInput.value = data.title.substring(0, 70);
+                const countEl = document.getElementById('titleCharCount');
+                if (countEl) countEl.textContent = titleInput.value.length;
+            }
+
+            // 5. Set source to ANTARA if empty
+            const sourceSelect = document.getElementById('sourceSelect');
+            const sourceInput = document.getElementById('customSourceInput') || document.querySelector('input[name="source"]');
+            if (sourceSelect) {
+                let foundAntara = false;
+                for (let i = 0; i < sourceSelect.options.length; i++) {
+                    if (sourceSelect.options[i].value.toUpperCase() === 'ANTARA') {
+                        sourceSelect.selectedIndex = i;
+                        handleSourceChange(sourceSelect.options[i].value);
+                        foundAntara = true;
+                        break;
+                    }
+                }
+                if (!foundAntara && sourceInput) {
+                    sourceInput.value = 'ANTARA';
+                }
+            } else if (sourceInput && !sourceInput.value) {
+                sourceInput.value = 'ANTARA';
+            }
+
+            markEditorDirty();
 
             if (typeof showToast === 'function') {
-                showToast('Artikel berhasil di-scrape! Isi naskah dan cover telah diisi ke editor.', 'success');
+                showToast('Artikel berhasil di-scrape! Isi naskah, cover, deskripsi, dan caption telah diisi ke editor.', 'success');
             }
         } else {
             throw new Error(json.data || 'Gagal melakukan scraping artikel');
@@ -1646,10 +1891,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmBtn = document.getElementById('confirmLeavePageBtn');
     if (confirmBtn) {
         confirmBtn.addEventListener('click', () => {
+            const targetUrl = pendingNavigationUrl;
             isEditorDirty = false;
+            isFormSubmitting = true; // Prevent beforeunload interception
             closeUnsavedChangesModal();
-            if (pendingNavigationUrl) {
-                window.location.href = pendingNavigationUrl;
+            if (targetUrl) {
+                window.location.href = targetUrl;
+            } else {
+                window.location.href = '/post';
             }
         });
     }

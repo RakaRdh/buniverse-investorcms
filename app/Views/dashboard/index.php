@@ -47,7 +47,7 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
     <!-- Card 1 -->
     <div class="surface-card p-3.5 sm:p-5 transition-shadow duration-150 hover:shadow-raised">
         <div class="flex items-center justify-between gap-2">
-            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">Today's Articles</span>
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">Your Articles Today</span>
             <span class="grid size-7 sm:size-8 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary">
                 <i data-lucide="file-text" class="size-4 sm:size-[18px]"></i>
             </span>
@@ -63,7 +63,7 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
     <!-- Card 2 -->
     <div class="surface-card p-3.5 sm:p-5 transition-shadow duration-150 hover:shadow-raised">
         <div class="flex items-center justify-between gap-2">
-            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">Published</span>
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">Your Published</span>
             <span class="grid size-7 sm:size-8 shrink-0 place-items-center rounded-lg bg-success/10 text-success">
                 <i data-lucide="check-circle" class="size-4 sm:size-[18px]"></i>
             </span>
@@ -77,21 +77,21 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
     <!-- Card 3 -->
     <div class="surface-card p-3.5 sm:p-5 transition-shadow duration-150 hover:shadow-raised">
         <div class="flex items-center justify-between gap-2">
-            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">In Review</span>
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">Your In Review / Draft</span>
             <span class="grid size-7 sm:size-8 shrink-0 place-items-center rounded-lg bg-warning/15 text-warning">
                 <i data-lucide="clock" class="size-4 sm:size-[18px]"></i>
             </span>
         </div>
         <p class="mt-2 sm:mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground"><?= $metrics['drafts'] + $metrics['review'] ?></p>
         <p class="mt-1 sm:mt-2 text-[11px] sm:text-xs font-medium text-warning truncate">
-            <?= $metrics['review'] ?> pending review
+            <?= $metrics['review'] ?> pending review &bull; <?= $metrics['drafts'] ?> draft
         </p>
     </div>
 
-    <!-- Card 4 -->
+    <!-- Card 4 (Total Views - GLOBAL) -->
     <div class="surface-card p-3.5 sm:p-5 transition-shadow duration-150 hover:shadow-raised">
         <div class="flex items-center justify-between gap-2">
-            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">Total Views</span>
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wide text-muted-foreground uppercase truncate">Total Views (Portal)</span>
             <span class="grid size-7 sm:size-8 shrink-0 place-items-center rounded-lg bg-accent/15 text-accent">
                 <i data-lucide="eye" class="size-4 sm:size-[18px]"></i>
             </span>
@@ -105,14 +105,76 @@ $userName = session('user_name') ? explode(' ', session('user_name'))[0] : 'Edit
     </div>
 </div>
 
+<!-- Section: Lanjutkan Draft (User's In-Progress Articles) -->
+<div class="surface-card mb-6 sm:mb-8 overflow-hidden border border-border/80 shadow-xs">
+    <div class="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-border bg-muted/20">
+        <div class="flex items-center gap-2.5">
+            <span class="grid size-7 place-items-center rounded-md bg-amber-500/15 text-amber-600">
+                <i data-lucide="edit-3" class="size-4"></i>
+            </span>
+            <div>
+                <h2 class="text-sm font-bold text-foreground">Lanjutkan Draft Anda</h2>
+                <p class="text-[11px] text-muted-foreground">Artikel draft dalam pengerjaan yang belum dipublikasikan</p>
+            </div>
+        </div>
+        <a href="<?= base_url('post?status=Draft') ?>" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+            <span>Semua Draft</span>
+            <i data-lucide="chevron-right" class="size-3.5"></i>
+        </a>
+    </div>
+
+    <?php if (empty($myDrafts)): ?>
+        <div class="py-8 px-4 text-center">
+            <div class="inline-flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground mb-2">
+                <i data-lucide="check-check" class="size-5"></i>
+            </div>
+            <p class="text-xs font-medium text-foreground">Tidak ada draft aktif yang tertunda.</p>
+            <p class="text-[11px] text-muted-foreground mt-0.5">Semua tulisan Anda telah selesai atau dipublikasikan.</p>
+            <a href="<?= base_url('post/new') ?>" class="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors">
+                <i data-lucide="plus" class="size-3.5"></i>
+                <span>Tulis Berita Baru</span>
+            </a>
+        </div>
+    <?php else: ?>
+        <div class="divide-y divide-border">
+            <?php foreach ($myDrafts as $draft): ?>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-3 hover:bg-muted/30 transition-colors">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                        <span class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground uppercase">
+                            Draft
+                        </span>
+                        <span class="text-[11px] font-medium text-primary">
+                            <?= esc($draft['category']) ?>
+                        </span>
+                        <span class="text-[10px] text-muted-foreground font-mono">
+                            Dibuat: <?= esc(date('d M Y, H:i', strtotime($draft['create_date']))) ?> WIB
+                        </span>
+                    </div>
+                    <a href="<?= base_url('post/edit/' . $draft['id']) ?>" class="block font-semibold text-xs sm:text-sm text-foreground hover:text-primary transition-colors line-clamp-1">
+                        <?= esc($draft['title'] ?: 'Draft Tanpa Judul #' . $draft['id']) ?>
+                    </a>
+                </div>
+                <div class="shrink-0 flex items-center gap-2">
+                    <a href="<?= base_url('post/edit/' . $draft['id']) ?>" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-2xs">
+                        <i data-lucide="edit-3" class="size-3.5"></i>
+                        <span>Lanjutkan Edit</span>
+                    </a>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
+
 <!-- Section 2: Charts & Quick Editorial Stream -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     <!-- Chart Card (SectionCard.tsx) -->
     <div class="surface-card lg:col-span-2">
         <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-4 border-b border-border">
             <div>
-                <h2 class="text-sm font-semibold text-foreground">Editorial Publishing Activity</h2>
-                <p class="mt-0.5 text-xs text-muted-foreground">Volume artikel dan draft yang diproduksi</p>
+                <h2 class="text-sm font-semibold text-foreground">Your Publishing & Draft Activity</h2>
+                <p class="mt-0.5 text-xs text-muted-foreground">Volume artikel dan draft yang Anda produksi</p>
             </div>
             <div class="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1 text-xs font-medium">
                 <button type="button" id="btnPeriodToday" onclick="switchDashboardPeriod('today')" class="period-btn rounded-md bg-background px-2.5 py-1 text-foreground shadow-xs font-semibold transition-all">Today</button>

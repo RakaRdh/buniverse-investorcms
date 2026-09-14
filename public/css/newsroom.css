@@ -102,6 +102,11 @@
 
 html {
   font-size: 100%;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
@@ -294,11 +299,17 @@ html.sidebar-pre-collapsed #desktopSidebar .nav-item-link {
 }
 
 /* Windows Caret & Blinking Cursor Visibility Fix (Finding D3) */
-input, textarea, [contenteditable="true"], .cke_editable, .ql-editor {
+input, textarea, select, [contenteditable="true"], [contenteditable], .cke_editable, .ql-editor {
   caret-color: #0F172A !important;
 }
-.dark input, .dark textarea, .dark [contenteditable="true"], .dark .cke_editable, .dark .ql-editor {
+.dark input, .dark textarea, .dark select, .dark [contenteditable="true"], .dark [contenteditable], .dark .cke_editable, .dark .ql-editor {
   caret-color: #38BDF8 !important;
+}
+
+/* Ensure I-Beam and pointer visibility on interactive form controls */
+input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]),
+textarea {
+  cursor: text;
 }
 
 /* Standardized Image Figure & Centered Caption Styling (Finding D9 & D11) */

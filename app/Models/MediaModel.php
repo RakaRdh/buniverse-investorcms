@@ -31,12 +31,13 @@ class MediaModel extends Model
                 m.mediaTitle AS title,
                 m.filename AS image,
                 m.caption AS caption,
+                COALESCE(NULLIF(TRIM(m.description), \'\'), m.caption, m.mediaTitle, \'\') AS description,
                 m.source AS source,
                 m.timestamp AS date,
                 p.username AS user,
                 p.name AS user_name,
                 COUNT(DISTINCT mnl.articleID) AS usage_count
-            ')
+            ', false)
             ->join('useradministrator p', 'p.userID = m.userID', 'left')
             ->join('mediaarticle mnl', 'mnl.mediaID = m.mediaID', 'left')
             ->groupBy('m.mediaID')

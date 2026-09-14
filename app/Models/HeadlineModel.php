@@ -13,7 +13,8 @@ class HeadlineModel extends Model
         'articleID',
         'num',
         'timestamp',
-        'status'
+        'status',
+        'set_by'
     ];
     protected $useTimestamps = false;
 
@@ -34,6 +35,8 @@ class HeadlineModel extends Model
                 n.createdAt AS create_date,
                 h.num AS headline_position,
                 h.category AS category,
+                h.timestamp AS headline_set_at,
+                h.set_by AS set_by,
                 COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail,
                 COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
                 COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium,
@@ -64,7 +67,7 @@ class HeadlineModel extends Model
      * Replika legacy: Article::saveHeadline() reordering
      * Tabel: articleheadline (W)
      */
-    public function batchReorder(string $category, array $orderedArticleIds): bool
+    public function batchReorder(string $category, array $orderedArticleIds, ?string $setBy = null): bool
     {
         if (empty($orderedArticleIds)) {
             return false;
@@ -72,11 +75,16 @@ class HeadlineModel extends Model
 
         $this->db->transStart();
         foreach ($orderedArticleIds as $position => $articleId) {
+            $updateData = ['num' => $position + 1];
+            if ($setBy !== null) {
+                $updateData['set_by'] = $setBy;
+                $updateData['timestamp'] = date('Y-m-d H:i:s');
+            }
             $this->db->table('articleheadline')
                 ->where('articleID', (int)$articleId)
                 ->where('category', $category)
                 ->where('status', 1)
-                ->update(['num' => $position + 1]);
+                ->update($updateData);
         }
         $this->db->transComplete();
 

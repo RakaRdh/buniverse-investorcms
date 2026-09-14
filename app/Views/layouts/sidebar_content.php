@@ -276,15 +276,16 @@ if (in_array($userRole, ['author', 'contributor'])) {
     <!-- Sidebar Footer: Stick to bottom with user info and Logout Button -->
     <div class="shrink-0 border-t border-sidebar-border bg-sidebar/95 p-3.5 space-y-2">
         <?php if (session()->has('user_name')): ?>
-            <div class="flex items-center gap-2.5 px-2 py-1">
-                <span class="grid size-7 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[11px] font-bold">
+            <a href="<?= base_url('user/profile') ?>" title="Lihat Profil Saya" class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors hover:bg-sidebar-accent/50 group cursor-pointer">
+                <span class="grid size-7 shrink-0 place-items-center rounded-full bg-primary/20 text-primary text-[11px] font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                     <?= esc(session('user_initials') ?? 'ID') ?>
                 </span>
                 <div class="min-w-0 flex-1">
-                    <p class="truncate text-xs font-semibold text-sidebar-accent-foreground leading-tight"><?= esc(session('user_name')) ?></p>
+                    <p class="truncate text-xs font-semibold text-sidebar-accent-foreground leading-tight group-hover:text-primary transition-colors"><?= esc(session('user_name')) ?></p>
                     <p class="truncate text-[10px] text-sidebar-foreground/60 capitalize"><?= esc(session('user_role')) ?></p>
                 </div>
-            </div>
+                <i data-lucide="chevron-right" class="size-3.5 text-sidebar-foreground/40 group-hover:text-sidebar-foreground/80 transition-colors shrink-0" aria-hidden="true"></i>
+            </a>
         <?php endif; ?>
 
         <button type="button" onclick="openLogoutModal()" class="nav-item-link flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/75 transition-colors duration-150 hover:bg-destructive/15 hover:text-destructive">

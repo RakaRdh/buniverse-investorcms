@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.ModalUtils) {
         window.ModalUtils.register('confirmAddModal', { onClose: closeConfirmModals });
         window.ModalUtils.register('confirmRemoveModal', { onClose: closeConfirmModals });
+        window.ModalUtils.register('alreadyHeadlineModal', { onClose: closeConfirmModals });
+        window.ModalUtils.register('maxQuotaModal', { onClose: closeConfirmModals });
     }
 
     initHeadlineDragAndDrop();
@@ -21,6 +23,14 @@ function onTargetCategoryChange(selectedCategory) {
     window.location.href = url.toString();
 }
 
+function checkAndConfirmAddHeadline(articleId, articleTitle, currentHeadlineCount, category) {
+    if (currentHeadlineCount >= 5) {
+        openMaxQuotaModal(category);
+        return;
+    }
+    confirmAddHeadline(articleId, articleTitle);
+}
+
 function confirmAddHeadline(articleId, articleTitle) {
     const modal = document.getElementById('confirmAddModal');
     const titleEl = document.getElementById('addArticleTitle');
@@ -28,6 +38,25 @@ function confirmAddHeadline(articleId, articleTitle) {
     
     if (titleEl) titleEl.textContent = articleTitle;
     if (inputEl) inputEl.value = articleId;
+    if (modal) modal.style.display = 'flex';
+}
+
+function openAlreadyHeadlineModal(articleTitle, category, currentPos) {
+    const modal = document.getElementById('alreadyHeadlineModal');
+    const titleEl = document.getElementById('alreadyHeadlineTitle');
+    const catEl = document.getElementById('alreadyHeadlineCategoryText');
+    const posEl = document.getElementById('alreadyHeadlinePosBadge');
+
+    if (titleEl) titleEl.textContent = articleTitle;
+    if (catEl) catEl.textContent = category;
+    if (posEl) posEl.textContent = `#${currentPos}`;
+    if (modal) modal.style.display = 'flex';
+}
+
+function openMaxQuotaModal(category) {
+    const modal = document.getElementById('maxQuotaModal');
+    const catEl = document.getElementById('maxQuotaCategoryText');
+    if (catEl) catEl.textContent = category;
     if (modal) modal.style.display = 'flex';
 }
 
@@ -45,8 +74,13 @@ function confirmRemoveHeadline(articleId, articleTitle, category) {
 function closeConfirmModals() {
     const addModal = document.getElementById('confirmAddModal');
     const removeModal = document.getElementById('confirmRemoveModal');
+    const alreadyModal = document.getElementById('alreadyHeadlineModal');
+    const quotaModal = document.getElementById('maxQuotaModal');
+
     if (addModal) addModal.style.display = 'none';
     if (removeModal) removeModal.style.display = 'none';
+    if (alreadyModal) alreadyModal.style.display = 'none';
+    if (quotaModal) quotaModal.style.display = 'none';
 }
 
 /**

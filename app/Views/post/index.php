@@ -276,21 +276,18 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                                     <span>Premium</span>
                                 </span>
                             <?php endif; ?>
-                            <span class="text-[11px] text-muted-foreground font-medium truncate">
-                                <?= esc($post['kanal'] ?? $post['category'] ?? 'Market') ?>
-                                <?php if (!empty($post['sub_kanal'])): ?>
-                                    &bull; <?= esc($post['sub_kanal']) ?>
-                                <?php endif; ?>
+                            <span class="text-[10px] text-muted-foreground font-mono">
+                                Publish: <?= !empty($post['publish_date']) ? esc(date('d/m/y H:i', strtotime($post['publish_date']))) : '-' ?>
                             </span>
                         </div>
                     </div>
                 </div>
 
                 <div class="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/50">
-                    <div class="truncate">
-                        <span><?= esc($post['author']) ?></span>
+                    <div class="truncate text-[10px] font-mono">
+                        <span class="font-sans font-semibold text-foreground"><?= esc($post['author']) ?></span>
                         <span class="mx-1">&bull;</span>
-                        <span><?= esc($post['publish_date']) ?></span>
+                        <span>Dibuat: <?= !empty($post['create_date']) ? esc(date('d/m/y H:i', strtotime($post['create_date']))) : '-' ?></span>
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
                         <span class="font-bold text-foreground mr-1"><?= number_format($post['views']) ?> views</span>
@@ -315,12 +312,12 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
         <table class="w-full text-left text-xs table-fixed">
             <thead class="border-b border-border bg-muted/40 text-muted-foreground uppercase tracking-wider font-bold">
                 <tr>
-                    <th class="py-3 px-3 w-[38%]">Article / Headline</th>
-                    <th class="py-3 px-2 w-[14%]">Kanal / Sub-Kanal</th>
+                    <th class="py-3 px-3 w-[36%]">Article / Headline</th>
                     <th class="py-3 px-2 w-[14%]">Author</th>
-                    <th class="py-3 px-2 w-[13%]">Publish Date</th>
+                    <th class="py-3 px-2 w-[14%]">Created At</th>
+                    <th class="py-3 px-2 w-[14%]">Publish At</th>
                     <th class="py-3 px-2 w-[10%]">Status</th>
-                    <th class="py-3 px-2 w-[5%] text-right">Views</th>
+                    <th class="py-3 px-2 w-[6%] text-right">Views</th>
                     <th class="py-3 px-3 w-[6%] text-right">Action</th>
                 </tr>
             </thead>
@@ -365,14 +362,13 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                                 </div>
                             </div>
                         </td>
-                        <td class="py-3 px-2 text-muted-foreground truncate">
-                            <span class="font-semibold text-foreground"><?= esc($post['kanal'] ?? $post['category'] ?? 'Market') ?></span>
-                            <?php if (!empty($post['sub_kanal'])): ?>
-                                <span class="text-[10px] text-muted-foreground block truncate">&bull; <?= esc($post['sub_kanal']) ?></span>
-                            <?php endif; ?>
-                        </td>
                         <td class="py-3 px-2 text-foreground font-medium truncate"><?= esc($post['author']) ?></td>
-                        <td class="py-3 px-2 text-muted-foreground whitespace-nowrap"><?= esc($post['publish_date']) ?></td>
+                        <td class="py-3 px-2 text-muted-foreground whitespace-nowrap text-[11px] font-mono">
+                            <?= !empty($post['create_date']) ? esc(date('Y-m-d H:i', strtotime($post['create_date']))) : '-' ?>
+                        </td>
+                        <td class="py-3 px-2 text-muted-foreground whitespace-nowrap text-[11px] font-mono">
+                            <?= !empty($post['publish_date']) ? esc(date('Y-m-d H:i', strtotime($post['publish_date']))) : '-' ?>
+                        </td>
                         <td class="py-3 px-2">
                             <?php 
                                 $status = strtolower($post['status']);

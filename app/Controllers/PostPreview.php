@@ -3,14 +3,17 @@
 namespace App\Controllers;
 
 use App\Models\ArticleModel;
+use App\Models\ChartModel;
 
 class PostPreview extends BaseController
 {
     protected ArticleModel $articleModel;
+    protected ChartModel $chartModel;
 
     public function __construct()
     {
         $this->articleModel = new ArticleModel();
+        $this->chartModel = new ChartModel();
     }
 
     public function show($id)
@@ -226,116 +229,125 @@ class PostPreview extends BaseController
             return '';
         }
 
-        // 0. User-requested clean syntax: ::(disini keterangan chart)::
+        // 1. Stock / Financial Ticker Embed via <blockquote>[embed type=stock]TICKER[/embed]</blockquote>
         $content = preg_replace_callback(
-            '/::\((.*?)\)::/i',
+            '/(?:<blockquote>\s*\[embed\s+type=["\']?stock["\']?\]\s*([A-Z0-9:\.\-]+)\s*\[\/embed\]\s*<\/blockquote>|<div[^>]*data-embed-type=["\'](?:stock_chart|financial_chart)["\'][^>]*data-(?:ticker|symbol)=["\']([^"\']+)["\'][^>]*>.*?<\/div>|::(?:Stock|Embed) Chart:\s*([A-Z0-9:\.\-]+)::)/i',
             function ($m) {
-                $chartDesc = trim($m[1]);
-                if (empty($chartDesc)) {
-                    $chartDesc = 'Financial Chart Analysis';
+                $rawTicker = !empty($m[1]) ? $m[1] : (!empty($m[2]) ? $m[2] : ($m[3] ?? 'BBCA'));
+                return $this->renderTradingViewWidget($rawTicker);
+            },
+            $content
+        );
+
+        // 2. Chart Embed via <blockquote>[embed type=chart ... ]...[/embed]</blockquote> or ::(label)::
+        $content = preg_replace_callback(
+            '/(?:<blockquote>\s*\[embed\s+type=["\']?chart["\']?([^\]]*)\](.*?)\[\/embed\]\s*<\/blockquote>|::\((.*?)\)::)/i',
+            function ($m) {
+                $attrs = $m[1] ?? '';
+                $bodyText = trim($m[2] ?? '');
+                $legacyLabel = trim($m[3] ?? '');
+
+                $chartId = null;
+                $symbol = '';
+                $title = '';
+
+                if (preg_match('/\bid=["\']?(\d+)["\']?/i', $attrs, $im)) {
+                    $chartId = (int)$im[1];
+                }
+                if (preg_match('/\bsymbol=["\']([^"\']*)["\']/i', $attrs, $sm)) {
+                    $symbol = trim($sm[1]);
+                }
+                if (preg_match('/\btitle=["\']([^"\']*)["\']/i', $attrs, $tm)) {
+                    $title = trim($tm[1]);
                 }
 
-                // Check if chart description contains stock ticker (e.g. BBCA, IDX:BBCA)
-                $stockTicker = null;
-                if (preg_match('/\b(?:IDX:)?([A-Z]{4})\b/', strtoupper($chartDesc), $tm)) {
-                    $stockTicker = $tm[1];
+                $chartTitle = $title ?: ($bodyText ?: ($legacyLabel ?: 'Financial Chart Analysis'));
+
+                // Query database chartdata table first
+                $chartRow = null;
+                if ($chartId) {
+                    $chartRow = $this->chartModel->find($chartId);
+                }
+                if (!$chartRow && !empty($chartTitle)) {
+                    $chartRow = $this->chartModel->where('LOWER(chartTitle)', strtolower($chartTitle))->first();
                 }
 
-                if ($stockTicker) {
-                    return '
-                    <div class="my-6 rounded-xl border border-slate-200 overflow-hidden bg-white shadow-xs">
-                        <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between text-xs">
-                            <span class="font-bold text-slate-800">' . htmlspecialchars($chartDesc) . '</span>
-                            <span class="rounded bg-indigo-100 text-indigo-700 px-2 py-0.5 text-[10px] font-mono font-bold">IDX:' . htmlspecialchars($stockTicker) . '</span>
-                        </div>
-                        <div class="w-full relative" style="height: 440px;">
-                            <iframe src="https://s.tradingview.com/widgetembed/?symbol=IDX%3A' . urlencode($stockTicker) . '&interval=D&symboledit=1&saveimage=1&toolbarbg=ffffff&studies=%5B%22STD%3BVolume%22%5D&theme=light&style=1&timezone=Asia%2FJakarta&locale=id&utm_source=investor.id"
-                                class="w-full h-full border-0"
-                                loading="lazy"
-                                title="' . htmlspecialchars($chartDesc) . '">
-                            </iframe>
-                        </div>
-                    </div>';
+                if ($chartRow) {
+                    return $this->renderCustomDataChart($chartRow, $chartTitle);
                 }
 
-                // General interactive financial chart card
+                // If not in chartdata, check if it is a stock ticker
+                $stockCandidate = $symbol ?: $chartTitle;
+                if (preg_match('/\b(?:IDX:)?([A-Z]{4})\b/', strtoupper($stockCandidate), $tm)) {
+                    return $this->renderTradingViewWidget($tm[1], $chartTitle);
+                }
+
+                // General interactive financial chart fallback card
                 return '
                 <div class="my-6 rounded-xl border border-blue-200/80 bg-blue-50/40 p-4 shadow-xs">
                     <div class="flex items-center justify-between border-b border-blue-200/60 pb-2 mb-3">
                         <div class="flex items-center gap-2">
                             <span class="size-2 rounded-full bg-blue-600 animate-pulse"></span>
-                            <h4 class="text-xs font-bold text-slate-900">' . htmlspecialchars($chartDesc) . '</h4>
+                            <h4 class="text-xs font-bold text-slate-900">' . htmlspecialchars($chartTitle) . '</h4>
                         </div>
                         <span class="rounded bg-blue-600 text-white px-2 py-0.5 text-[10px] font-bold">EMBED CHART</span>
                     </div>
-                    <div class="h-64 sm:h-72 w-full rounded-lg bg-white border border-blue-100 flex flex-col items-center justify-center text-slate-400 p-4 text-center">
-                        <svg class="size-12 text-blue-500/70 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
-                        <span class="text-xs font-semibold text-slate-700">' . htmlspecialchars($chartDesc) . '</span>
-                        <span class="text-[11px] text-slate-400 mt-0.5">Grafik interaktif dirender secara otomatis pada portal berita pembaca</span>
+                    <div class="h-48 w-full rounded-lg bg-white border border-blue-100 flex flex-col items-center justify-center text-slate-400 p-4 text-center">
+                        <svg class="size-10 text-blue-500/70 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                        <span class="text-xs font-semibold text-slate-700">' . htmlspecialchars($chartTitle) . '</span>
+                        <span class="text-[11px] text-slate-400 mt-0.5">Konfigurasi chart belum ditemukan di database</span>
                     </div>
                 </div>';
             },
             $content
         );
 
-        // Google Docs / Spreadsheet Embed Tokens (::Google Doc: URL:: or ::Google Sheet: URL::)
+        // 3. Google Docs / Sheets via <blockquote>[embed type=googledoc|googlesheet url=URL]Title[/embed]</blockquote> or ::Google Doc: URL::
         $content = preg_replace_callback(
-            '/::Google (Doc|Sheet|Spreadsheet):\s*(https?:\/\/[^\s:]+)(?:\s*\|\s*([^:]+))?::/i',
+            '/(?:<blockquote>\s*\[embed\s+type=["\']?(googledoc|googlesheet)["\']?(?:\s+url=["\']([^"\']+)["\'])?[^\]]*\](.*?)\[\/embed\]\s*<\/blockquote>|::Google (Doc|Sheet|Spreadsheet):\s*(https?:\/\/[^\s:]+)(?:\s*\|\s*([^:]+))?::)/i',
             function ($m) {
-                $type = strtolower($m[1]);
-                $url = trim($m[2]);
-                $title = !empty($m[3]) ? trim($m[3]) : ($type === 'doc' ? 'Google Document' : 'Google Spreadsheet');
-                return $this->renderGoogleEmbed($type, $url, $title);
+                if (!empty($m[1])) {
+                    $type = strtolower($m[1]) === 'googlesheet' ? 'sheet' : 'doc';
+                    $url = trim($m[2] ?? '');
+                    $title = trim($m[3] ?? '');
+                    if (empty($url) && filter_var($title, FILTER_VALIDATE_URL)) {
+                        $url = $title;
+                        $title = ($type === 'sheet' ? 'Google Spreadsheet' : 'Google Document');
+                    }
+                } else {
+                    $type = strtolower($m[4] ?? 'doc');
+                    $url = trim($m[5] ?? '');
+                    $title = !empty($m[6]) ? trim($m[6]) : ($type === 'doc' ? 'Google Document' : 'Google Spreadsheet');
+                }
+                return $this->renderGoogleEmbed($type, $url, $title ?: 'Google Document');
             },
             $content
         );
 
-        // 1. Stock / Financial Charts (Tokens and Placeholders)
+        // 4. Social Media Embeds via <blockquote>[embed type=youtube|instagram|twitter|x|tiktok|googledrive|scribd|socmed]URL[/embed]</blockquote> or ::Embed Socmed::
         $content = preg_replace_callback(
-            '/(?:<div[^>]*data-embed-type=["\'](?:stock_chart|financial_chart)["\'][^>]*data-(?:ticker|symbol)=["\']([^"\']+)["\'][^>]*>.*?<\/div>|::(?:Stock|Embed) Chart:\s*([A-Z0-9:\.\-]+)::)/i',
+            '/(?:<blockquote>\s*\[embed\s+type=["\']?(youtube|instagram|twitter|x|tiktok|googledrive|scribd|socmed)["\']?[^\]]*\](.*?)\[\/embed\]\s*<\/blockquote>|::Embed Socmed:\s*([^\|:]+)(?:\s*\|\s*([^\|:]+))?(?:\s*\|\s*([^:]+))?::|<div[^>]*data-embed-type=["\']socmed["\'][^>]*data-platform=["\']([^"\']+)["\'][^>]*data-url=["\']([^"\']+)["\'][^>]*>.*?<\/div>)/i',
             function ($m) {
-                $rawTicker = !empty($m[1]) ? $m[1] : $m[2];
-                $cleanTicker = strtoupper(trim(str_replace(['IDX:', '$'], '', $rawTicker)));
-                if (empty($cleanTicker)) $cleanTicker = 'BBCA';
-
-                return '
-                <div class="my-6 rounded-xl border border-slate-200 overflow-hidden bg-white shadow-xs">
-                    <div class="w-full relative" style="height: 480px;">
-                        <iframe src="https://s.tradingview.com/widgetembed/?symbol=IDX%3A' . urlencode($cleanTicker) . '&interval=D&symboledit=1&saveimage=1&toolbarbg=ffffff&studies=%5B%22STD%3BVolume%22%5D&theme=light&style=1&timezone=Asia%2FJakarta&locale=id&utm_source=investor.id"
-                            class="w-full h-full border-0"
-                            loading="lazy"
-                            title="' . htmlspecialchars($cleanTicker) . ' Chart oleh TradingView">
-                        </iframe>
-                    </div>
-                    <div class="text-center text-xs text-slate-500 py-2 border-t border-slate-100 font-sans">
-                        <a href="https://id.tradingview.com/symbols/IDX-' . htmlspecialchars($cleanTicker) . '/" target="_blank" rel="noopener nofollow" class="text-blue-600 hover:underline font-semibold">' . htmlspecialchars($cleanTicker) . ' Chart</a> oleh TradingView
-                    </div>
-                </div>';
+                if (!empty($m[1])) {
+                    $platform = strtolower($m[1]);
+                    $body = trim($m[2] ?? '');
+                    $parts = explode('|', $body, 2);
+                    $url = trim($parts[0]);
+                    $caption = isset($parts[1]) ? trim($parts[1]) : '';
+                    return $this->renderSocialEmbedBadge($platform, $url, $caption);
+                } elseif (!empty($m[3])) {
+                    $platform = strtolower(trim($m[3]));
+                    $url = !empty($m[4]) ? trim($m[4]) : '#';
+                    $caption = !empty($m[5]) ? trim($m[5]) : '';
+                    return $this->renderSocialEmbedBadge($platform, $url, $caption);
+                } else {
+                    return $this->renderSocialEmbedBadge(strtolower(trim($m[6] ?? 'socmed')), $m[7] ?? '#');
+                }
             },
             $content
         );
 
-        // 2. Social Media & Document Embeds (Tokens and Shortcodes)
-        $content = preg_replace_callback(
-            '/::Embed Socmed:\s*([^\|:]+)(?:\s*\|\s*([^\|:]+))?(?:\s*\|\s*([^:]+))?::/i',
-            function ($m) {
-                $platform = strtolower(trim($m[1]));
-                $url = !empty($m[2]) ? trim($m[2]) : '#';
-                $caption = !empty($m[3]) ? trim($m[3]) : '';
-                return $this->renderSocialEmbedBadge($platform, $url, $caption);
-            },
-            $content
-        );
-
-        $content = preg_replace_callback(
-            '/<div[^>]*data-embed-type=["\']socmed["\'][^>]*data-platform=["\']([^"\']+)["\'][^>]*data-url=["\']([^"\']+)["\'][^>]*>.*?<\/div>/i',
-            function ($m) {
-                return $this->renderSocialEmbedBadge(strtolower(trim($m[1])), $m[2]);
-            },
-            $content
-        );
-
-        // 3. Baca Juga blockquote polish
+        // 5. Baca Juga blockquote polish
         $content = preg_replace_callback(
             '/<blockquote>\s*<p>\s*<strong>Baca Juga:\s*<\/strong>\s*<a href="([^"]+)"[^>]*>(.*?)<\/a>\s*<\/p>\s*<\/blockquote>/i',
             function ($m) {
@@ -479,6 +491,82 @@ class PostPreview extends BaseController
             </div>
             <div class="w-full relative" style="height: 480px;">
                 <iframe src="' . htmlspecialchars($embedUrl) . '" class="w-full h-full border-0" loading="lazy" title="' . $safeTitle . '"></iframe>
+            </div>
+        </div>';
+    }
+
+    /**
+     * Render production-identical TradingView widget (Gambar 1 parity)
+     * Clean, border-rounded, no outer headers/footers, saveimage=0 for the pop-out link icon
+     */
+    protected function renderTradingViewWidget(string $ticker, string $desc = ''): string
+    {
+        $cleanTicker = strtoupper(trim(str_replace(['IDX:', '$'], '', $ticker)));
+        if (empty($cleanTicker)) {
+            $cleanTicker = 'BBCA';
+        }
+        $title = $desc ?: "{$cleanTicker} Chart oleh TradingView";
+
+        return '
+        <div class="my-6 w-full rounded-xl border border-slate-200 overflow-hidden bg-white shadow-xs" style="height: 480px;">
+            <iframe src="https://s.tradingview.com/widgetembed/?symbol=IDX%3A' . urlencode($cleanTicker) . '&interval=D&symboledit=1&saveimage=0&toolbarbg=ffffff&studies=%5B%22STD%3BVolume%22%5D&theme=light&style=1&timezone=Asia%2FJakarta&locale=id&utm_source=investor.id"
+                class="w-full h-full border-0"
+                loading="lazy"
+                title="' . htmlspecialchars($title) . '">
+            </iframe>
+        </div>';
+    }
+
+    /**
+     * Render real interactive Custom Data Chart from database (chartdata)
+     * Displays real Chart.js interactive canvas with categories and numeric series
+     */
+    protected function renderCustomDataChart(array $chartRow, string $titleOverride = ''): string
+    {
+        $parsed = $this->chartModel->parseChartAxisData($chartRow);
+        $chartId = (int)($chartRow['chartID'] ?? ($chartRow['id'] ?? 1));
+        $chartTitle = $titleOverride ?: ($chartRow['chartTitle'] ?? 'Grafik Finansial');
+        $style = $chartRow['chartStyle'] ?? ($chartRow['type'] ?? 'line');
+        $symbol = $chartRow['xAxisTitle'] ?? ($chartRow['symbol'] ?? 'Periode');
+        $source = $chartRow['source'] ?? 'Investor.id Riset';
+        $yTitle = $parsed['yAxisTitle'] ?? 'Nilai';
+        $labels = $parsed['labels'] ?? [];
+        $values = $parsed['values'] ?? [];
+
+        $uniqueCanvasId = 'custom_chart_' . $chartId . '_' . substr(md5($chartTitle . microtime()), 0, 6);
+
+        return '
+        <div class="my-6 rounded-xl border border-slate-200 bg-white p-5 shadow-xs overflow-hidden article-custom-chart-wrapper">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-3 mb-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="inline-flex items-center rounded-sm bg-blue-50 text-blue-700 px-2 py-0.5 text-[10px] font-bold capitalize border border-blue-100">
+                            ' . htmlspecialchars($style) . '
+                        </span>
+                        <span class="text-[11px] font-semibold text-slate-400 font-mono">
+                            #' . $chartId . '
+                        </span>
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-base leading-snug">' . htmlspecialchars($chartTitle) . '</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">' . htmlspecialchars($symbol) . ' &bull; Sumber: <span class="font-medium text-slate-700">' . htmlspecialchars($source) . '</span></p>
+                </div>
+                <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                    <span class="size-1.5 rounded-full bg-emerald-500"></span>
+                    Data Riset
+                </span>
+            </div>
+            <div class="w-full relative bg-slate-50/50 rounded-lg p-3" style="height: 320px;">
+                <canvas id="' . $uniqueCanvasId . '"
+                        data-type="' . htmlspecialchars($style) . '"
+                        data-title="' . htmlspecialchars($chartTitle) . '"
+                        data-ytitle="' . htmlspecialchars($yTitle) . '"
+                        data-labels="' . htmlspecialchars(json_encode($labels)) . '"
+                        data-values="' . htmlspecialchars(json_encode($values)) . '">
+                </canvas>
+            </div>
+            <div class="mt-3 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
+                <span>Grafik Interaktif Investor.id</span>
+                <span>Sumber Data: <strong class="text-slate-600">' . htmlspecialchars($source) . '</strong></span>
             </div>
         </div>';
     }

@@ -139,3 +139,203 @@ input[type=range] {
   border-left-color: #6366f1;
 }
 
+/* ==========================================================================
+   CKEditor 4 Dark Mode Theming (Seamless CMS Integration)
+   ========================================================================== */
+.dark .cke {
+  border: 1px solid hsl(var(--border)) !important;
+  background-color: hsl(var(--card)) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.25) !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden;
+}
+
+.dark .cke_inner {
+  background-color: hsl(var(--card)) !important;
+  border-radius: 0.5rem !important;
+}
+
+.dark .cke_top {
+  background: hsl(var(--muted) / 0.7) !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  box-shadow: none !important;
+  padding: 6px 8px !important;
+}
+
+.dark .cke_bottom {
+  background: hsl(var(--muted) / 0.45) !important;
+  border-top: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+  box-shadow: none !important;
+}
+
+.dark .cke_contents {
+  background-color: #0f172a !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Source mode textarea in dark mode */
+.cke_source {
+  caret-color: #0f172a !important;
+}
+
+.dark .cke_source {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  caret-color: #38bdf8 !important;
+  border-color: hsl(var(--border)) !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  line-height: 1.6 !important;
+  padding: 12px 16px !important;
+}
+
+/* Toolgroups and buttons in dark mode */
+.dark .cke_toolgroup {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  margin: 1px 4px 1px 0 !important;
+}
+
+.dark .cke_toolgroup a.cke_button:last-child:after,
+.dark .cke_toolgroup a.cke_button.cke_button_disabled:hover:last-child:after {
+  border-right-color: hsl(var(--border)) !important;
+}
+
+.dark .cke_button {
+  transition: background-color 0.15s ease;
+  border-radius: 3px !important;
+}
+
+.dark .cke_button:hover,
+.dark .cke_button:focus,
+.dark .cke_button:active {
+  background: hsl(var(--accent) / 0.25) !important;
+  box-shadow: none !important;
+}
+
+.dark .cke_button_on {
+  background: hsl(var(--primary) / 0.3) !important;
+  box-shadow: none !important;
+}
+
+/* Icon filters for dark mode */
+.dark .cke_button_icon {
+  filter: invert(0.88) brightness(1.1);
+}
+
+.dark .cke_button_disabled .cke_button_icon {
+  opacity: 0.25 !important;
+  filter: invert(0.5);
+}
+
+/* Dropdown / combo styling in dark mode */
+.dark .cke_combo_button {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+}
+
+.dark .cke_combo_text {
+  color: hsl(var(--foreground)) !important;
+  text-shadow: none !important;
+}
+
+.dark .cke_combo_open {
+  border-left-color: hsl(var(--border)) !important;
+}
+
+.dark .cke_combo_arrow {
+  filter: invert(0.85);
+}
+
+.dark .cke_path_item {
+  color: hsl(var(--muted-foreground)) !important;
+  text-shadow: none !important;
+}
+
+.dark .cke_path_item:hover {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .cke_resizer {
+  border-color: transparent hsl(var(--muted-foreground) / 0.4) transparent transparent !important;
+}
+
+/* Dialogs in dark mode */
+.dark .cke_dialog {
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+}
+
+.dark .cke_dialog_body {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .cke_dialog_title {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  text-shadow: none !important;
+}
+
+.dark .cke_dialog_footer {
+  background: hsl(var(--muted) / 0.6) !important;
+  border-top: 1px solid hsl(var(--border)) !important;
+}
+
+.dark .cke_dialog_ui_input_text,
+.dark .cke_dialog_ui_input_select,
+.dark .cke_dialog_ui_input_textarea {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--input)) !important;
+  border-radius: 4px !important;
+}
+
+.dark .cke_dialog_tab {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+.dark .cke_dialog_tab_selected {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-bottom-color: hsl(var(--card)) !important;
+}
+
+/* ==========================================================================
+   CKEditor & Article Body Blockquote Callout Box (Visual Parity with Gambar 2)
+   ========================================================================== */
+body.cke_editable blockquote,
+.article-body blockquote,
+.preview-article-body blockquote {
+  background-color: #f0f7ff !important;
+  border-left: 4px solid #2B6CB0 !important;
+  color: #1e3a8a !important;
+  padding: 10px 16px !important;
+  margin: 14px 0 !important;
+  border-radius: 0 6px 6px 0 !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  box-shadow: 0 1px 2px rgba(43, 108, 176, 0.05);
+}
+
+.dark body.cke_editable blockquote,
+html.dark body.cke_editable blockquote,
+.dark .article-body blockquote,
+.dark .preview-article-body blockquote {
+  background-color: rgba(30, 41, 59, 0.75) !important;
+  border-left-color: #60a5fa !important;
+  color: #cbd5e1 !important;
+}
+
+
+

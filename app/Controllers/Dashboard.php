@@ -15,11 +15,14 @@ class Dashboard extends BaseController
 
     public function index()
     {
-        $metrics = $this->articleModel->getDashboardMetrics();
+        $sessionUserId = (int)(session('user_id') ?: 1);
+
+        $metrics = $this->articleModel->getDashboardMetrics($sessionUserId);
         $topArticles = $this->articleModel->getTopArticles(5);
         $pendingArticles = $this->articleModel->getPendingArticles(5);
+        $myDrafts = $this->articleModel->getUserActiveDrafts($sessionUserId, 5);
         $recentArticles = $this->articleModel->getArticlesWithRelations([], 1, 10)['data'];
-        $chartDatasets = $this->articleModel->getPublishingChartData();
+        $chartDatasets = $this->articleModel->getPublishingChartData($sessionUserId);
 
         return view('dashboard/index', [
             'title'           => 'Newsroom Overview',
@@ -27,6 +30,7 @@ class Dashboard extends BaseController
             'posts'           => $recentArticles,
             'topArticles'     => $topArticles,
             'pendingArticles' => $pendingArticles,
+            'myDrafts'        => $myDrafts,
             'metrics'         => $metrics,
             'chartDatasets'   => $chartDatasets
         ]);

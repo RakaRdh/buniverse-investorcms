@@ -265,12 +265,32 @@ class CmsDataSeeder extends Seeder
 
             $daysAgo = $art['days'] ?? ($idx % 60);
             $hoursAgo = ($idx * 3) % 24;
-            $pubDate = date('Y-m-d H:i:s', strtotime("-{$daysAgo} days -{$hoursAgo} hours"));
-            $createDate = date('Y-m-d H:i:s', strtotime("-{$daysAgo} days -{$hoursAgo} hours -30 minutes"));
+            if ($daysAgo < 0) {
+                // Future scheduled publication
+                $futureDays = abs($daysAgo);
+                $pubDate = date('Y-m-d H:i:s', strtotime("+{$futureDays} days +{$hoursAgo} hours"));
+                $createDate = date('Y-m-d H:i:s', strtotime("-1 hours"));
+            } else {
+                $pubDate = date('Y-m-d H:i:s', strtotime("-{$daysAgo} days -{$hoursAgo} hours"));
+                $createDate = date('Y-m-d H:i:s', strtotime("-{$daysAgo} days -{$hoursAgo} hours -30 minutes"));
+            }
+
+            // Embed shortcodes according to production specifications
+            $embedShortcode = '';
+            if ($idx % 6 === 0) {
+                $embedShortcode = '<blockquote>[embed type=stock]BBCA,BBRI,BMRI[/embed]</blockquote>';
+            } elseif ($idx % 6 === 1) {
+                $embedShortcode = '<blockquote>[embed type=chart]' . (($idx % 4) + 1) . '[/embed]</blockquote>';
+            } elseif ($idx % 6 === 2) {
+                $embedShortcode = '<blockquote>[embed type=youtube]https://www.youtube.com/watch?v=dQw4w9WgXcQ[/embed]</blockquote>';
+            } elseif ($idx % 6 === 3) {
+                $embedShortcode = '<blockquote><p><strong>Baca Juga: </strong><a href="/artikel/ihsg-tembus-level-psikologis-7450">IHSG Melesat Tembus Level 7.450 Didorong Saham Perbankan</a></p></blockquote>';
+            }
 
             // Full production body style with inline CSS and HTML formatting
             $bodyContent = '<p><span style="font-family: Verdana, \'Lucida Grande\', Tahoma, Arial, sans-serif; line-height: 16px; font-size: 11px; border-collapse: collapse; color: #333333; ">'
                 . '<span style="font-size: 10pt; ">' . esc($art['lead']) . '</span><br><br>'
+                . ($embedShortcode ? $embedShortcode . '<br>' : '')
                 . '<span style="font-size: 10pt; ">' . esc($art['summary']) . ' Dalam laporannya, para analis menyoroti ketahanan makroekonomi domestik serta perbaikan marjin laba bersih korporasi yang menjadi katalis fundamental utama.</span><br><br>'
                 . '<span style="font-size: 10pt; ">"Kami melihat prospek akumulasi jangka panjang masih sangat terbuka lebar, didukung arus masuk modal asing dan kebijakan suku bunga acuan yang kondusif," ungkap perwakilan riset pasar modal di Jakarta.</span><br><br>'
                 . '<span style="font-size: 10pt; ">Lebih lanjut, pelaku pasar diimbau untuk tetap mencermati faktor risiko geopolitik global serta menerapkan manajemen diversifikasi portofolio secara terukur guna meraih imbal hasil optimal.</span>'
@@ -310,14 +330,19 @@ class CmsDataSeeder extends Seeder
             ]);
 
             // Article Meta
+            $thumbCaption = $art['thumb_caption'] ?? ('Ilustrasi foto: ' . $art['title']);
+            $thumbDesc = $art['thumb_desc'] ?? ('Dokumentasi visual liputan redaksi Investor.id untuk artikel ' . $art['title']);
+
             $metaEntries = [
-                'news_source'   => $art['source'] ?? 'Investor Daily',
-                'thumbnail'     => $art['thumb'] ?? '/img/investor_placeholder.jpg',
-                'is_premium'    => (string)($art['is_premium'] ?? 0),
-                'headline_type' => $art['headline_type'] ?? 'none',
-                'upper_deck'    => $art['upper_deck'] ?? 'FOKUS PASAR',
-                'kanal'         => $art['kanal'] ?? 'Market',
-                'sub_kanal'     => $art['sub_kanal'] ?? '',
+                'news_source'           => $art['source'] ?? 'Investor Daily',
+                'thumbnail'             => $art['thumb'] ?? '/img/investor_placeholder.jpg',
+                'thumbnail_caption'     => $thumbCaption,
+                'thumbnail_description' => $thumbDesc,
+                'is_premium'            => (string)($art['is_premium'] ?? 0),
+                'headline_type'         => $art['headline_type'] ?? 'none',
+                'upper_deck'            => $art['upper_deck'] ?? 'FOKUS PASAR',
+                'kanal'                 => $art['kanal'] ?? 'Market',
+                'sub_kanal'             => $art['sub_kanal'] ?? '',
             ];
 
             foreach ($metaEntries as $mKey => $mVal) {
@@ -373,17 +398,20 @@ class CmsDataSeeder extends Seeder
 
         // 7. articleheadline (Active & Inactive Headlines: 'home', 'topical', 'trending', 'newsletter')
         $headlineCategories = ['home', 'topical', 'trending', 'newsletter'];
+        $staffUsernames = ['raka_h', 'admin', 'budi_redpel', 'hendra_redpel', 'dewi_editor'];
         for ($i = 0; $i < 20; $i++) {
             if (isset($articleMap[$i])) {
                 $catName = $headlineCategories[$i % count($headlineCategories)];
                 // Variasi status = 0 untuk 3 headline terakhir guna memastikan parity kasus status = 0 dari DB Sumber
                 $hStatus = ($i >= 17) ? 0 : 1;
+                $setByStaff = $staffUsernames[$i % count($staffUsernames)];
                 $this->db->table('articleheadline')->insert([
                     'category'  => $catName,
                     'articleID' => $articleMap[$i],
                     'num'       => ($i % 5) + 1,
                     'timestamp' => date('Y-m-d H:i:s', strtotime("-{$i} hours")),
                     'status'    => $hStatus,
+                    'set_by'    => $setByStaff,
                 ]);
             }
         }
@@ -448,10 +476,12 @@ class CmsDataSeeder extends Seeder
             $principalId = $userMap[$userKey] ?? 1;
             $imgFile = $imgPool[$mIdx % count($imgPool)];
             $mTitle = $mediaTitles[$mIdx % count($mediaTitles)] . ' #' . ($mIdx + 1);
+            $mCaption = 'Dokumentasi riset redaksi Investor.id terkait ' . $mTitle;
+            $mDescription = 'Foto dokumentasi resolusi tinggi untuk kebutuhan liputan editorial pasar modal mengenai ' . $mTitle;
 
             $this->db->table('media')->insert([
-                'caption'     => 'Dokumentasi riset redaksi Investor.id terkait ' . $mTitle,
-                'description' => 'Foto dokumentasi resolusi tinggi untuk kebutuhan liputan editorial pasar modal.',
+                'caption'     => $mCaption,
+                'description' => $mDescription,
                 'filename'    => $imgFile,
                 'mediaTitle'  => $mTitle,
                 'source'      => 'Investor.id / Riset',
@@ -461,13 +491,13 @@ class CmsDataSeeder extends Seeder
             ]);
             $mediaId = $this->db->insertID();
 
-            // Link into mediaarticle (0-indexed position, caption NULL per production spec)
+            // Link into mediaarticle (0-indexed position, caption populated per media specification)
             if (isset($articleMap[$mIdx])) {
                 $this->db->table('mediaarticle')->insert([
                     'mediaID'   => $mediaId,
                     'articleID' => $articleMap[$mIdx],
                     'position'  => $mIdx % 3, // 0, 1, 2
-                    'caption'   => null,
+                    'caption'   => $mCaption,
                 ]);
             }
         }
@@ -928,6 +958,6 @@ class CmsDataSeeder extends Seeder
         ];
         $this->db->table('user2fauth')->insertBatch($tokens);
 
-        echo "CmsDataSeeder with 100 Fresh Articles finished successfully!\n";
+        echo "CmsDataSeeder with " . count($articlesRaw) . " Fresh Articles finished successfully!\n";
     }
 }

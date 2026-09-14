@@ -285,12 +285,71 @@ class GeminiProvider
         // 2. Fetch HTML
         $html = $this->fetchUrlContent($url);
 
+        // 2b. Extract Article Title
+        $title = null;
+        if (preg_match('/<meta[^>]+property=["\']og:title["\'][^>]+content=["\'](.*?)["\']/i', $html, $mTitle)) {
+            $title = html_entity_decode(trim($mTitle[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        } elseif (preg_match('/<title[^>]*>(.*?)<\/title>/is', $html, $mTitle)) {
+            $title = html_entity_decode(trim(strip_tags($mTitle[1])), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+        if ($title) {
+            $title = preg_replace('/\s*[-|]\s*(ANTARA News|Investor\.id|BeritaSatu).*$/i', '', $title);
+            $title = trim($title);
+        }
+
         // 3. Extract Open Graph image for thumbnail
         $thumbnailUrl = null;
         if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](.*?)["\']/i', $html, $m)) {
             $thumbnailUrl = $m[1];
         } elseif (preg_match('/<meta[^>]+content=["\'](https?:\/\/[^"\']+)["\'][^>]+property=["\']og:image["\']/i', $html, $m)) {
             $thumbnailUrl = $m[1];
+        }
+
+        // 3b. Extract Image Caption & Description
+        $thumbnailCaption = '';
+        $thumbnailDescription = '';
+
+        // Prioritize <figcaption>
+        if (preg_match('/<figcaption[^>]*>(.*?)<\/figcaption>/is', $html, $mFigCap)) {
+            $rawCap = trim(strip_tags($mFigCap[1]));
+            if (!empty($rawCap)) {
+                $thumbnailDescription = html_entity_decode($rawCap, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+        }
+
+        // Secondary fallback: caption class in div, p, span
+        if (empty($thumbnailDescription)) {
+            if (preg_match('/<(?:div|p|span)[^>]+class=["\'][^"\']*(?:caption|text-muted|img-desc|image-desc|credit|foto-caption)[^"\']*["\'][^>]*>(.*?)<\/(?:div|p|span)>/is', $html, $mDivCap)) {
+                $rawCap = trim(strip_tags($mDivCap[1]));
+                if (!empty($rawCap)) {
+                    $thumbnailDescription = html_entity_decode($rawCap, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                }
+            }
+        }
+
+        // Tertiary fallback: og:image:alt or twitter:image:alt
+        if (empty($thumbnailDescription)) {
+            if (preg_match('/<meta[^>]+(?:property|name)=["\'](?:og|twitter):image:alt["\'][^>]+content=["\'](.*?)["\']/i', $html, $mAlt)) {
+                $thumbnailDescription = html_entity_decode(trim($mAlt[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+        }
+
+        // Quaternary fallback: article title
+        if (empty($thumbnailDescription) && !empty($title)) {
+            $thumbnailDescription = 'Dokumentasi visual artikel: ' . $title;
+        }
+
+        // Clean up whitespace
+        $thumbnailDescription = preg_replace('/\s+/', ' ', trim($thumbnailDescription));
+
+        // Generate concise thumbnail caption from description
+        $thumbnailCaption = $thumbnailDescription;
+        if (mb_strlen($thumbnailCaption) > 140) {
+            if (preg_match('/^(.*?[.!?])(?:\s|$)/u', $thumbnailDescription, $mSentence)) {
+                $thumbnailCaption = trim($mSentence[1]);
+            } else {
+                $thumbnailCaption = mb_substr($thumbnailDescription, 0, 137) . '...';
+            }
         }
 
         // 4. Download and cache image locally if available
@@ -326,10 +385,13 @@ class GeminiProvider
         $body = $this->callWithFallback($prompt, 4096);
 
         return [
-            'body'          => $body,
-            'thumbnail_url' => $savedImage ?: '/img/investor_placeholder.jpg',
-            'source_url'    => $url,
-            'model'         => $this->getLastModelUsed(),
+            'title'                 => $title,
+            'body'                  => $body,
+            'thumbnail_url'         => $savedImage ?: '/img/investor_placeholder.jpg',
+            'thumbnail_caption'     => $thumbnailCaption,
+            'thumbnail_description' => $thumbnailDescription,
+            'source_url'            => $url,
+            'model'                 => $this->getLastModelUsed(),
         ];
     }
 

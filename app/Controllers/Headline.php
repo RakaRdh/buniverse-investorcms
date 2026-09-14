@@ -56,15 +56,21 @@ class Headline extends BaseController
             'to'         => min($page * $perPage, $totalItems),
         ];
 
+        $activeHeadlineMap = [];
+        foreach ($headlines as $hl) {
+            $activeHeadlineMap[(int)$hl['id']] = (int)$hl['headline_position'];
+        }
+
         return view('headline/index', [
-            'title'          => 'Headline Management',
-            'breadcrumb'     => 'Headline / Placements',
-            'availablePosts' => $availableResult['data'],
-            'pagination'     => $pagination,
-            'headlines'      => $headlines,
-            'targetCategory' => $targetCategory,
-            'categories'     => $categories,
-            'filters'        => [
+            'title'             => 'Headline Management',
+            'breadcrumb'        => 'Headline / Placements',
+            'availablePosts'    => $availableResult['data'],
+            'pagination'        => $pagination,
+            'headlines'         => $headlines,
+            'activeHeadlineMap' => $activeHeadlineMap,
+            'targetCategory'    => $targetCategory,
+            'categories'        => $categories,
+            'filters'           => [
                 'q'        => $keyword ?? '',
                 'category' => $categoryFilter ?? 'all'
             ]
@@ -89,16 +95,41 @@ class Headline extends BaseController
             return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Gagal: Hanya artikel berstatus 'Publish' yang dapat dijadikan headline.");
         }
 
+        // Future Publish At protection: Do not allow articles whose publish time has not arrived yet
+        if (!empty($article['articleDate']) && strtotime($article['articleDate']) > time()) {
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Gagal: Artikel belum mencapai jadwal tayang (Publish At di masa mendatang).");
+        }
+
         $existing = $this->headlineModel
             ->where('articleID', $articleId)
             ->where('category', $targetCategory)
             ->first();
+
+        // 1. If already active in this category, reject with clear informative message
+        if ($existing && (int)$existing['status'] === 1) {
+            $pos = $existing['num'] ?? 1;
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))
+                ->with('error', "Artikel sudah terdaftar sebagai headline aktif di kategori '{$targetCategory}' (pada posisi #{$pos}).");
+        }
+
+        // 2. Enforce max 5 articles quota per category (Legacy parity)
+        $activeCount = $this->headlineModel
+            ->where('category', $targetCategory)
+            ->where('status', 1)
+            ->countAllResults();
+
+        if ($activeCount >= 5) {
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))
+                ->with('error', "Batas maksimal tercapai: Kategori '{$targetCategory}' sudah memiliki 5 artikel headline. Silakan hapus atau gantikan salah satu artikel terlebih dahulu.");
+        }
 
         $maxPos = $this->headlineModel
             ->where('category', $targetCategory)
             ->where('status', 1)
             ->selectMax('num')
             ->first()['num'] ?? 0;
+
+        $currentUser = session('user_username') ?: (session('username') ?: (session('user_name') ?: 'admin'));
 
         if (!$existing) {
             $this->headlineModel->insert([
@@ -107,6 +138,7 @@ class Headline extends BaseController
                 'num'        => $maxPos + 1,
                 'timestamp'  => date('Y-m-d H:i:s'),
                 'status'     => 1,
+                'set_by'     => $currentUser,
             ]);
             return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil ditambahkan ke antrean headline {$targetCategory}.");
         } else if ((int)$existing['status'] === 0) {
@@ -115,6 +147,7 @@ class Headline extends BaseController
                 'num'       => $maxPos + 1,
                 'timestamp' => date('Y-m-d H:i:s'),
                 'status'    => 1,
+                'set_by'    => $currentUser,
             ]);
             return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil diaktifkan kembali di antrean headline {$targetCategory}.");
         }
@@ -129,11 +162,17 @@ class Headline extends BaseController
             $targetCategory = 'home';
         }
 
+        $currentUser = session('user_username') ?: (session('username') ?: (session('user_name') ?: 'admin'));
+
         // Production convention: set status = 0 rather than hard deleting to preserve audit log
         $this->headlineModel
             ->where('articleID', (int)$id)
             ->where('category', $targetCategory)
-            ->set(['status' => 0])
+            ->set([
+                'status'    => 0,
+                'set_by'    => $currentUser,
+                'timestamp' => date('Y-m-d H:i:s'),
+            ])
             ->update();
 
         return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel dinonaktifkan dari antrean headline {$targetCategory}.");
@@ -174,7 +213,8 @@ class Headline extends BaseController
             ]);
         }
 
-        $success = $this->headlineModel->batchReorder($category, $rawOrder);
+        $currentUser = session('user_username') ?: (session('username') ?: (session('user_name') ?: 'admin'));
+        $success = $this->headlineModel->batchReorder($category, $rawOrder, $currentUser);
 
         if ($success) {
             return $this->response->setJSON([

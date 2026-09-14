@@ -101,10 +101,16 @@
                 <!-- Scheduled Date & Time Controls (Slider + Manual Editable Inputs) -->
                 <div id="scheduledSettingBox" class="p-3.5 rounded-lg border border-primary/30 bg-primary/5 space-y-3.5" style="display: none;">
                     <div>
-                        <label class="block text-xs font-bold text-primary mb-1 flex items-center justify-between">
-                            <span>Pilih Tanggal Tayang:</span>
-                            <i data-lucide="calendar" class="size-3.5"></i>
-                        </label>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-xs font-bold text-primary flex items-center gap-1">
+                                <span>Pilih Tanggal Tayang:</span>
+                                <i data-lucide="calendar" class="size-3.5"></i>
+                            </label>
+                            <button type="button" id="btnPublishNow" onclick="setPublishNow()" class="inline-flex items-center gap-1 rounded bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-bold hover:bg-primary/90 transition-colors shadow-2xs">
+                                <i data-lucide="zap" class="size-2.5"></i>
+                                <span>Publish Now</span>
+                            </button>
+                        </div>
                         <input type="text" id="scheduledDateInput" class="flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-sm font-medium" placeholder="Pilih tanggal...">
                     </div>
 
@@ -133,7 +139,7 @@
                     </div>
 
                     <div class="p-2 rounded bg-background border border-border text-[11px] flex items-center justify-between">
-                        <span class="text-muted-foreground">Waktu Dijadwalkan:</span>
+                        <span class="text-muted-foreground">Waktu Publikasi:</span>
                         <span id="publishDateDisplay" class="font-bold text-foreground font-mono">01 Sep 2026 09:00</span>
                     </div>
                 </div>
@@ -217,6 +223,21 @@
                                 <p class="text-xs text-muted-foreground mt-1">
                                     Mendukung format JPG, PNG, atau WebP (Rekomendasi min. 1200×675 px, max 5MB)
                                 </p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-2 pt-1">
+                            <div>
+                                <label class="block text-[11px] font-bold text-foreground mb-1">
+                                    Deskripsi Cover <span class="text-destructive">*</span>
+                                </label>
+                                <textarea name="thumbnail_description" id="thumbnailDescriptionInput" rows="2" class="flex w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary" placeholder="Masukkan deskripsi gambar cover..."><?= esc($article['thumbnail_description'] ?? '') ?></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-foreground mb-1">
+                                    Caption Cover
+                                </label>
+                                <input type="text" name="thumbnail_caption" id="thumbnailCaptionInput" value="<?= esc($article['thumbnail_caption'] ?? '') ?>" class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary" placeholder="Caption gambar cover (otomatis mengikuti deskripsi)...">
                             </div>
                         </div>
 
@@ -420,35 +441,79 @@
                     </div>
                 </div>
 
-                <!-- Sumber Berita (Dropdown) -->
+                <!-- Sumber Berita (Legacy Structured Dropdown & Custom Input) -->
                 <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Sumber Berita</label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-foreground">Sumber Berita</label>
+                        <span id="customSourceBadge" class="<?= (!empty($currentSource) && !in_array($currentSource, ['Investor Daily', 'Investor Daily TV', 'Investor.id', 'BeritaSatu.com', 'Majalah Investor', 'BTV', 'ANTARA', 'REUTERS', 'AFP', 'Bloomberg', 'Bursa Efek Indonesia (IDX)', 'Bank Indonesia', 'WWW', 'World Wide Web (WWW)'])) ? '' : 'hidden' ?> text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">Sumber Manual</span>
+                    </div>
                     <?php
-                        $currentSource = $article['source'] ?? $article['sumber_berita'] ?? 'Investor.id / Riset';
-                        $standardSources = [
-                            'Investor.id / Riset',
-                            'Antara News',
+                        $currentSource = $article['source'] ?? $article['sumber_berita'] ?? 'Investor Daily';
+                        $internalSources = [
+                            'Investor Daily',
+                            'Investor Daily TV',
+                            'Investor.id',
+                            'BeritaSatu.com',
+                            'Majalah Investor',
+                            'BTV'
+                        ];
+                        $externalSources = [
+                            'ANTARA',
+                            'REUTERS',
+                            'AFP',
+                            'Bloomberg',
                             'Bursa Efek Indonesia (IDX)',
                             'Bank Indonesia',
-                            'Bloomberg',
-                            'Reuters',
-                            'Kementerian Keuangan',
-                            'Siaran Pers Emiten'
+                            'WWW' => 'World Wide Web (WWW)'
                         ];
-                        $isCustom = !in_array($currentSource, $standardSources);
+
+                        $matchedSource = false;
+                        foreach ($internalSources as $s) {
+                            if (strcasecmp($currentSource, $s) === 0) {
+                                $matchedSource = $s;
+                                break;
+                            }
+                        }
+                        if (!$matchedSource) {
+                            foreach ($externalSources as $val => $label) {
+                                $target = is_string($val) ? $val : $label;
+                                if (strcasecmp($currentSource, $target) === 0 || strcasecmp($currentSource, $label) === 0) {
+                                    $matchedSource = $target;
+                                    break;
+                                }
+                            }
+                        }
+                        $isCustom = ($matchedSource === false);
                     ?>
-                    <select id="sourceSelect" onchange="handleSourceChange(this.value)" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                        <?php foreach ($standardSources as $sSource): ?>
-                            <option value="<?= esc($sSource) ?>" <?= ($currentSource === $sSource) ? 'selected' : '' ?>><?= esc($sSource) ?></option>
-                        <?php endforeach; ?>
-                        <option value="Lainnya" <?= $isCustom ? 'selected' : '' ?>>Lainnya (Ketik Manual)...</option>
+                    <select id="sourceSelect" onchange="handleSourceChange(this.value)" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium text-foreground">
+                        <optgroup label="INTERNAL">
+                            <?php foreach ($internalSources as $sSource): ?>
+                                <option value="<?= esc($sSource) ?>" <?= ($matchedSource === $sSource) ? 'selected' : '' ?>><?= esc($sSource) ?></option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <optgroup label="EXTERNAL">
+                            <?php foreach ($externalSources as $val => $label): 
+                                $optVal = is_string($val) ? $val : $label;
+                                $optLabel = $label;
+                            ?>
+                                <option value="<?= esc($optVal) ?>" <?= ($matchedSource === $optVal) ? 'selected' : '' ?>><?= esc($optLabel) ?></option>
+                            <?php endforeach; ?>
+                            <option value="OTHERS" <?= $isCustom ? 'selected' : '' ?>>OTHERS (Ketik Sumber Lain)...</option>
+                        </optgroup>
                     </select>
-                    <input type="text" 
-                           id="customSourceInput" 
-                           name="source" 
-                           value="<?= esc($currentSource) ?>" 
-                           placeholder="Ketik nama sumber berita..." 
-                           class="<?= $isCustom ? '' : 'hidden' ?> mt-1.5 flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+
+                    <div id="customSourceWrapper" class="<?= $isCustom ? '' : 'hidden' ?> mt-2">
+                        <div class="relative">
+                            <input type="text" 
+                                   id="customSourceInput" 
+                                   name="source" 
+                                   value="<?= esc($currentSource) ?>" 
+                                   placeholder="Ketik nama sumber berita lain..." 
+                                   class="flex h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                            <i data-lucide="edit-3" class="size-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        </div>
+                        <p class="text-[10px] text-muted-foreground mt-1">Isi sumber berita manual jika tidak tertera pada daftar di atas.</p>
+                    </div>
                 </div>
             </div>
 
@@ -632,7 +697,7 @@
                         <span class="text-[9px] text-muted-foreground font-mono truncate">
                             <i data-lucide="calendar" class="size-2.5 inline-block mr-0.5"></i><?= esc($m['date'] ?? '') ?>
                         </span>
-                        <button type="button" onclick="selectMediaImage('<?= esc(addslashes($m['image'])) ?>', '<?= esc(addslashes($m['caption'] ?? 'Dokumentasi Investor.id')) ?>')" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] text-white px-3 py-1.5 text-xs font-bold shadow-2xs hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
+                        <button type="button" onclick="selectMediaImage('<?= esc(addslashes($m['image'])) ?>', '<?= esc(addslashes($m['caption'] ?? 'Dokumentasi Investor.id')) ?>', '<?= esc(addslashes($m['description'] ?? ($m['caption'] ?? 'Dokumentasi Investor.id'))) ?>')" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] text-white px-3 py-1.5 text-xs font-bold shadow-2xs hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
                             <i data-lucide="check" class="size-3"></i>
                             <span>Pilih Gambar</span>
                         </button>
@@ -742,7 +807,7 @@
                         </div>
                         <span class="text-[10px] text-muted-foreground block mt-0.5">Simbol: <strong><?= esc($ch['symbol'] ?? 'IDX') ?></strong> &bull; Sumber: <?= esc($ch['source'] ?? 'Investor.id') ?></span>
                     </div>
-                    <button type="button" onclick="insertSelectedChart('<?= esc(addslashes($ch['title'])) ?>', '<?= esc(addslashes($ch['symbol'] ?? 'IDX')) ?>', '<?= esc(addslashes($ch['type'] ?? 'Area')) ?>', '<?= esc(addslashes($ch['source'] ?? 'Investor.id')) ?>')" class="inline-flex shrink-0 items-center gap-1 rounded bg-[#2B6CB0] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 shadow-2xs">
+                    <button type="button" onclick="insertSelectedChart('<?= esc($ch['id'] ?? '') ?>', '<?= esc(addslashes($ch['title'])) ?>', '<?= esc(addslashes($ch['symbol'] ?? 'IDX')) ?>', '<?= esc(addslashes($ch['type'] ?? 'Area')) ?>', '<?= esc(addslashes($ch['source'] ?? 'Investor.id')) ?>')" class="inline-flex shrink-0 items-center gap-1 rounded bg-[#2B6CB0] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 shadow-2xs">
                         <span>Sisipkan</span>
                     </button>
                 </div>
@@ -958,7 +1023,7 @@ window.__ARTICLE_CURRENT_SUBKANAL__ = <?= json_encode($article['sub_kanal'] ?? '
 <!-- CKEditor 4 Full Suite CDN & Flatpickr CDN -->
 <script src="https://cdn.ckeditor.com/4.22.1/full-all/ckeditor.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="/js/pages/editor.js"></script>
+<script src="/js/pages/editor.js?v=<?= time() ?>"></script>
 <?php if ($isEdit && !empty($article['id'])): ?>
 <script>
 // Auto release edit lock when navigating away or closing window
