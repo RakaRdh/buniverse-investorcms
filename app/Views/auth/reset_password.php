@@ -133,13 +133,26 @@
                         <!-- New Password -->
                         <div>
                             <label class="block text-xs font-semibold text-[#334155] mb-1.5">Kata Sandi Baru</label>
-                            <input type="password" name="new_password" required minlength="8" placeholder="Minimal 8 karakter" class="flex h-10 w-full rounded-lg border border-[#CBD5E1] bg-white px-3.5 text-sm text-[#0F172A] shadow-xs placeholder:text-[#94A3B8] focus:border-[#0077CC] focus:outline-none focus:ring-2 focus:ring-[#0077CC]/20 transition-all font-mono">
+                            <div class="relative flex items-center">
+                                <input type="password" id="new_password" name="new_password" required minlength="8" placeholder="Minimal 8 karakter (kombinasi huruf, angka, simbol)" class="flex h-10 w-full rounded-lg border border-[#CBD5E1] bg-white pl-3.5 pr-11 text-sm text-[#0F172A] shadow-xs placeholder:text-[#94A3B8] focus:border-[#0077CC] focus:outline-none focus:ring-2 focus:ring-[#0077CC]/20 transition-all font-mono">
+                                <button type="button" onclick="togglePasswordVisibility('new_password', this)" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#475569] p-1.5 rounded-md transition-colors" title="Lihat/Sembunyikan Kata Sandi">
+                                    <i data-lucide="eye" class="size-4"></i>
+                                </button>
+                            </div>
+                            <p class="mt-1.5 text-[11px] text-[#64748B] leading-tight">
+                                Wajib mengandung huruf besar, huruf kecil, angka, dan karakter simbol.
+                            </p>
                         </div>
 
                         <!-- Confirm Password -->
                         <div>
                             <label class="block text-xs font-semibold text-[#334155] mb-1.5">Konfirmasi Kata Sandi Baru</label>
-                            <input type="password" name="confirm_password" required minlength="8" placeholder="Ulangi kata sandi baru" class="flex h-10 w-full rounded-lg border border-[#CBD5E1] bg-white px-3.5 text-sm text-[#0F172A] shadow-xs placeholder:text-[#94A3B8] focus:border-[#0077CC] focus:outline-none focus:ring-2 focus:ring-[#0077CC]/20 transition-all font-mono">
+                            <div class="relative flex items-center">
+                                <input type="password" id="confirm_password" name="confirm_password" required minlength="8" placeholder="Ulangi kata sandi baru" class="flex h-10 w-full rounded-lg border border-[#CBD5E1] bg-white pl-3.5 pr-11 text-sm text-[#0F172A] shadow-xs placeholder:text-[#94A3B8] focus:border-[#0077CC] focus:outline-none focus:ring-2 focus:ring-[#0077CC]/20 transition-all font-mono">
+                                <button type="button" onclick="togglePasswordVisibility('confirm_password', this)" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#475569] p-1.5 rounded-md transition-colors" title="Lihat/Sembunyikan Kata Sandi">
+                                    <i data-lucide="eye" class="size-4"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Submit Button -->
@@ -169,6 +182,15 @@
     </div>
 
     <script>
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const isPass = input.type === 'password';
+            input.type = isPass ? 'text' : 'password';
+            btn.innerHTML = isPass ? '<i data-lucide="eye-off" class="size-4 text-[#0077CC]"></i>' : '<i data-lucide="eye" class="size-4"></i>';
+            if (window.lucide) lucide.createIcons();
+        }
+
         lucide.createIcons();
     </script>
 </body>

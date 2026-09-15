@@ -90,4 +90,80 @@ class HeadlineModel extends Model
 
         return $this->db->transStatus();
     }
+
+    /**
+     * Log headline activity (ADD, REMOVE, REORDER) to articleheadlinehistory
+     */
+    public function logHistory(int $articleId, string $category, string $action, ?int $position = null, ?string $user = null, ?string $notes = null): bool
+    {
+        return $this->db->table('articleheadlinehistory')->insert([
+            'articleID' => $articleId,
+            'category'  => $category,
+            'action'    => strtoupper($action),
+            'position'  => $position,
+            'user'      => $user ?: (session('user_username') ?: (session('username') ?: 'system')),
+            'timestamp' => date('Y-m-d H:i:s'),
+            'notes'     => $notes,
+        ]);
+    }
+
+    /**
+     * Get paginated headline history with article and user details
+     */
+    public function getHistory(array $filters = [], int $page = 1, int $perPage = 20): array
+    {
+        $builder = $this->db->table('articleheadlinehistory hh')
+            ->select('
+                hh.id AS history_id,
+                hh.articleID,
+                hh.category,
+                hh.action,
+                hh.position,
+                hh.user,
+                hh.timestamp,
+                hh.notes,
+                n.headline AS article_title,
+                n.status AS article_status,
+                u.name AS actor_name,
+                u.alias AS actor_alias
+            ')
+            ->join('article n', 'n.articleID = hh.articleID', 'left')
+            ->join('useradministrator u', 'u.username = hh.user', 'left');
+
+        if (!empty($filters['category']) && strtolower($filters['category']) !== 'all') {
+            $builder->where('LOWER(hh.category)', strtolower($filters['category']));
+        }
+
+        if (!empty($filters['action']) && strtolower($filters['action']) !== 'all') {
+            $builder->where('UPPER(hh.action)', strtoupper($filters['action']));
+        }
+
+        if (!empty($filters['q'])) {
+            $builder->groupStart()
+                ->like('n.headline', $filters['q'])
+                ->orLike('hh.user', $filters['q'])
+                ->orLike('u.name', $filters['q'])
+            ->groupEnd();
+        }
+
+        if (!empty($filters['date_from'])) {
+            $builder->where('hh.timestamp >=', date('Y-m-d 00:00:00', strtotime($filters['date_from'])));
+        }
+        if (!empty($filters['date_to'])) {
+            $builder->where('hh.timestamp <=', date('Y-m-d 23:59:59', strtotime($filters['date_to'])));
+        }
+
+        $countBuilder = clone $builder;
+        $total = $countBuilder->countAllResults(false);
+
+        $offset = ($page - 1) * $perPage;
+        $list = $builder->orderBy('hh.timestamp', 'DESC')
+            ->limit($perPage, $offset)
+            ->get()->getResultArray();
+
+        return [
+            'total' => $total,
+            'data'  => $list,
+        ];
+    }
 }

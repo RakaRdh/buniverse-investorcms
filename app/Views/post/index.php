@@ -248,9 +248,8 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                 };
             ?>
             <div class="p-3.5 space-y-2.5">
-                <div class="flex items-start gap-3">
-                    <img src="<?= esc($post['thumbnail']) ?>" alt="" loading="lazy" decoding="async" class="size-12 rounded-md object-cover shrink-0 border border-border">
-                    <div class="min-w-0 flex-1">
+                <div class="space-y-1">
+                    <div class="min-w-0">
                         <a href="<?= base_url('post/edit/' . $post['id']) ?>" class="block font-medium text-xs text-foreground hover:text-primary transition-colors leading-snug line-clamp-2">
                             <?= esc($post['title']) ?>
                         </a>
@@ -279,6 +278,11 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                             <span class="text-[10px] text-muted-foreground font-mono">
                                 Publish: <?= !empty($post['publish_date']) ? esc(date('d/m/y H:i', strtotime($post['publish_date']))) : '-' ?>
                             </span>
+                            <?php if (!empty($post['post_by_name']) || !empty($post['post_by'])): ?>
+                                <span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                                    <span>Ed: <?= esc($post['post_by_alias'] ?: ($post['post_by_name'] ?: $post['post_by'])) ?></span>
+                                </span>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -312,19 +316,20 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
         <table class="w-full text-left text-xs table-fixed">
             <thead class="border-b border-border bg-muted/40 text-muted-foreground uppercase tracking-wider font-bold">
                 <tr>
-                    <th class="py-3 px-3 w-[36%]">Article / Headline</th>
-                    <th class="py-3 px-2 w-[14%]">Author</th>
-                    <th class="py-3 px-2 w-[14%]">Created At</th>
-                    <th class="py-3 px-2 w-[14%]">Publish At</th>
-                    <th class="py-3 px-2 w-[10%]">Status</th>
-                    <th class="py-3 px-2 w-[6%] text-right">Views</th>
-                    <th class="py-3 px-3 w-[6%] text-right">Action</th>
+                    <th class="py-3 px-3 w-[38%]">Article / Headline</th>
+                    <th class="py-3 px-2.5 w-[14%]">Author</th>
+                    <th class="py-3 px-2.5 w-[12%]">Editor</th>
+                    <th class="py-3 px-2 w-[11%]">Created At</th>
+                    <th class="py-3 px-2 w-[11%]">Publish At</th>
+                    <th class="py-3 px-1 w-[6%] text-center">Status</th>
+                    <th class="py-3 px-2 w-[4%] text-right">Views</th>
+                    <th class="py-3 px-3 w-[4%] text-right">Action</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-border">
                 <?php if (empty($posts)): ?>
                     <tr>
-                        <td colspan="7" class="py-10 text-center">
+                        <td colspan="8" class="py-10 text-center">
                             <div class="flex flex-col items-center justify-center gap-2">
                                 <i data-lucide="file-question" class="size-8 text-muted-foreground"></i>
                                 <p class="text-sm font-medium text-foreground">No articles found</p>
@@ -336,22 +341,20 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                     <?php foreach ($posts as $post): ?>
                     <tr class="transition-colors hover:bg-muted/50">
                         <td class="py-3 px-3">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <img src="<?= esc($post['thumbnail']) ?>" alt="" loading="lazy" decoding="async" class="size-9 rounded-md object-cover shrink-0 border border-border">
-                                <div class="min-w-0 flex-1">
-                                    <a href="<?= base_url('post/edit/' . $post['id']) ?>" class="block font-medium text-foreground truncate hover:text-primary transition-colors text-xs leading-snug">
-                                        <?= esc($post['title']) ?>
-                                    </a>
+                            <div class="min-w-0">
+                                <a href="<?= base_url('post/edit/' . $post['id']) ?>" class="block font-medium text-foreground truncate hover:text-primary transition-colors text-xs leading-snug" title="<?= esc($post['title']) ?>">
+                                    <?= esc($post['title']) ?>
+                                </a>
+                                <div class="flex items-center gap-1.5 mt-0.5">
+                                    <span class="text-[10px] text-muted-foreground font-mono">#<?= esc($post['id']) ?></span>
                                     <?php if (!empty($post['editlock'])): ?>
-                                        <div class="flex items-center gap-1.5 mt-0.5">
-                                            <span class="inline-flex items-center gap-1 text-[10px] text-rose-600 dark:text-rose-400 font-medium">
-                                                <i data-lucide="lock" class="size-2.5"></i>
-                                                <span>Diedit: <?= esc($post['locked_by_name'] ?: ($post['locked_by_username'] ?: 'User #' . $post['editlock'])) ?></span>
-                                            </span>
-                                            <?php if ($canViewDeleted): ?>
-                                                <button type="button" onclick="forceUnlockItem(<?= (int)$post['id'] ?>)" class="text-[10px] text-amber-600 hover:text-amber-700 underline font-medium" title="Buka gembok artikel">Unlock</button>
-                                            <?php endif; ?>
-                                        </div>
+                                        <span class="inline-flex items-center gap-1 text-[10px] text-rose-600 dark:text-rose-400 font-medium">
+                                            <i data-lucide="lock" class="size-2.5"></i>
+                                            <span>Diedit: <?= esc($post['locked_by_name'] ?: ($post['locked_by_username'] ?: 'User #' . $post['editlock'])) ?></span>
+                                        </span>
+                                        <?php if ($canViewDeleted): ?>
+                                            <button type="button" onclick="forceUnlockItem(<?= (int)$post['id'] ?>)" class="text-[10px] text-amber-600 hover:text-amber-700 underline font-medium" title="Buka gembok artikel">Unlock</button>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                     <?php if (!empty($post['is_premium'])): ?>
                                         <span class="inline-flex items-center gap-0.5 rounded-sm bg-amber-500/15 px-1 py-0.2 text-[8px] font-bold text-amber-700 uppercase">
@@ -362,14 +365,20 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                                 </div>
                             </div>
                         </td>
-                        <td class="py-3 px-2 text-foreground font-medium truncate"><?= esc($post['author']) ?></td>
+                        <td class="py-3 px-2.5 text-foreground font-medium truncate" title="<?= esc($post['author']) ?>"><?= esc($post['author']) ?></td>
+                        <td class="py-3 px-2.5 text-muted-foreground truncate" title="<?= esc($post['post_by_name'] ?: $post['post_by']) ?>">
+                            <span class="font-medium text-foreground"><?= esc($post['post_by_alias'] ?: ($post['post_by_name'] ?: ($post['post_by'] ?: '-'))) ?></span>
+                            <?php if (!empty($post['post_by_alias']) && !empty($post['post_by_name'])): ?>
+                                <span class="block text-[10px] text-muted-foreground/70 truncate"><?= esc($post['post_by_name']) ?></span>
+                            <?php endif; ?>
+                        </td>
                         <td class="py-3 px-2 text-muted-foreground whitespace-nowrap text-[11px] font-mono">
                             <?= !empty($post['create_date']) ? esc(date('Y-m-d H:i', strtotime($post['create_date']))) : '-' ?>
                         </td>
                         <td class="py-3 px-2 text-muted-foreground whitespace-nowrap text-[11px] font-mono">
                             <?= !empty($post['publish_date']) ? esc(date('Y-m-d H:i', strtotime($post['publish_date']))) : '-' ?>
                         </td>
-                        <td class="py-3 px-2">
+                        <td class="py-3 px-1 text-center">
                             <?php 
                                 $status = strtolower($post['status']);
                                 $badgeClass = match($status) {

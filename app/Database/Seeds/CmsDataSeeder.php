@@ -106,20 +106,24 @@ class CmsDataSeeder extends Seeder
 
         $userMap = []; // username => userID
         foreach ($defaultStaff as $u) {
-            $salt = AdminModel::generateSalt(128);
+            $salt = AdminModel::generateSalt($u['username'], $u['password']);
             $hashedPass = AdminModel::encodePassword($u['password'], $salt);
+            $authCode = random_int(100000, 999999);
+            $authExpired = date('Y-m-d H:i:s', strtotime('+15 minutes'));
             $this->db->table('useradministrator')->insert([
-                'name'      => $u['name'],
-                'username'  => $u['username'],
-                'alias'     => $u['alias'],
-                'slug'      => url_title($u['name'], '-', true),
-                'password'  => $hashedPass,
-                'salt'      => $salt,
-                'email'     => $u['email'],
-                'active'    => $u['active'] ?? 1,
-                'roleName'  => $u['role'],
-                'nextVerify'=> date('Y-m-d', strtotime('+30 days')),
-                'lastLogin' => date('Y-m-d H:i:s'),
+                'name'        => $u['name'],
+                'username'    => $u['username'],
+                'alias'       => $u['alias'],
+                'slug'        => url_title($u['name'], '-', true),
+                'password'    => $hashedPass,
+                'salt'        => $salt,
+                'email'       => $u['email'],
+                'active'      => $u['active'] ?? 1,
+                'roleName'    => $u['role'],
+                'nextVerify'  => date('Y-m-d', strtotime('+30 days')),
+                'authCode'    => (string)$authCode,
+                'authExpired' => $authExpired,
+                'lastLogin'   => date('Y-m-d H:i:s'),
             ]);
             $userMap[$u['username']] = $this->db->insertID();
         }
@@ -396,8 +400,8 @@ class CmsDataSeeder extends Seeder
             }
         }
 
-        // 7. articleheadline (Active & Inactive Headlines: 'home', 'topical', 'trending', 'newsletter')
-        $headlineCategories = ['home', 'topical', 'trending', 'newsletter'];
+        // 7. articleheadline (Active & Inactive Headlines: 'headline', 'topical', 'trending', 'newsletter')
+        $headlineCategories = ['headline', 'topical', 'trending', 'newsletter'];
         $staffUsernames = ['raka_h', 'admin', 'budi_redpel', 'hendra_redpel', 'dewi_editor'];
         for ($i = 0; $i < 20; $i++) {
             if (isset($articleMap[$i])) {
@@ -950,14 +954,7 @@ class CmsDataSeeder extends Seeder
         ];
         $this->db->table('pushtodevicescron')->insertBatch($crons);
 
-        // 22. user2fauth
-        $tokens = [
-            ['iduser' => 1, 'code' => 849201, 'expired' => date('Y-m-d H:i:s', strtotime('+30 days')), 'isUsed' => '1'],
-            ['iduser' => 2, 'code' => 610394, 'expired' => date('Y-m-d H:i:s', strtotime('+15 days')), 'isUsed' => '0'],
-            ['iduser' => 3, 'code' => 459128, 'expired' => date('Y-m-d H:i:s', strtotime('+7 days')),  'isUsed' => '1'],
-        ];
-        $this->db->table('user2fauth')->insertBatch($tokens);
-
+        // 22. user2fauth (Discontinued - 2FA authentication is unified in useradministrator authCode & authExpired)
         echo "CmsDataSeeder with " . count($articlesRaw) . " Fresh Articles finished successfully!\n";
     }
 }

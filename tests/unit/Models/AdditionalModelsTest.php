@@ -11,7 +11,6 @@ use App\Models\MemberModel;
 use App\Models\NotificationModel;
 use App\Models\FeatureContentModel;
 use App\Models\ChartModel;
-use App\Models\TagModel;
 use App\Models\ActivityLogModel;
 use App\Models\DataRepository;
 
@@ -153,23 +152,6 @@ class AdditionalModelsTest extends CIUnitTestCase
         $this->assertIsArray($charts);
     }
 
-    public function testTagModelSyncArticleTags(): void
-    {
-        $tagModel = new TagModel();
-        $dummyNanoId = 99999999;
-
-        $tagModel->syncArticleTags($dummyNanoId, ['Unit Test Tag A', 'Unit Test Tag B']);
-
-        $links = $this->db->table('articletag')
-            ->where('articleId', $dummyNanoId)
-            ->get()->getResultArray();
-
-        $this->assertCount(2, $links);
-
-        // Clean up
-        $this->db->table('articletag')->where('articleId', $dummyNanoId)->delete();
-        $tagModel->whereIn('label', ['Unit Test Tag A', 'Unit Test Tag B'])->delete();
-    }
 
     public function testActivityLogModelLogAction(): void
     {

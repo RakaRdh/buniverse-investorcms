@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\MediaModel;
+use App\Libraries\ImageProcessor;
 
 class Media extends BaseController
 {
@@ -84,16 +85,21 @@ class Media extends BaseController
 
         $imagePath = $this->request->getPost('image');
 
-        // Handle local file upload if provided
+        // Handle local file upload if provided (MIME validated & memory re-encoded via ImageProcessor)
         $file = $this->request->getFile('media_file');
         if ($file && $file->isValid() && !$file->hasMoved()) {
-            $uploadDir = FCPATH . 'uploads/media';
-            if (!is_dir($uploadDir)) {
-                @mkdir($uploadDir, 0777, true);
+            $allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+            if (!in_array($file->getMimeType(), $allowedMimes)) {
+                return redirect()->back()->withInput()->with('error', 'Format file tidak didukung. Harap gunakan format JPG, PNG, atau WebP.');
             }
-            $newName = $file->getRandomName();
-            $file->move($uploadDir, $newName);
-            $imagePath = '/uploads/media/' . $newName;
+
+            $imageProcessor = new ImageProcessor();
+            $processedUrl = $imageProcessor->processUploadedFile($file, 'media');
+            if ($processedUrl) {
+                $imagePath = $processedUrl;
+            } else {
+                return redirect()->back()->withInput()->with('error', 'Gagal memproses file gambar. Pastikan file gambar valid.');
+            }
         }
 
         if (empty($imagePath)) {

@@ -47,6 +47,7 @@ $routes->get('/keyword/delete/(:num)', 'Keyword::delete/$1');
 
 // Headline Management (Master, Admin, Editor)
 $routes->get('/headline', 'Headline::index', ['filter' => 'role:master,admin,editor']);
+$routes->get('/headline/history', 'Headline::history', ['filter' => 'role:master,admin,editor']);
 $routes->post('/headline/add', 'Headline::add', ['filter' => 'role:master,admin,editor']);
 $routes->get('/headline/remove/(:num)', 'Headline::remove/$1', ['filter' => 'role:master,admin,editor']);
 $routes->post('/headline/save', 'Headline::save', ['filter' => 'role:master,admin,editor']);
@@ -79,6 +80,11 @@ $routes->get('/embed-chart/delete/(:num)', 'EmbedChart::delete/$1', ['filter' =>
 // Editorial Statistics & Reporting
 $routes->get('/statistic', 'Statistic::index');
 $routes->get('/statistic/report', 'StatisticReport::index');
+$routes->get('/statistic/editorial', 'StatisticReport::index');
+$routes->get('/statistic/publish-log', 'StatisticReport::publishLog');
+$routes->get('/statistic/popular', 'StatisticReport::popular');
+$routes->get('/statistic/heatmap', 'StatisticReport::heatmap');
+$routes->get('/statistic/export', 'StatisticReport::export');
 $routes->get('/statistic/hourly-heatmap', 'StatisticReport::hourlyHeatmap');
 
 // Kanal & Sub-Kanal Taxonomy & Performance (Master, Admin)
@@ -133,11 +139,22 @@ $routes->post('/api/ai/tags', 'AiAssistant::generateTags');
 $routes->post('/api/ai/points', 'AiAssistant::generatePoints');
 $routes->post('/api/ai/scrape', 'AiAssistant::scrape');
 
+// SEO Scoring Feature
+$routes->get('/scoring', 'Scoring::index');
+$routes->get('/scoring/logs', 'Scoring::logs');
+$routes->get('/scoring/detail/(:num)', 'Scoring::detailView/$1');
+$routes->get('/api/scoring/search-articles', 'Scoring::searchArticles');
+$routes->get('/api/scoring/article/(:num)', 'Scoring::getArticle/$1');
+$routes->post('/api/scoring/calculate', 'Scoring::calculate');
+$routes->get('/api/scoring/history/(:num)', 'Scoring::history/$1');
+$routes->get('/api/scoring/log/(:num)', 'Scoring::detail/$1');
+
 // Editorial Auto-Save, Standardized Image Upload & Edit Lock
 $routes->post('/api/autosave', 'Api\PostApi::autosave');
 $routes->post('/api/upload-image', 'Api\PostApi::uploadImage');
 $routes->post('/api/post/release-lock/(:num)', 'Api\PostApi::releaseLock/$1');
 $routes->post('/api/post/force-unlock/(:num)', 'Api\PostApi::forceUnlock/$1');
+$routes->get('/api/post/revision/(:num)', 'Api\PostApi::revisionDetail/$1');
 
 // Tag Real-Time Autocomplete
 $routes->get('/api/tags/search', 'Post::searchTags');

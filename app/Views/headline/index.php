@@ -96,7 +96,7 @@
         </div>
 
         <select name="target_category" onchange="onTargetCategoryChange(this.value)" class="flex h-8.5 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold shadow-sm focus-visible:outline-none">
-            <option value="home" <?= ($targetCategory === 'home') ? 'selected' : '' ?>>Headline Utama (Home)</option>
+            <option value="headline" <?= ($targetCategory === 'headline' || $targetCategory === 'home') ? 'selected' : '' ?>>Headline Utama</option>
             <option value="topical" <?= ($targetCategory === 'topical') ? 'selected' : '' ?>>Topical</option>
             <option value="trending" <?= ($targetCategory === 'trending') ? 'selected' : '' ?>>Trending</option>
             <option value="newsletter" <?= ($targetCategory === 'newsletter') ? 'selected' : '' ?>>Newsletter</option>
@@ -104,8 +104,8 @@
 
         <!-- Category explanation text without icons -->
         <div class="text-[11px] text-muted-foreground bg-muted/40 p-2 rounded border border-border/60">
-            <?php if ($targetCategory === 'home'): ?>
-                Headline Utama Homepage (Maksimal 5 artikel untuk carousel & hero banner depan)
+            <?php if ($targetCategory === 'headline' || $targetCategory === 'home'): ?>
+                Headline Utama (Maksimal 5 artikel untuk carousel & hero banner depan)
             <?php elseif ($targetCategory === 'topical'): ?>
                 Isu & Tema Khusus (Maksimal 5 artikel tematik pilihan redaksi)
             <?php elseif ($targetCategory === 'trending'): ?>
@@ -282,13 +282,13 @@
         <form method="post" action="<?= base_url('headline/save') ?>" class="surface-card p-5 space-y-4">
             <div>
                 <div class="flex items-center justify-between mb-1.5">
-                    <label for="targetCategorySelect" class="block text-xs font-bold text-foreground">Select Category / Kanal</label>
+                    <label for="targetCategorySelect" class="block text-xs font-bold text-foreground">Pilih Kategori (Category)</label>
                     <span class="text-[11px] font-bold <?= count($headlines) >= 5 ? 'text-amber-600 bg-amber-500/10' : 'text-primary bg-primary/10' ?> px-2 py-0.5 rounded">
                         <?= count($headlines) ?> / 5 Artikel Terisi
                     </span>
                 </div>
                 <select name="target_category" id="targetCategorySelect" onchange="onTargetCategoryChange(this.value)" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm font-semibold shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                    <option value="home" <?= ($targetCategory === 'home') ? 'selected' : '' ?>>Headline Utama (Home)</option>
+                    <option value="headline" <?= ($targetCategory === 'headline' || $targetCategory === 'home') ? 'selected' : '' ?>>Headline Utama</option>
                     <option value="topical" <?= ($targetCategory === 'topical') ? 'selected' : '' ?>>Topical</option>
                     <option value="trending" <?= ($targetCategory === 'trending') ? 'selected' : '' ?>>Trending</option>
                     <option value="newsletter" <?= ($targetCategory === 'newsletter') ? 'selected' : '' ?>>Newsletter</option>
@@ -296,8 +296,8 @@
 
                 <!-- Category explanation text without icons -->
                 <div class="mt-2 text-[11px] text-muted-foreground bg-muted/40 p-2 rounded border border-border/60 leading-relaxed">
-                    <?php if ($targetCategory === 'home'): ?>
-                        Headline Utama Homepage (Maksimal 5 artikel untuk carousel & hero banner depan)
+                    <?php if ($targetCategory === 'headline' || $targetCategory === 'home'): ?>
+                        Headline Utama (Maksimal 5 artikel untuk carousel & hero banner depan)
                     <?php elseif ($targetCategory === 'topical'): ?>
                         Isu & Tema Khusus (Maksimal 5 artikel tematik pilihan redaksi)
                     <?php elseif ($targetCategory === 'trending'): ?>
@@ -387,7 +387,7 @@
             </div>
             <div>
                 <h3 class="text-sm font-bold text-foreground">Jadikan Headline <span class="text-primary font-black"><?= esc($targetCategory) ?></span>?</h3>
-                <p class="text-xs text-muted-foreground">Artikel ini akan dimasukkan ke urutan headline kanal <?= esc($targetCategory) ?>.</p>
+                <p class="text-xs text-muted-foreground">Artikel ini akan dimasukkan ke urutan headline kategori <?= esc($targetCategory) ?>.</p>
             </div>
         </div>
         <div class="p-3 rounded-lg bg-muted/60 border border-border">
@@ -439,7 +439,7 @@
     <div class="surface-card w-full max-w-md p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
         <div>
             <h3 class="text-sm font-bold text-foreground">Artikel Sudah Menjadi Headline</h3>
-            <p class="text-xs text-muted-foreground mt-0.5">Artikel ini sudah aktif terdaftar di antrean headline kanal <span id="alreadyHeadlineCategoryText" class="font-bold text-primary"></span>.</p>
+            <p class="text-xs text-muted-foreground mt-0.5">Artikel ini sudah aktif terdaftar di antrean headline kategori <span id="alreadyHeadlineCategoryText" class="font-bold text-primary"></span>.</p>
         </div>
         <div class="p-3.5 rounded-lg bg-muted/60 border border-border space-y-1.5">
             <p id="alreadyHeadlineTitle" class="text-xs font-semibold text-foreground line-clamp-2"></p>
@@ -463,7 +463,7 @@
     <div class="surface-card w-full max-w-md p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
         <div>
             <h3 class="text-sm font-bold text-foreground">Batas Maksimal Headline Tercapai</h3>
-            <p class="text-xs text-muted-foreground mt-0.5">Kanal <span id="maxQuotaCategoryText" class="font-bold text-primary"></span> sudah terisi penuh (5 dari 5 artikel).</p>
+            <p class="text-xs text-muted-foreground mt-0.5">Kategori <span id="maxQuotaCategoryText" class="font-bold text-primary"></span> sudah terisi penuh (5 dari 5 artikel).</p>
         </div>
         <div class="p-3.5 rounded-lg bg-muted/60 border border-border">
             <p class="text-xs text-muted-foreground leading-relaxed">

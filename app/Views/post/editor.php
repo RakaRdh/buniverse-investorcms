@@ -148,12 +148,91 @@
                 <input type="hidden" name="publish_date" id="publishDateHiddenInput" value="<?= esc(!empty($article['publish_date']) && strtotime($article['publish_date']) ? date('Y-m-d H:i:s', strtotime($article['publish_date'])) : date('Y-m-d H:i:s')) ?>">
 
                 <!-- Preview Article Button in Right Sidebar -->
-                <div class="pt-3 border-t border-border">
+                <div class="pt-3 border-t border-border space-y-2">
                     <button type="button" onclick="previewArticlePage()" class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-primary shadow-2xs hover:bg-primary hover:text-white transition-colors">
                         <i data-lucide="eye" class="size-4"></i>
                         <span>Preview Artikel</span>
                     </button>
                 </div>
+
+                <?php if ($isEdit && !empty($article['status']) && in_array(strtolower($article['status']), ['publish', 'published'])): ?>
+                <!-- Live Post URL Box (Replika Legacy View Post) -->
+                <?php 
+                    $liveCategorySlug = !empty($article['kanal']) ? url_title($article['kanal'], '-', true) : 'market';
+                    $liveSlug = !empty($article['slug']) ? $article['slug'] : url_title($article['title'] ?? '', '-', true);
+                    $liveUrl = "https://investor.id/{$liveCategorySlug}/{$article['id']}/{$liveSlug}";
+                ?>
+                <div class="pt-3 border-t border-border space-y-2">
+                    <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-foreground">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="globe" class="size-3.5 text-emerald-600"></i>
+                            <span>View Live Post</span>
+                        </span>
+                        <span class="inline-flex items-center rounded-sm bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 uppercase">Live</span>
+                    </div>
+                    <div class="rounded-lg border border-border bg-background p-2.5 space-y-2 shadow-2xs">
+                        <a href="<?= esc($liveUrl) ?>" target="_blank" class="text-xs text-primary font-mono hover:underline break-all block leading-tight">
+                            <?= esc($liveUrl) ?>
+                        </a>
+                        <button type="button" onclick="copyLivePostUrl('<?= esc(addslashes($liveUrl)) ?>')" class="inline-flex w-full items-center justify-center gap-1.5 rounded border border-input bg-muted/60 px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-muted transition-colors">
+                            <i data-lucide="copy" class="size-3"></i>
+                            <span>Salin Tautan Live</span>
+                        </button>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($isEdit && !empty($revisions) && is_array($revisions)): ?>
+                <!-- Riwayat Perubahan Naskah (Replika Legacy adm_articleform.tpl) -->
+                <div class="pt-3 border-t border-border space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                            <i data-lucide="history" class="size-3.5 text-primary"></i>
+                            <span>Riwayat Perubahan</span>
+                        </label>
+                        <span class="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            <?= count($revisions) ?> log
+                        </span>
+                    </div>
+                    <div class="rounded-lg border border-border bg-background p-2 max-h-52 overflow-y-auto custom-sidebar-scroll divide-y divide-border/60">
+                        <?php foreach ($revisions as $rev): ?>
+                            <div class="py-2 first:pt-1 last:pb-1 flex items-start justify-between gap-2 group">
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-[11px] font-semibold text-foreground truncate">
+                                        <?= esc($rev['editor_name'] ?: ($rev['editor_username'] ?: 'Editor')) ?>
+                                    </div>
+                                    <div class="text-[10px] text-muted-foreground font-mono">
+                                        <?= date('d/m/y H:i', strtotime($rev['timestamp'])) ?>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="openRevisionDiffModal(<?= (int)$rev['id'] ?>)" class="inline-flex shrink-0 items-center gap-1 rounded bg-[#2B6CB0]/10 hover:bg-[#2B6CB0] text-[#2B6CB0] hover:text-white px-2 py-1 text-[10px] font-bold transition-colors shadow-2xs" title="Lihat komparasi Sebelum vs Sesudah">
+                                    <span>Diff</span>
+                                </button>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($isEdit && !empty($article['id'])): ?>
+                <!-- SEO Readiness Scoring Link Card -->
+                <div class="pt-3 border-t border-border space-y-2">
+                    <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-foreground">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="check-circle-2" class="size-3.5 text-primary"></i>
+                            <span>SEO Readiness</span>
+                        </span>
+                        <span class="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary uppercase">Feature</span>
+                    </div>
+                    <p class="text-[11px] text-muted-foreground leading-snug">
+                        Periksa kesiapan SEO on-page naskah ini (analisis teknis 12 parameter &amp; AI Quality Score).
+                    </p>
+                    <a href="<?= base_url('scoring?article_id=' . (int)$article['id']) ?>" class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600/10 border border-emerald-600/30 px-3.5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-colors shadow-2xs">
+                        <i data-lucide="sparkles" class="size-3.5"></i>
+                        <span>Cek Skor SEO Artikel Ini</span>
+                    </a>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
         
@@ -572,13 +651,13 @@
                         <i data-lucide="line-chart" class="size-3 text-accent"></i>
                         <span>Embed Chart</span>
                     </button>
-                    <button type="button" onclick="openMediaChooserModal('ckeditor')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
+                    <button type="button" onclick="openWysiwygImageModal()" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
                         <i data-lucide="image" class="size-3 text-primary"></i>
                         <span>Insert Media</span>
                     </button>
                     <button type="button" onclick="openEmbedGoogleDocModal()" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
                         <i data-lucide="file-spreadsheet" class="size-3 text-emerald-600"></i>
-                        <span>Google Docs/Sheets</span>
+                        <span>Google Docs / Files</span>
                     </button>
                     <button type="button" onclick="insertEmbedTool('embed_socmed')" class="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
                         <i data-lucide="code-2" class="size-3 text-amber-600"></i>
@@ -646,6 +725,111 @@
         </div>
     </div>
 </form>
+
+<!-- Modal Insert Image via WYSIWYG (Legacy Parity + Drag & Drop + Media Library Fallback) -->
+<div id="wysiwygImageModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.75); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-xl max-h-[88vh] flex flex-col p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-border">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-border pb-3">
+            <div>
+                <h3 class="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                    <i data-lucide="image" class="size-4 text-primary"></i>
+                    <span>Sisipkan Gambar ke Naskah (WYSIWYG)</span>
+                </h3>
+                <p class="text-[11px] text-muted-foreground mt-0.5">Unggah berkas foto baru atau pilih gambar dari Media Library editorial.</p>
+            </div>
+            <button type="button" onclick="closeWysiwygImageModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <i data-lucide="x" class="size-4"></i>
+            </button>
+        </div>
+
+        <div class="overflow-y-auto flex-1 space-y-3.5 pr-1 custom-sidebar-scroll">
+            <!-- Dropzone & File Input / Media Chooser Trigger -->
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1.5">Pilih Foto Gambar <span class="text-destructive">*</span></label>
+                
+                <!-- Drag and drop container -->
+                <div id="wysiwygImageDropzone" class="border-2 border-dashed border-border hover:border-primary/60 rounded-xl p-4 text-center cursor-pointer transition-colors bg-muted/20 hover:bg-muted/40 relative">
+                    <input type="file" id="wysiwygImageFileInput" accept="image/jpeg,image/png,image/webp,image/jpg" class="hidden" onchange="handleWysiwygImageFileSelected(this)">
+                    
+                    <div id="wysiwygDropzonePrompt" class="space-y-2">
+                        <div class="size-10 mx-auto rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                            <i data-lucide="upload-cloud" class="size-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-foreground">Klik untuk memilih foto atau Drag &amp; Drop berkas ke sini</p>
+                            <p class="text-[10px] text-muted-foreground mt-0.5">Format didukung: JPG, PNG, WebP (Maksimal 5MB)</p>
+                        </div>
+                    </div>
+
+                    <!-- Image Preview Area inside Dropzone -->
+                    <div id="wysiwygImagePreviewContainer" class="hidden relative">
+                        <img id="wysiwygImagePreviewEl" src="" alt="Preview" class="max-h-48 mx-auto rounded-lg object-contain border border-border shadow-xs bg-slate-900">
+                        <button type="button" onclick="clearWysiwygImageSelection(event)" class="absolute top-2 right-2 rounded-full bg-black/70 hover:bg-black text-white p-1 shadow-md transition-colors" title="Hapus / Ganti Foto">
+                            <i data-lucide="x" class="size-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Or choose from Media Library button -->
+                <div class="flex items-center justify-between mt-2">
+                    <span class="text-[11px] text-muted-foreground">Atau gunakan foto yang sudah ada:</span>
+                    <button type="button" onclick="openMediaChooserModal('wysiwyg_modal')" class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1 text-xs font-semibold text-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors shadow-2xs">
+                        <i data-lucide="images" class="size-3.5 text-primary"></i>
+                        <span>Pilih dari Media Library</span>
+                    </button>
+                </div>
+                <input type="hidden" id="wysiwygImageUrlInput" value="">
+            </div>
+
+            <!-- Description / Alt Text -->
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1">
+                    Deskripsi Foto (Alt Text)
+                </label>
+                <input type="text" id="wysiwygImageDescInput" placeholder="Deskripsi foto untuk aksesibilitas & SEO (misal: Gedung Bursa Efek Indonesia Jakarta)..." class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+            </div>
+
+            <!-- Caption (<figcaption>) -->
+            <div>
+                <label class="block text-xs font-bold text-foreground mb-1">
+                    Keterangan Foto (Caption) <span class="text-destructive">*</span>
+                </label>
+                <textarea id="wysiwygImageCaptionInput" rows="2" placeholder="Keterangan foto yang muncul di bawah gambar pada naskah (misal: Suasana perdagangan saham di BEI, Jakarta, Senin (14/9)...)" class="w-full rounded-md border border-input bg-background p-2.5 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"></textarea>
+            </div>
+
+            <!-- Legacy Sizing & Alignment Row (Persis opsi legacy cms.embedToPost) -->
+            <div class="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                    <label class="block text-xs font-bold text-foreground mb-1">Ukuran Foto (Legacy)</label>
+                    <select id="wysiwygImageSizeSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                        <option value="100" selected>Full width (100%)</option>
+                        <option value="50">Half width (50%)</option>
+                        <option value="30">Small (30%)</option>
+                        <option value="150">Original (Proporsional)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-foreground mb-1">Perataan Posisi (Alignment)</label>
+                    <select id="wysiwygImageAlignSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                        <option value="center" selected>Center (Tengah)</option>
+                        <option value="left">Left (Kiri - Text Wrap)</option>
+                        <option value="right">Right (Kanan - Text Wrap)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-border">
+            <button type="button" onclick="closeWysiwygImageModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
+            <button type="button" id="submitWysiwygImageBtn" onclick="submitWysiwygImageEmbed()" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90 shadow-xs">
+                <i data-lucide="plus" class="size-3.5"></i>
+                <span>Sisipkan ke Naskah</span>
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Media Library Chooser (Standardized max-w-2xl with clean responsive grid) -->
 <div id="mediaChooserModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
@@ -749,18 +933,40 @@
 
         <!-- Article Rows List -->
         <div id="articleModalList" class="overflow-y-auto flex-1 space-y-2 p-1 max-h-[300px] custom-sidebar-scroll">
-            <?php foreach (($allPosts ?? []) as $ap): ?>
-            <div class="article-modal-row flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border hover:border-primary hover:bg-muted/40 transition-colors" data-title="<?= esc(strtolower($ap['title'])) ?>" data-tags="<?= esc(strtolower($ap['tags'] ?? '')) ?>" data-kanal="<?= esc(strtolower($ap['kanal'] ?? '')) ?>">
+            <?php foreach (($allPosts ?? []) as $ap): 
+                $isScheduled = false;
+                if (!empty($ap['raw_article_date']) && strtotime($ap['raw_article_date']) > time()) {
+                    $isScheduled = true;
+                }
+                if (isset($ap['article_status']) && strcasecmp($ap['article_status'], 'Scheduled') === 0) {
+                    $isScheduled = true;
+                }
+            ?>
+            <div class="article-modal-row flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border <?= $isScheduled ? 'opacity-60 bg-muted/20' : 'hover:border-primary hover:bg-muted/40' ?> transition-colors" data-title="<?= esc(strtolower($ap['title'])) ?>" data-tags="<?= esc(strtolower($ap['tags'] ?? '')) ?>" data-kanal="<?= esc(strtolower($ap['kanal'] ?? '')) ?>">
                 <div class="flex items-center gap-3 min-w-0">
                     <img src="<?= esc($ap['thumbnail']) ?>" alt="" loading="lazy" decoding="async" class="size-9 rounded object-cover border border-border shrink-0">
                     <div class="min-w-0">
-                        <h4 class="text-xs font-bold text-foreground truncate"><?= esc($ap['title']) ?></h4>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <h4 class="text-xs font-bold text-foreground truncate"><?= esc($ap['title']) ?></h4>
+                            <?php if ($isScheduled): ?>
+                            <span class="inline-flex items-center gap-1 rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[9px] font-bold text-amber-600 dark:text-amber-400">
+                                <i data-lucide="clock" class="size-2.5"></i> Terjadwal
+                            </span>
+                            <?php endif; ?>
+                        </div>
                         <span class="text-[10px] text-muted-foreground block"><?= esc($ap['kanal'] ?? 'Market') ?> &bull; <?= esc($ap['publish_date']) ?></span>
                     </div>
                 </div>
+                <?php if ($isScheduled): ?>
+                <button type="button" disabled title="Artikel masih terjadwal dan belum dapat disisipkan" class="inline-flex shrink-0 items-center gap-1 rounded bg-muted text-muted-foreground border border-border px-2.5 py-1 text-[11px] font-semibold cursor-not-allowed opacity-60">
+                    <i data-lucide="lock" class="size-3"></i>
+                    <span>Terjadwal</span>
+                </button>
+                <?php else: ?>
                 <button type="button" onclick="insertSelectedArticleLink('<?= esc(addslashes($ap['title'])) ?>', '<?= base_url('post/' . $ap['id']) ?>', '<?= esc(addslashes($ap['summary'] ?? '')) ?>')" class="inline-flex shrink-0 items-center gap-1 rounded bg-[#2B6CB0] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#2B6CB0]/90 shadow-2xs">
                     <span>Sisipkan</span>
                 </button>
+                <?php endif; ?>
             </div>
             <?php endforeach; ?>
         </div>
@@ -938,23 +1144,36 @@
     </div>
 </div>
 
-<!-- Modal 4: Embed Google Docs / Spreadsheet (Standardized max-w-lg) -->
+<!-- Modal 4: Embed Google Docs / Spreadsheet & Berkas Lokal (/files) (Standardized max-w-lg) -->
 <div id="embedGoogleDocModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
     <div class="surface-card w-full max-w-lg max-h-[85vh] flex flex-col p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-border">
         <div class="flex items-center justify-between border-b border-border pb-3">
             <div>
                 <h3 class="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                    <i data-lucide="file-spreadsheet" class="size-4 text-emerald-600"></i>
-                    <span>Sisipkan Google Docs / Spreadsheet</span>
+                    <i data-lucide="file-text" class="size-4 text-emerald-600"></i>
+                    <span>Sisipkan Dokumen / Lembar Kerja</span>
                 </h3>
-                <p class="text-[11px] text-muted-foreground mt-0.5">Embed dokumen atau spreadsheet publik dari Google Workspace.</p>
+                <p class="text-[11px] text-muted-foreground mt-0.5">Embed Google Docs/Sheets publik atau sisipkan link unduh berkas lokal dari /files.</p>
             </div>
             <button type="button" onclick="closeEmbedGoogleDocModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <i data-lucide="x" class="size-4"></i>
             </button>
         </div>
 
-        <div class="space-y-3">
+        <!-- Document Source Tabs -->
+        <div class="flex border-b border-border text-xs">
+            <button type="button" id="docTabGoogleBtn" onclick="switchDocTab('google')" class="px-3 py-1.5 font-bold border-b-2 border-primary text-primary flex items-center gap-1.5 transition-colors">
+                <i data-lucide="file-spreadsheet" class="size-3.5 text-emerald-600"></i>
+                <span>Google Docs / Sheets</span>
+            </button>
+            <button type="button" id="docTabLocalBtn" onclick="switchDocTab('local')" class="px-3 py-1.5 font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors">
+                <i data-lucide="folder-archive" class="size-3.5 text-amber-600"></i>
+                <span>Berkas Lokal (/files)</span>
+            </button>
+        </div>
+
+        <!-- Tab 1: Google Docs / Sheets URL -->
+        <div id="docTabGoogleContent" class="space-y-3">
             <div>
                 <label class="block text-xs font-bold text-foreground mb-1">Tipe Google File</label>
                 <select id="googleDocTypeSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
@@ -973,14 +1192,56 @@
                 <label class="block text-xs font-bold text-foreground mb-1">Judul / Keterangan Dokumen (Opsional)</label>
                 <input type="text" id="googleDocTitleInput" placeholder="Misal: Laporan Analisis Keuangan Kuartal II..." class="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
             </div>
+
+            <div class="flex justify-end gap-2 pt-3 border-t border-border">
+                <button type="button" onclick="closeEmbedGoogleDocModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
+                <button type="button" onclick="submitGoogleDocEmbed()" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90">
+                    <i data-lucide="plus" class="size-3.5"></i>
+                    <span>Sisipkan Google Doc</span>
+                </button>
+            </div>
         </div>
 
-        <div class="flex justify-end gap-2 pt-3 border-t border-border">
-            <button type="button" onclick="closeEmbedGoogleDocModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
-            <button type="button" onclick="submitGoogleDocEmbed()" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#2B6CB0]/90">
-                <i data-lucide="plus" class="size-3.5"></i>
-                <span>Sisipkan Dokumen</span>
-            </button>
+        <!-- Tab 2: Local Files from /files -->
+        <div id="docTabLocalContent" class="space-y-3 hidden">
+            <div class="relative">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-3 text-muted-foreground"></i>
+                <input type="text" id="localFilesSearchInput" onkeyup="filterLocalFilesList(this.value)" placeholder="Cari nama berkas dokumen..." class="flex h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+            </div>
+
+            <div id="localFilesModalList" class="overflow-y-auto space-y-2 p-1 max-h-[220px] custom-sidebar-scroll border border-border/60 rounded-md">
+                <?php if (empty($files)): ?>
+                <div class="p-6 text-center text-xs text-muted-foreground">
+                    Belum ada berkas terunggah di database. Silakan kelola di menu <a href="/files" target="_blank" class="text-primary underline">Files</a>.
+                </div>
+                <?php else: ?>
+                    <?php foreach ($files as $f): ?>
+                    <div class="local-file-item flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border hover:border-primary hover:bg-muted/40 transition-colors" data-title="<?= esc(strtolower($f['name'] ?? '')) ?>" data-uploader="<?= esc(strtolower($f['upload_by'] ?? '')) ?>">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="size-8 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <i data-lucide="file-check" class="size-4"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="text-xs font-bold text-foreground truncate"><?= esc($f['name']) ?></h4>
+                                <span class="text-[10px] text-muted-foreground block truncate"><?= esc($f['url'] ?? '') ?> &bull; <?= esc($f['upload_by'] ?? 'admin') ?></span>
+                            </div>
+                        </div>
+                        <button type="button" onclick="insertSelectedLocalFile('<?= esc(addslashes($f['name'])) ?>', '<?= esc(addslashes($f['url'])) ?>')" class="inline-flex shrink-0 items-center gap-1 rounded bg-[#2B6CB0] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#2B6CB0]/90 shadow-2xs">
+                            <i data-lucide="plus" class="size-3"></i>
+                            <span>Sisipkan</span>
+                        </button>
+                    </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
+            <div class="flex items-center justify-between pt-2.5 border-t border-border">
+                <a href="/files" target="_blank" class="text-xs text-primary hover:underline flex items-center gap-1">
+                    <i data-lucide="external-link" class="size-3"></i>
+                    <span>Buka Menu Files</span>
+                </a>
+                <button type="button" onclick="closeEmbedGoogleDocModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted">Tutup</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1006,6 +1267,83 @@
             </button>
             <button type="button" id="confirmLeavePageBtn" class="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3.5 py-1.5 text-xs font-bold text-destructive-foreground hover:bg-destructive/90 transition-colors">
                 <span>Tinggalkan Halaman</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 6: In-Editor Riwayat Revisi Diff (Replika Legacy adm_articleform.tpl articlehistory) -->
+<div id="revisionDiffModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.75); backdrop-filter: blur(4px); z-index: 1010; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-4xl max-h-[90vh] flex flex-col p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-border">
+        <div class="flex items-center justify-between border-b border-border pb-3">
+            <div>
+                <h3 class="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                    <i data-lucide="git-compare" class="size-4 text-primary"></i>
+                    <span>Komparasi Revisi Naskah (Before vs After)</span>
+                </h3>
+                <p id="revisionDiffMeta" class="text-[11px] text-muted-foreground font-mono mt-0.5">Memuat riwayat perubahan...</p>
+            </div>
+            <button type="button" onclick="closeRevisionDiffModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <i data-lucide="x" class="size-4"></i>
+            </button>
+        </div>
+
+        <div id="revisionDiffBody" class="flex-1 overflow-y-auto space-y-4 pr-1">
+            <!-- Loading indicator -->
+            <div id="revisionDiffLoading" class="py-12 text-center text-muted-foreground text-xs">
+                <div class="inline-block animate-spin size-5 border-2 border-primary border-t-transparent rounded-full mb-2"></div>
+                <div>Memuat perbandingan naskah...</div>
+            </div>
+
+            <!-- Content Container -->
+            <div id="revisionDiffContent" class="hidden space-y-4">
+                <!-- Status Diff -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 rounded-lg bg-muted/40 border border-border text-xs">
+                    <div>
+                        <span class="text-muted-foreground font-medium">Status Sebelum:</span>
+                        <span id="diffStatusPrev" class="font-bold text-foreground ml-1">-</span>
+                    </div>
+                    <div>
+                        <span class="text-muted-foreground font-medium">Status Sesudah:</span>
+                        <span id="diffStatusAfter" class="font-bold text-primary ml-1">-</span>
+                    </div>
+                </div>
+
+                <!-- Side by Side Title Diff -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Perubahan Judul (Headline)</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="p-3 rounded-lg border border-rose-500/30 bg-rose-500/5 text-xs">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400 mb-1">Sebelumnya (Before)</div>
+                            <div id="diffTitlePrev" class="font-medium text-foreground leading-relaxed break-words"></div>
+                        </div>
+                        <div class="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 text-xs">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-1">Sesudahnya (After)</div>
+                            <div id="diffTitleAfter" class="font-medium text-foreground leading-relaxed break-words"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Side by Side Body Content Diff -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Perubahan Body Artikel</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="p-3 rounded-lg border border-border bg-card text-xs max-h-72 overflow-y-auto custom-sidebar-scroll">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Isi Sebelum Revisi</div>
+                            <div id="diffContentPrev" class="prose prose-xs dark:prose-invert max-w-none break-words text-[11px] leading-relaxed"></div>
+                        </div>
+                        <div class="p-3 rounded-lg border border-border bg-card text-xs max-h-72 overflow-y-auto custom-sidebar-scroll">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-primary mb-1">Isi Setelah Revisi</div>
+                            <div id="diffContentAfter" class="prose prose-xs dark:prose-invert max-w-none break-words text-[11px] leading-relaxed"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end pt-3 border-t border-border">
+            <button type="button" onclick="closeRevisionDiffModal()" class="rounded-md bg-[#2B6CB0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-2xs">
+                Tutup Komparasi
             </button>
         </div>
     </div>

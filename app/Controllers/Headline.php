@@ -23,10 +23,10 @@ class Headline extends BaseController
     {
         $categories = $this->categoryModel->getKanalTree();
 
-        // Selected target category (defaults to 'home')
-        $targetCategory = $this->request->getGet('target_category') ?: 'home';
-        if ($targetCategory === 'Headline') {
-            $targetCategory = 'home';
+        // Selected target category (defaults to 'headline')
+        $targetCategory = $this->request->getGet('target_category') ?: 'headline';
+        if (strtolower($targetCategory) === 'home') {
+            $targetCategory = 'headline';
         }
         $headlines = $this->headlineModel->getActiveHeadlines($targetCategory);
 
@@ -36,9 +36,10 @@ class Headline extends BaseController
         $page = (int)($this->request->getGet('page') ?? 1);
 
         $filters = [
-            'status' => 'Publish',
-            'q'      => $keyword,
-            'kanal'  => $categoryFilter,
+            'status'   => 'Publish',
+            'q'        => $keyword,
+            'kanal'    => $categoryFilter,
+            'order_by' => 'createdAt',
         ];
 
         $perPage = 25;
@@ -80,9 +81,9 @@ class Headline extends BaseController
     public function add()
     {
         $articleId = (int)$this->request->getPost('article_id');
-        $targetCategory = $this->request->getPost('target_category') ?: 'home';
-        if ($targetCategory === 'Headline') {
-            $targetCategory = 'home';
+        $targetCategory = $this->request->getPost('target_category') ?: 'headline';
+        if (strtolower($targetCategory) === 'home') {
+            $targetCategory = 'headline';
         }
 
         // Server-side validation: Verify article exists and is Published
@@ -132,23 +133,27 @@ class Headline extends BaseController
         $currentUser = session('user_username') ?: (session('username') ?: (session('user_name') ?: 'admin'));
 
         if (!$existing) {
+            $newPos = $maxPos + 1;
             $this->headlineModel->insert([
                 'category'   => $targetCategory,
                 'articleID'  => $articleId,
-                'num'        => $maxPos + 1,
+                'num'        => $newPos,
                 'timestamp'  => date('Y-m-d H:i:s'),
                 'status'     => 1,
                 'set_by'     => $currentUser,
             ]);
+            $this->headlineModel->logHistory($articleId, $targetCategory, 'ADD', $newPos, $currentUser, "Menambahkan artikel ke headline posisi #{$newPos}");
             return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil ditambahkan ke antrean headline {$targetCategory}.");
         } else if ((int)$existing['status'] === 0) {
             // Re-activate previously removed headline
+            $newPos = $maxPos + 1;
             $this->headlineModel->update($existing['id'], [
-                'num'       => $maxPos + 1,
+                'num'       => $newPos,
                 'timestamp' => date('Y-m-d H:i:s'),
                 'status'    => 1,
                 'set_by'    => $currentUser,
             ]);
+            $this->headlineModel->logHistory($articleId, $targetCategory, 'ADD', $newPos, $currentUser, "Mengaktifkan kembali artikel ke headline posisi #{$newPos}");
             return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil diaktifkan kembali di antrean headline {$targetCategory}.");
         }
 
@@ -157,12 +162,19 @@ class Headline extends BaseController
 
     public function remove($id)
     {
-        $targetCategory = $this->request->getGet('target_category') ?: 'home';
-        if ($targetCategory === 'Headline') {
-            $targetCategory = 'home';
+        $targetCategory = $this->request->getGet('target_category') ?: 'headline';
+        if (strtolower($targetCategory) === 'home') {
+            $targetCategory = 'headline';
         }
 
         $currentUser = session('user_username') ?: (session('username') ?: (session('user_name') ?: 'admin'));
+
+        // Ambil info posisi sebelum dinonaktifkan
+        $currentHl = $this->headlineModel
+            ->where('articleID', (int)$id)
+            ->where('category', $targetCategory)
+            ->first();
+        $prevPos = $currentHl['num'] ?? null;
 
         // Production convention: set status = 0 rather than hard deleting to preserve audit log
         $this->headlineModel
@@ -175,25 +187,30 @@ class Headline extends BaseController
             ])
             ->update();
 
+        $this->headlineModel->logHistory((int)$id, $targetCategory, 'REMOVE', $prevPos, $currentUser, "Menghapus artikel dari antrean headline (sebelumnya posisi #{$prevPos})");
+
         return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel dinonaktifkan dari antrean headline {$targetCategory}.");
     }
 
     public function save()
     {
-        $targetCategory = $this->request->getPost('target_category') ?: 'home';
-        if ($targetCategory === 'Headline') {
-            $targetCategory = 'home';
+        $targetCategory = $this->request->getPost('target_category') ?: 'headline';
+        if (strtolower($targetCategory) === 'home') {
+            $targetCategory = 'headline';
         }
         return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Daftar headline kanal '{$targetCategory}' berhasil disimpan.");
     }
 
     /**
      * POST /headline/reorder
-     * Menerima JSON payload: { category: 'home', order: [12, 45, 89] }
+     * Menerima JSON payload: { category: 'headline', order: [12, 45, 89] }
      */
     public function reorder()
     {
-        $category = $this->request->getPost('category') ?: 'home';
+        $category = $this->request->getPost('category') ?: 'headline';
+        if (strtolower($category) === 'home') {
+            $category = 'headline';
+        }
         $rawOrder = $this->request->getPost('order');
 
         if (empty($rawOrder)) {
@@ -217,6 +234,11 @@ class Headline extends BaseController
         $success = $this->headlineModel->batchReorder($category, $rawOrder, $currentUser);
 
         if ($success) {
+            foreach ($rawOrder as $idx => $artId) {
+                $pos = $idx + 1;
+                $this->headlineModel->logHistory((int)$artId, $category, 'REORDER', $pos, $currentUser, "Mengubah urutan headline ke posisi #{$pos}");
+            }
+
             return $this->response->setJSON([
                 'status'  => 'success',
                 'message' => "Urutan headline {$category} berhasil diperbarui."
@@ -226,6 +248,56 @@ class Headline extends BaseController
         return $this->response->setStatusCode(500)->setJSON([
             'status'  => 'error',
             'message' => 'Gagal memperbarui urutan headline.'
+        ]);
+    }
+
+    /**
+     * Sub Menu: GET /headline/history
+     * Riwayat Audit Log Headline (Siapa yang menambah, mengubah posisi, dan menghapus headline)
+     */
+    public function history()
+    {
+        $categoryFilter = $this->request->getGet('category') ?: 'all';
+        $actionFilter   = $this->request->getGet('action') ?: 'all';
+        $keyword        = $this->request->getGet('q') ?: '';
+        $dateFrom       = $this->request->getGet('date_from') ?: '';
+        $dateTo         = $this->request->getGet('date_to') ?: '';
+        $page           = max(1, (int)($this->request->getGet('page') ?? 1));
+        $perPage        = 25;
+
+        $filters = [
+            'category'  => $categoryFilter,
+            'action'    => $actionFilter,
+            'q'         => $keyword,
+            'date_from' => $dateFrom,
+            'date_to'   => $dateTo,
+        ];
+
+        $historyResult = $this->headlineModel->getHistory($filters, $page, $perPage);
+        $totalItems = $historyResult['total'];
+        $totalPages = max(1, (int)ceil($totalItems / $perPage));
+
+        $pagination = [
+            'page'       => $page,
+            'perPage'    => $perPage,
+            'totalItems' => $totalItems,
+            'totalPages' => $totalPages,
+            'from'       => $totalItems > 0 ? (($page - 1) * $perPage) + 1 : 0,
+            'to'         => min($page * $perPage, $totalItems),
+        ];
+
+        return view('headline/history', [
+            'title'      => 'Riwayat Log Headline',
+            'breadcrumb' => 'Headline / Riwayat Log',
+            'logs'       => $historyResult['data'],
+            'pagination' => $pagination,
+            'filters'    => [
+                'category'  => $categoryFilter,
+                'action'    => $actionFilter,
+                'q'         => $keyword,
+                'date_from' => $dateFrom,
+                'date_to'   => $dateTo,
+            ]
         ]);
     }
 }

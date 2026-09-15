@@ -177,14 +177,14 @@ class GeminiProvider
     /**
      * Call Primary model with automated fallback chain on Rate Limit (429), Timeout, 404, or Server Overload (503)
      */
-    protected function callWithFallback(string $prompt, int $maxTokens = 500): string
+    protected function callWithFallback(string $prompt, int $maxTokens = 500, array $options = []): string
     {
         $models = array_unique([$this->primaryModel, $this->fallbackModel, $this->tertiaryModel]);
         $lastException = null;
 
         foreach ($models as $idx => $model) {
             try {
-                return $this->callGeminiApi($model, $prompt, $maxTokens);
+                return $this->callGeminiApi($model, $prompt, $maxTokens, $options);
             } catch (\Throwable $e) {
                 $lastException = $e;
                 $msg = $e->getMessage();
@@ -205,10 +205,19 @@ class GeminiProvider
     /**
      * cURL HTTPS Client to Google Gemini API
      */
-    protected function callGeminiApi(string $model, string $prompt, int $maxTokens = 500): string
+    protected function callGeminiApi(string $model, string $prompt, int $maxTokens = 500, array $options = []): string
     {
         $this->lastModelUsed = $model;
         $url = "https://generativelanguage.googleapis.com/v1beta/models/" . $model . ":generateContent?key=" . $this->apiKey;
+
+        $generationConfig = [
+            'maxOutputTokens' => $maxTokens,
+            'temperature'     => $options['temperature'] ?? 0.7,
+        ];
+
+        if (!empty($options['responseMimeType'])) {
+            $generationConfig['responseMimeType'] = $options['responseMimeType'];
+        }
 
         $payload = [
             'contents' => [
@@ -218,10 +227,7 @@ class GeminiProvider
                     ]
                 ]
             ],
-            'generationConfig' => [
-                'maxOutputTokens' => $maxTokens,
-                'temperature'     => 0.7,
-            ]
+            'generationConfig' => $generationConfig
         ];
 
         $ch = curl_init($url);
@@ -230,7 +236,7 @@ class GeminiProvider
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => json_encode($payload),
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-            CURLOPT_TIMEOUT        => 35,
+            CURLOPT_TIMEOUT        => $options['timeout'] ?? 35,
             CURLOPT_SSL_VERIFYPEER => false,
         ]);
 
@@ -252,10 +258,132 @@ class GeminiProvider
 
         if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
             $text = trim($result['candidates'][0]['content']['parts'][0]['text']);
+            if (!empty($options['raw']) || !empty($options['responseMimeType'])) {
+                return $text;
+            }
             return str_replace(['**', '*'], '', $text);
         }
 
         throw new \RuntimeException("Unexpected response structure from Gemini API.");
+    }
+
+    /**
+     * Generate SEO Quality Score (AI Analysis - 4 Criteria)
+     * Returns structured array with scores, reasonings, and recommendations
+     */
+    public function generateSeoQualityScore(string $title, string $body, string $summary = '', array $keywords = []): array
+    {
+        if (empty($this->apiKey)) {
+            throw new \RuntimeException("Gemini API Key is not configured in .env.");
+        }
+
+        $cleanBody = strip_tags($body);
+        $wordCount = str_word_count($cleanBody);
+
+        if ($wordCount < 150) {
+            throw new \InvalidArgumentException("Artikel terlalu pendek untuk dinilai oleh AI (minimal 150 kata, saat ini {$wordCount} kata).");
+        }
+
+        $keywordStr = !empty($keywords) ? implode(', ', $keywords) : 'Tidak ada kata kunci terdaftar';
+
+        $prompt = <<<PROMPT
+Kamu adalah Senior Editorial SEO Analyst untuk media berita finansial dan investasi (Investor Daily / Investor.id).
+Tugasmu adalah menganalisis kualitas konten artikel berikut secara objektif dan mendalam dari sudut pandang editorial & SEO.
+
+DATA ARTIKEL:
+- Judul: {$title}
+- Ringkasan / Meta Description: {$summary}
+- Kata Kunci Terdaftar: {$keywordStr}
+- Isi Artikel:
+{$cleanBody}
+
+KRITERIA PENILAIAN (Skor 0-100 untuk tiap kriteria):
+
+1. search_intent (bobot 30% dari skor AI):
+   - Apakah artikel ini menjawab apa yang dicari investor atau pembaca finansial terkait topik/kata kunci tersebut?
+   - Apakah informasi relevan, fokus, dan tidak melenceng?
+
+2. content_depth (bobot 30% dari skor AI):
+   - Kedalaman analisis, kelengkapan data/angka (misal persentase laba, harga saham, proyeksi, kutipan narasumber kompeten).
+   - Bukan sekadar rangkuman dangkal 2-3 paragraf tanpa substansi atau data pendukung.
+
+3. click_readiness (bobot 20% dari skor AI):
+   - Menariknya judul dan ringkasan (Click-Through Rate potential) tanpa menjadi clickbait murahan.
+   - Apakah judul dan summary memicu minat pembaca profesional/investor?
+
+4. keyword_naturalness (bobot 20% dari skor AI):
+   - Alami tidaknya penempatan kata kunci terdaftar ({$keywordStr}) dalam artikel.
+   - Tidak terjadi keyword stuffing (pemaksaan kata kunci berlebihan) atau sebaliknya topik sama sekali tidak menyinggung kata kunci tersebut.
+
+INSTRUKSI OUTPUT:
+Kembalikan HANYA format JSON valid tanpa teks pengantar atau markdown wrapper. Struktur JSON HARUS persis seperti ini:
+{
+  "search_intent": {
+    "score": 85,
+    "reasoning": "Penjelasan singkat 1-2 kalimat mengapa skor ini diberikan."
+  },
+  "content_depth": {
+    "score": 75,
+    "reasoning": "Penjelasan singkat 1-2 kalimat mengapa skor ini diberikan."
+  },
+  "click_readiness": {
+    "score": 90,
+    "reasoning": "Penjelasan singkat 1-2 kalimat mengapa skor ini diberikan."
+  },
+  "keyword_naturalness": {
+    "score": 80,
+    "reasoning": "Penjelasan singkat 1-2 kalimat mengapa skor ini diberikan."
+  },
+  "recommendations": [
+    "Rekomendasi spesifik 1 untuk meningkatkan kualitas artikel ini.",
+    "Rekomendasi spesifik 2 untuk meningkatkan kualitas artikel ini.",
+    "Rekomendasi spesifik 3 untuk meningkatkan kualitas artikel ini."
+  ]
+}
+PROMPT;
+
+        $options = [
+            'temperature'      => 0.1,
+            'responseMimeType' => 'application/json',
+            'raw'              => true,
+            'timeout'          => 45,
+        ];
+
+        $rawJson = $this->callWithFallback($prompt, 1200, $options);
+        $cleanJson = trim($rawJson);
+
+        // Remove markdown backticks if any slipped through
+        if (str_starts_with($cleanJson, '```json')) {
+            $cleanJson = substr($cleanJson, 7);
+        }
+        if (str_starts_with($cleanJson, '```')) {
+            $cleanJson = substr($cleanJson, 3);
+        }
+        if (str_ends_with($cleanJson, '```')) {
+            $cleanJson = substr($cleanJson, 0, -3);
+        }
+        $cleanJson = trim($cleanJson);
+
+        $parsed = json_decode($cleanJson, true);
+        if (!is_array($parsed)) {
+            throw new \RuntimeException("Gemini response is not valid JSON: " . substr($rawJson, 0, 200));
+        }
+
+        // Validate required keys
+        $requiredKeys = ['search_intent', 'content_depth', 'click_readiness', 'keyword_naturalness'];
+        foreach ($requiredKeys as $key) {
+            if (!isset($parsed[$key]['score']) || !isset($parsed[$key]['reasoning'])) {
+                throw new \RuntimeException("Gemini response missing criteria '{$key}' or invalid structure.");
+            }
+            // Clamp score between 0 and 100
+            $parsed[$key]['score'] = max(0, min(100, (float)$parsed[$key]['score']));
+        }
+
+        if (!isset($parsed['recommendations']) || !is_array($parsed['recommendations'])) {
+            $parsed['recommendations'] = [];
+        }
+
+        return $parsed;
     }
 
     /**

@@ -92,6 +92,18 @@
                 </div>
             <?php endif; ?>
 
+            <?php if (session()->getFlashdata('warning')): ?>
+                <div class="mb-6 flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-600/30 dark:bg-amber-950/30 dark:text-amber-300">
+                    <div class="flex items-center gap-2.5 font-medium">
+                        <i data-lucide="alert-triangle" class="size-4 shrink-0 text-amber-600 dark:text-amber-400"></i>
+                        <span><?= esc(session()->getFlashdata('warning')) ?></span>
+                    </div>
+                    <button class="text-amber-700/70 hover:text-amber-900 dark:text-amber-400/70 dark:hover:text-amber-200" onclick="this.parentElement.remove()">
+                        <i data-lucide="x" class="size-4"></i>
+                    </button>
+                </div>
+            <?php endif; ?>
+
             <?php if (session()->getFlashdata('info')): ?>
                 <div class="mb-6 flex items-center justify-between rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
                     <div class="flex items-center gap-2.5 font-medium">

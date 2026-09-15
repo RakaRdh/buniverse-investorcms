@@ -198,11 +198,39 @@ class CmsControllersTest extends CIUnitTestCase
         $this->assertTrue($statResult->isOK());
         $this->assertStringContainsString('Audience Analytics', $statResult->response()->getBody());
 
-        $reportResult = $this->withURI('http://localhost:8080/statistic-report')
+        $reportResult = $this->withURI('http://localhost:8080/statistic/report')
             ->controller(StatisticReport::class)
             ->execute('index');
         $this->assertTrue($reportResult->isOK());
         $this->assertStringContainsString('Editorial Performance', $reportResult->response()->getBody());
+
+        // Test Publish Log
+        $publishResult = $this->withURI('http://localhost:8080/statistic/publish-log')
+            ->controller(StatisticReport::class)
+            ->execute('publishLog');
+        $this->assertTrue($publishResult->isOK());
+        $this->assertStringContainsString('Publish Log', $publishResult->response()->getBody());
+
+        // Test Popular Articles
+        $popularResult = $this->withURI('http://localhost:8080/statistic/popular')
+            ->controller(StatisticReport::class)
+            ->execute('popular');
+        $this->assertTrue($popularResult->isOK());
+        $this->assertStringContainsString('Artikel Terpopuler', $popularResult->response()->getBody());
+
+        // Test Heatmap - Month Mode
+        $heatmapResult = $this->withURI('http://localhost:8080/statistic/heatmap?mode=month&month=9&year=2026')
+            ->controller(StatisticReport::class)
+            ->execute('heatmap');
+        $this->assertTrue($heatmapResult->isOK());
+        $this->assertStringContainsString('Heatmap Distribusi Jam Terbit', $heatmapResult->response()->getBody());
+
+        // Test Heatmap - Range Mode
+        $heatmapRangeResult = $this->withURI('http://localhost:8080/statistic/heatmap?mode=range&from=2026-09-01&to=2026-09-15')
+            ->controller(StatisticReport::class)
+            ->execute('heatmap');
+        $this->assertTrue($heatmapRangeResult->isOK());
+        $this->assertStringContainsString('Heatmap Distribusi Jam Terbit', $heatmapRangeResult->response()->getBody());
     }
 
     public function testPostPreviewShowValidAndInvalid(): void

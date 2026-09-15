@@ -337,5 +337,31 @@ html.dark body.cke_editable blockquote,
   color: #cbd5e1 !important;
 }
 
+/* ==========================================================================
+   Non-Editable & Atomic Deletion Blockquotes in CKEditor 4
+   ========================================================================== */
+body.cke_editable blockquote[contenteditable="false"] {
+  user-select: all !important;
+  -webkit-user-select: all !important;
+  cursor: pointer !important;
+  outline: 1px dashed rgba(43, 108, 176, 0.35) !important;
+  transition: outline 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+
+body.cke_editable blockquote[contenteditable="false"]:hover {
+  outline: 1.5px solid #2B6CB0 !important;
+  box-shadow: 0 0 0 2px rgba(43, 108, 176, 0.15) !important;
+}
+
+.dark body.cke_editable blockquote[contenteditable="false"] {
+  outline: 1px dashed rgba(96, 165, 250, 0.35) !important;
+}
+
+.dark body.cke_editable blockquote[contenteditable="false"]:hover {
+  outline: 1.5px solid #60a5fa !important;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
+}
+
 
 

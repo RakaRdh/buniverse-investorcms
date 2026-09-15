@@ -9,6 +9,8 @@ use App\Models\MediaModel;
 use App\Models\AdminModel;
 use App\Models\ChartModel;
 use App\Models\KeywordModel;
+use App\Models\FileModel;
+use App\Libraries\HtmlSanitizer;
 
 class Post extends BaseController
 {
@@ -19,6 +21,7 @@ class Post extends BaseController
     protected AdminModel $adminModel;
     protected ChartModel $chartModel;
     protected KeywordModel $keywordModel;
+    protected FileModel $fileModel;
 
     public function __construct()
     {
@@ -29,6 +32,7 @@ class Post extends BaseController
         $this->adminModel = new AdminModel();
         $this->chartModel = new ChartModel();
         $this->keywordModel = new KeywordModel();
+        $this->fileModel = new FileModel();
     }
 
     public function index()
@@ -124,6 +128,7 @@ class Post extends BaseController
         $media = $this->mediaModel->getMediaWithRelations(1, 30)['data'];
         $allPosts = $this->articleModel->getLightweightArticles(50);
         $charts = $this->chartModel->getCustomCharts();
+        $files = $this->fileModel->getFilesWithUploader(null, 1, 50)['data'] ?? [];
 
         return view('post/editor', [
             'title'      => 'Create New Post',
@@ -135,6 +140,7 @@ class Post extends BaseController
             'media'      => $media,
             'charts'     => $charts,
             'allPosts'   => $allPosts,
+            'files'      => $files,
             'article'    => null,
             'isEdit'     => false
         ]);
@@ -170,6 +176,9 @@ class Post extends BaseController
         $media = $this->mediaModel->getMediaWithRelations(1, 30)['data'];
         $allPosts = $this->articleModel->getLightweightArticles(50);
         $charts = $this->chartModel->getCustomCharts();
+        $files = $this->fileModel->getFilesWithUploader(null, 1, 50)['data'] ?? [];
+        $revisionsRes = $this->articleModel->getRevisionHistory(1, 15, ['article_id' => (int)$id]);
+        $revisions = $revisionsRes['data'] ?? [];
         $lockInfo = $this->articleModel->acquireLock((int)$id, $userId);
 
         return view('post/editor', [
@@ -182,7 +191,9 @@ class Post extends BaseController
             'media'      => $media,
             'charts'     => $charts,
             'allPosts'   => $allPosts,
+            'files'      => $files,
             'article'    => $article,
+            'revisions'  => $revisions,
             'lockInfo'   => $lockInfo,
             'isEdit'     => true
         ]);
@@ -284,11 +295,15 @@ class Post extends BaseController
             }
         }
 
+        $cleanTitle = HtmlSanitizer::cleanTitle($title);
+        $cleanSummary = HtmlSanitizer::cleanSummary($this->request->getPost('summary') ?? '');
+        $cleanContent = HtmlSanitizer::clean($this->request->getPost('content') ?? '');
+
         $articleData = [
-            'title'             => $title,
-            'slug'              => url_title($title, '-', true),
-            'summary'           => $this->request->getPost('summary') ?? '',
-            'content'           => $this->request->getPost('content') ?? '',
+            'title'             => $cleanTitle,
+            'slug'              => url_title($cleanTitle, '-', true),
+            'summary'           => $cleanSummary,
+            'content'           => $cleanContent,
             'status'            => $status,
             'publish_date'      => $publishDate,
             'thumbnail'             => $this->request->getPost('thumbnail') ?: '/img/investor_placeholder.jpg',
@@ -449,10 +464,14 @@ class Post extends BaseController
             }
         }
 
+        $cleanTitle = HtmlSanitizer::cleanTitle($title);
+        $cleanSummary = HtmlSanitizer::cleanSummary($this->request->getPost('summary') ?? '');
+        $cleanContent = HtmlSanitizer::clean($this->request->getPost('content') ?? '');
+
         $articleData = [
-            'title'             => $title,
-            'summary'           => $this->request->getPost('summary') ?? '',
-            'content'           => $this->request->getPost('content') ?? '',
+            'title'             => $cleanTitle,
+            'summary'           => $cleanSummary,
+            'content'           => $cleanContent,
             'status'            => $status,
             'publish_date'      => $publishDate,
             'thumbnail'             => $this->request->getPost('thumbnail') ?: '/img/investor_placeholder.jpg',

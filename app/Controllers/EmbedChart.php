@@ -85,16 +85,33 @@ class EmbedChart extends BaseController
             $style = 'bar-vertical';
         }
 
-        // Parse labels (newline or comma separated)
-        $labels = $this->parseListInput($xLabelsRaw);
-        if (empty($labels)) {
-            $labels = ['Kuartal I', 'Kuartal II', 'Kuartal III', 'Kuartal IV'];
+        // Check if CSV file was uploaded
+        $csvFile = $this->request->getFile('csv_file');
+        if ($csvFile && $csvFile->isValid() && !$csvFile->hasMoved()) {
+            $parsedCsv = $this->parseCsvFile($csvFile->getTempName());
+            if (!empty($parsedCsv['labels']) && !empty($parsedCsv['values'])) {
+                $labels = $parsedCsv['labels'];
+                $values = $parsedCsv['values'];
+                if (!empty($parsedCsv['xAxisTitle']) && empty($xAxisTitle)) {
+                    $xAxisTitle = $parsedCsv['xAxisTitle'];
+                }
+            }
         }
 
-        // Parse values (newline or comma separated)
-        $values = $this->parseNumericInput($yValuesRaw);
+        if (empty($labels)) {
+            // Parse labels (newline or comma separated)
+            $labels = $this->parseListInput($xLabelsRaw);
+            if (empty($labels)) {
+                $labels = ['Kuartal I', 'Kuartal II', 'Kuartal III', 'Kuartal IV'];
+            }
+        }
+
         if (empty($values)) {
-            $values = [120, 150, 190, 240];
+            // Parse values (newline or comma separated)
+            $values = $this->parseNumericInput($yValuesRaw);
+            if (empty($values)) {
+                $values = [120, 150, 190, 240];
+            }
         }
 
         $jsonData = json_encode([
@@ -178,8 +195,28 @@ class EmbedChart extends BaseController
             $style = 'bar-vertical';
         }
 
-        $labels = $this->parseListInput($xLabelsRaw);
-        $values = $this->parseNumericInput($yValuesRaw);
+        $labels = [];
+        $values = [];
+
+        // Check if CSV file was uploaded
+        $csvFile = $this->request->getFile('csv_file');
+        if ($csvFile && $csvFile->isValid() && !$csvFile->hasMoved()) {
+            $parsedCsv = $this->parseCsvFile($csvFile->getTempName());
+            if (!empty($parsedCsv['labels']) && !empty($parsedCsv['values'])) {
+                $labels = $parsedCsv['labels'];
+                $values = $parsedCsv['values'];
+                if (!empty($parsedCsv['xAxisTitle']) && empty($xAxisTitle)) {
+                    $xAxisTitle = $parsedCsv['xAxisTitle'];
+                }
+            }
+        }
+
+        if (empty($labels)) {
+            $labels = $this->parseListInput($xLabelsRaw);
+        }
+        if (empty($values)) {
+            $values = $this->parseNumericInput($yValuesRaw);
+        }
 
         $jsonData = json_encode([
             'labels'     => $labels,
@@ -309,4 +346,83 @@ class EmbedChart extends BaseController
         }
         return $values;
     }
+
+    /**
+     * Helper to parse an uploaded CSV file
+     * Supports standard formats:
+     * Format 1 (Key, Value per row):
+     *   Category, Value
+     *   Q1, 100
+     *   Q2, 150
+     *
+     * Format 2 (Single line or multi column):
+     *   Q1, Q2, Q3
+     *   100, 150, 200
+     */
+    protected function parseCsvFile(string $filePath): array
+    {
+        $labels = [];
+        $values = [];
+        $xAxisTitle = '';
+
+        if (!file_exists($filePath) || !is_readable($filePath)) {
+            return ['labels' => [], 'values' => [], 'xAxisTitle' => ''];
+        }
+
+        $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (empty($lines)) {
+            return ['labels' => [], 'values' => [], 'xAxisTitle' => ''];
+        }
+
+        // Detect delimiter (comma vs semicolon)
+        $firstLine = $lines[0];
+        $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
+
+        $rows = [];
+        foreach ($lines as $line) {
+            $cols = str_getcsv($line, $delimiter);
+            $rows[] = array_map('trim', $cols);
+        }
+
+        if (empty($rows)) {
+            return ['labels' => [], 'values' => [], 'xAxisTitle' => ''];
+        }
+
+        // Check if row 0 has headers (non-numeric second col)
+        $hasHeader = false;
+        if (count($rows) > 1 && count($rows[0]) >= 2) {
+            $secondCol = preg_replace('/[^\d\.\-]/', '', $rows[0][1]);
+            if (!is_numeric($secondCol)) {
+                $hasHeader = true;
+                $xAxisTitle = $rows[0][0];
+            }
+        }
+
+        $startIndex = $hasHeader ? 1 : 0;
+
+        // Check if structured as Column 0 = Label, Column 1 = Value
+        if (count($rows[0]) >= 2 && count($rows) >= 2) {
+            for ($i = $startIndex; $i < count($rows); $i++) {
+                if (isset($rows[$i][0]) && isset($rows[$i][1])) {
+                    $labels[] = $rows[$i][0];
+                    $valClean = preg_replace('/[^\d\.\-]/', '', $rows[$i][1]);
+                    $values[] = is_numeric($valClean) ? (float)$valClean : 0;
+                }
+            }
+        } else if (count($rows) >= 2) {
+            // Row 0 = labels, Row 1 = values
+            $labels = $rows[0];
+            foreach ($rows[1] as $item) {
+                $valClean = preg_replace('/[^\d\.\-]/', '', $item);
+                $values[] = is_numeric($valClean) ? (float)$valClean : 0;
+            }
+        }
+
+        return [
+            'labels'     => $labels,
+            'values'     => $values,
+            'xAxisTitle' => $xAxisTitle,
+        ];
+    }
 }
+

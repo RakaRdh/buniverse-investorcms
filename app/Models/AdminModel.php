@@ -27,34 +27,91 @@ class AdminModel extends Model
     ];
     protected $useTimestamps = false;
 
+    const LEGACY_PEPPER = 'B3!21t454t03';
+
     /**
-     * Generate a random salt string using SHA-512 (production convention: 128 characters lowercase hex [0-9a-f])
+     * Generate Salt deterministik sesuai legacy:
+     * hash('SHA512', '[' . strtolower($username) . '>|<' . $password . ']')
+     * Jika username & password tidak dioper, fallback ke random 128 chars.
      */
-    public static function generateSalt(int $length = 128): string
+    public static function generateSalt(string $username = '', string $password = '', int $length = 128): string
     {
+        if (!empty($username) && !empty($password)) {
+            return hash('sha512', '[' . strtolower(trim($username)) . '>|<' . $password . ']');
+        }
         $hash = hash('sha512', random_bytes(64) . microtime(true));
         return ($length === 128) ? $hash : substr($hash, 0, $length);
     }
 
     /**
-     * SHA-512 Hash with salt (production convention: 128 characters lowercase [0-9a-f])
+     * Validasi kekuatan kata sandi sesuai standar legacy Administrator.class.php
+     * Syarat: Minimal 8 karakter, huruf besar (A-Z), huruf kecil (a-z), angka (0-9), dan simbol khusus.
+     * Mengembalikan array error jika tidak memenuhi syarat, atau array kosong jika valid.
      */
-    public static function encodePassword(string $plainPassword, string $salt): string
+    public static function validatePasswordStrength(string $password): array
     {
-        return hash('sha512', $salt . $plainPassword);
+        $errors = [];
+        if (strlen($password) < 8) {
+            $errors[] = 'Minimal 8 karakter.';
+        }
+        if (!preg_match('/[A-Z]/', $password)) {
+            $errors[] = 'Minimal 1 huruf kapital (A-Z).';
+        }
+        if (!preg_match('/[a-z]/', $password)) {
+            $errors[] = 'Minimal 1 huruf kecil (a-z).';
+        }
+        if (!preg_match('/[0-9]/', $password)) {
+            $errors[] = 'Minimal 1 digit angka (0-9).';
+        }
+        if (!preg_match('/[^a-zA-Z0-9]/', $password)) {
+            $errors[] = 'Minimal 1 karakter simbol khusus (misal: @, #, $, !, %, dll).';
+        }
+        return $errors;
     }
 
     /**
-     * Verify plain password against SHA-512 salted hash
+     * Encode password sesuai legacy:
+     * hash('SHA512', $salt . "B3!21t454t03" . $password . $salt)
      */
-    public static function verifyPassword(string $plainPassword, string $salt, string $hash): bool
+    public static function encodePassword(string $password, string $salt): string
     {
-        if (empty($salt) || empty($hash)) {
+        return hash('sha512', $salt . self::LEGACY_PEPPER . $password . $salt);
+    }
+
+    /**
+     * Verify plain password against hash (Prioritas Legacy Salt+Pepper, dengan fallback multi-hash)
+     */
+    public static function verifyPassword(string $plainPassword, string $salt, string $hash, string $username = ''): bool
+    {
+        if (empty($hash)) {
             return false;
         }
-        $check1 = hash('sha512', $salt . $plainPassword);
-        $check2 = hash('sha512', $plainPassword . $salt);
-        return hash_equals($hash, $check1) || hash_equals($hash, $check2);
+
+        // 1. Cek formula legacy deterministik jika username tersedia
+        if (!empty($username)) {
+            $expectedLegacySalt = self::generateSalt($username, $plainPassword);
+            $expectedLegacyHash = self::encodePassword($plainPassword, $expectedLegacySalt);
+            if (hash_equals($hash, $expectedLegacyHash)) {
+                return true;
+            }
+        }
+
+        // 2. Cek formula legacy dengan salt yang tersimpan di DB
+        if (!empty($salt)) {
+            $storedPepperHash = self::encodePassword($plainPassword, $salt);
+            if (hash_equals($hash, $storedPepperHash)) {
+                return true;
+            }
+
+            // 3. Fallback CI4 testing hash sebelumnya (salt . plainPassword atau plainPassword . salt)
+            $altHash1 = hash('sha512', $salt . $plainPassword);
+            $altHash2 = hash('sha512', $plainPassword . $salt);
+            if (hash_equals($hash, $altHash1) || hash_equals($hash, $altHash2)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -118,8 +175,10 @@ class AdminModel extends Model
         $salt = $user['salt'] ?? '';
         $storedHash = $user['password'] ?? '';
 
-        // Strategy 1: SHA-512 salted hash (128 lowercase hex chars)
-        if (!empty($salt) && self::verifyPassword($password, $salt, $storedHash)) {
+        $username = $user['username'] ?? '';
+
+        // Strategy 1: SHA-512 salted hash (Legacy formula priority + fallback)
+        if (self::verifyPassword($password, $salt, $storedHash, $username)) {
             $authenticated = true;
         }
 
@@ -128,16 +187,21 @@ class AdminModel extends Model
             $legacyDecoded = self::decodePassword($storedHash, $salt);
             if ($legacyDecoded !== null && hash_equals($legacyDecoded, $password)) {
                 $authenticated = true;
-                $newHash = self::encodePassword($password, $salt);
-                $this->update($user['userID'], ['password' => $newHash]);
+                $newSalt = self::generateSalt($username, $password);
+                $newHash = self::encodePassword($password, $newSalt);
+                $this->update($user['userID'], [
+                    'password' => $newHash,
+                    'salt'     => $newSalt,
+                ]);
                 $user['password'] = $newHash;
+                $user['salt']     = $newSalt;
             }
         }
 
         // Strategy 3: Bcrypt verify (and upgrade to SHA-512 hash)
         if (!$authenticated && password_verify($password, $storedHash)) {
             $authenticated = true;
-            $newSalt = self::generateSalt(128);
+            $newSalt = self::generateSalt($username, $password);
             $newHash = self::encodePassword($password, $newSalt);
             $this->update($user['userID'], [
                 'password' => $newHash,
@@ -150,7 +214,7 @@ class AdminModel extends Model
         // Strategy 4: Legacy MD5 (and upgrade to SHA-512 hash)
         if (!$authenticated && strcasecmp(md5($password), $storedHash) === 0) {
             $authenticated = true;
-            $newSalt = self::generateSalt(128);
+            $newSalt = self::generateSalt($username, $password);
             $newHash = self::encodePassword($password, $newSalt);
             $this->update($user['userID'], [
                 'password' => $newHash,

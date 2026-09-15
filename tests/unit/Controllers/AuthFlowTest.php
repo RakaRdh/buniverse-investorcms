@@ -35,5 +35,32 @@ class AuthFlowTest extends CIUnitTestCase
         $body = $result->getBody();
         $this->assertStringContainsString('Setel Kata Sandi Baru', $body);
         $this->assertStringContainsString('Kata Sandi Baru', $body);
+        // Verify eye toggle and security guidelines
+        $this->assertStringContainsString('togglePasswordVisibility', $body);
+        $this->assertStringContainsString('data-lucide="eye"', $body);
+        $this->assertStringContainsString('huruf besar, huruf kecil, angka, dan karakter simbol', $body);
+    }
+
+    public function testPasswordStrengthValidation()
+    {
+        // Lemah: Kurang dari 8 karakter
+        $err1 = \App\Models\AdminModel::validatePasswordStrength('Ab1!');
+        $this->assertNotEmpty($err1);
+
+        // Lemah: Tanpa simbol
+        $err2 = \App\Models\AdminModel::validatePasswordStrength('Password123');
+        $this->assertNotEmpty($err2);
+
+        // Lemah: Tanpa huruf besar
+        $err3 = \App\Models\AdminModel::validatePasswordStrength('password123!');
+        $this->assertNotEmpty($err3);
+
+        // Lemah: Tanpa angka
+        $err4 = \App\Models\AdminModel::validatePasswordStrength('Password!@#');
+        $this->assertNotEmpty($err4);
+
+        // Kuat: Memenuhi seluruh syarat
+        $errStrong = \App\Models\AdminModel::validatePasswordStrength('Investor@2026!');
+        $this->assertEmpty($errStrong);
     }
 }

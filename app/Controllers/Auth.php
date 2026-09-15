@@ -130,10 +130,8 @@ class Auth extends BaseController
             $userAuthExpired = (string)($user['authExpired'] ?? '');
 
             if ($userAuthCode !== '' && $userAuthCode === $code && ($userAuthExpired === '' || $userAuthExpired >= $nowStr)) {
-                // Kode cocok & valid: perpanjang nextVerify +5 hari sesuai legacy
+                // Kode cocok & valid: perpanjang nextVerify +5 hari sesuai legacy (pertahankan authCode & authExpired)
                 $this->adminModel->update($user['userID'] ?? $user['id'], [
-                    'authCode'    => null,
-                    'authExpired' => null,
                     'nextVerify'  => date('Y-m-d', strtotime('+5 days')),
                     'lastLogin'   => date('Y-m-d H:i:s'),
                     'lastLoginIP' => $this->request->getIPAddress(),
@@ -205,6 +203,19 @@ class Auth extends BaseController
             'user_initials' => $initials,
             'password_expired' => $user['passwordExpired'] ?? null,
         ]);
+
+        // Standar legacy: set cookie cmsinvestorid berbasis salt unik user (24 jam)
+        if (!empty($user['salt'])) {
+            $response = service('response');
+            $response->setCookie([
+                'name'     => 'cmsinvestorid',
+                'value'    => $user['salt'],
+                'expire'   => 86400, // 24 jam
+                'path'     => '/',
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        }
     }
 
     /**
@@ -345,9 +356,10 @@ class Auth extends BaseController
                     ->with('error', 'Semua kolom formulir wajib diisi.');
             }
 
-            if (strlen($newPassword) < 8) {
+            $passwordErrors = AdminModel::validatePasswordStrength($newPassword);
+            if (!empty($passwordErrors)) {
                 return redirect()->to('/auth/reset-password?token=' . urlencode($token) . '&user=' . urlencode($identifier))
-                    ->with('error', 'Kata sandi minimal terdiri dari 8 karakter.');
+                    ->with('error', 'Kombinasi kata sandi belum memenuhi standar: ' . implode(' ', $passwordErrors));
             }
 
             if ($newPassword !== $confirmPassword) {
@@ -378,7 +390,8 @@ class Auth extends BaseController
             }
 
             // Valid: hash kata sandi baru menggunakan SHA-512 + 128 chars salt (standar produksi CI4 & Legacy)
-            $newSalt = AdminModel::generateSalt(128);
+            $username = $user['username'] ?? '';
+            $newSalt = AdminModel::generateSalt($username, $newPassword);
             $newHash = AdminModel::encodePassword($newPassword, $newSalt);
 
             // Segera hanguskan token pemulihan (One-Time Token) dan set rotasi 90 hari
@@ -429,7 +442,7 @@ class Auth extends BaseController
             $email->setTo($user['email']);
             $email->setSubject('Tautan Pemulihan Kata Sandi - CMS Investor');
 
-            $resetUrl = base_url('auth/reset-password?token=' . urlencode($resetToken) . '&user=' . urlencode($user['username']));
+            $resetUrl = site_url('auth/reset-password?token=' . urlencode($resetToken) . '&user=' . urlencode($user['username']));
 
             $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">';
             $body .= '<div style="margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;">';
@@ -437,15 +450,17 @@ class Auth extends BaseController
             $body .= '<p style="color: #64748B; font-size: 12px; margin: 4px 0 0 0;">Pemulihan Kredensial Editorial</p>';
             $body .= '</div>';
             $body .= '<p style="font-size: 14px; line-height: 1.5;">Halo, <strong>' . esc($user['name'] ?: $user['username']) . '</strong>,</p>';
-            $body .= '<p style="font-size: 14px; line-height: 1.5; color: #334155;">Kami menerima permintaan untuk mereset kata sandi akun editorial Anda. Silakan klik tombol di bawah ini untuk membuat kata sandi baru:</p>';
-            $body .= '<div style="text-align: center; margin: 24px 0;">';
-            $body .= '<div style="margin-bottom: 16px;"><span style="display: inline-block; font-size: 28px; font-weight: 800; font-family: monospace; letter-spacing: 6px; padding: 10px 24px; background-color: #EBF8FF; color: #2B6CB0; border-radius: 8px; border: 1.5px dashed #2B6CB0;">' . $resetToken . '</span></div>';
-            $body .= '<a href="' . $resetUrl . '" style="display: inline-block; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #0077CC; padding: 12px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 4px rgba(0,119,204,0.3);">Buat Kata Sandi Baru</a>';
+            $body .= '<p style="font-size: 14px; line-height: 1.5; color: #334155;">Kami menerima permintaan untuk mereset kata sandi akun editorial Anda. Silakan klik tombol di bawah ini untuk langsung membuat kata sandi baru:</p>';
+            $body .= '<div style="text-align: center; margin: 28px 0;">';
+            $body .= '<a href="' . $resetUrl . '" style="display: inline-block; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #0077CC; padding: 14px 32px; border-radius: 8px; text-decoration: none; box-shadow: 0 3px 6px rgba(0,119,204,0.25);">Buat Kata Sandi Baru</a>';
             $body .= '</div>';
-            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Anda dapat mengklik tombol di atas atau memasukkan kode verifikasi <strong>' . $resetToken . '</strong> pada formulir reset kata sandi.</p>';
-            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Tautan alternatif:<br><a href="' . $resetUrl . '" style="color: #0077CC; word-break: break-all;">' . $resetUrl . '</a></p>';
+            $body .= '<div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px 16px; margin: 20px 0; font-size: 12px; color: #475569;">';
+            $body .= '<strong style="color: #1e293b; display: block; margin-bottom: 4px;">Tombol tidak dapat diklik?</strong>';
+            $body .= 'Salin tautan ini ke peramban Anda:<br><a href="' . $resetUrl . '" style="color: #0077CC; word-break: break-all; text-decoration: underline;">' . $resetUrl . '</a><br><br>';
+            $body .= 'Atau jika diminta memasukkan kode secara manual, gunakan kode token: <strong style="font-family: monospace; font-size: 14px; color: #0077CC; letter-spacing: 2px;">' . $resetToken . '</strong>';
+            $body .= '</div>';
             $body .= '<p style="color: #ef4444; font-size: 12px; line-height: 1.5; font-weight: 600;">Tautan ini hanya berlaku selama 15 menit dan hanya dapat digunakan 1 (satu) kali.</p>';
-            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Jika Anda tidak merasa mengajukan permintaan ini, abaikan pesan ini dan kata sandi Anda tetap aman.</p>';
+            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Jika Anda tidak merasa mengajukan permintaan ini, abaikan email ini dan kata sandi Anda tetap aman.</p>';
             $body .= '<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0 16px 0;">';
             $body .= '<p style="color: #94a3b8; font-size: 11px; margin: 0; text-align: center;">&copy; ' . date('Y') . ' Investor.ID Editorial Newsroom</p>';
             $body .= '</div>';

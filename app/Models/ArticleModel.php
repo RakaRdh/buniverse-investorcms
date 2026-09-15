@@ -37,10 +37,27 @@ class ArticleModel extends Model
     }
 
     /**
+     * Auto-publish scheduled articles that have passed articleDate
+     */
+    public function autoPublishDueArticles(): int
+    {
+        $now = date('Y-m-d H:i:s');
+        $builder = $this->db->table('article');
+        $builder->where('status', 'Hold')
+                ->where('articleDate <=', $now);
+        $count = $builder->countAllResults(false);
+        if ($count > 0) {
+            $builder->update(['status' => 'Publish']);
+        }
+        return $count;
+    }
+
+    /**
      * JOIN Query: Get Articles with Categories, Authors, Tags, and Metadata
      */
     public function getArticlesWithRelations(array $filters = [], int $page = 1, int $perPage = 25): array
     {
+        $this->autoPublishDueArticles();
         $builder = $this->db->table('article n')
             ->select('
                 n.articleID AS id,
@@ -55,6 +72,7 @@ class ArticleModel extends Model
                 n.createdAt AS create_date,
                 p.username AS post_by,
                 p.name AS post_by_name,
+                p.alias AS post_by_alias,
                 COALESCE(ANY_VALUE(c_parent.categoryName), ANY_VALUE(nm_kanal.metaval), ANY_VALUE(c.categoryName), "Market") AS kanal,
                 COALESCE(ANY_VALUE(nm_sub.metaval), IF(ANY_VALUE(c.parent) IS NOT NULL, ANY_VALUE(c.categoryName), ""), "") AS sub_kanal,
                 COALESCE(ANY_VALUE(c_parent.categoryName), ANY_VALUE(nm_kanal.metaval), ANY_VALUE(c.categoryName), "Market") AS category,
@@ -149,10 +167,13 @@ class ArticleModel extends Model
         $totalItems = (int)($countRow['total'] ?? 0);
 
         $offset = ($page - 1) * $perPage;
-        $data = $builder->orderBy('n.articleDate', 'DESC')
-            ->orderBy('n.articleID', 'DESC')
-            ->limit($perPage, $offset)
-            ->get()->getResultArray();
+        $orderBy = $filters['order_by'] ?? 'articleDate';
+        if ($orderBy === 'created' || $orderBy === 'createdAt' || $orderBy === 'created_at') {
+            $builder->orderBy('n.createdAt', 'DESC')->orderBy('n.articleID', 'DESC');
+        } else {
+            $builder->orderBy('n.articleDate', 'DESC')->orderBy('n.articleID', 'DESC');
+        }
+        $data = $builder->limit($perPage, $offset)->get()->getResultArray();
 
         // Normalise fields for view compatibility
         foreach ($data as &$row) {
@@ -183,7 +204,9 @@ class ArticleModel extends Model
                 n.articleID AS id,
                 n.headline AS title,
                 n.summary AS summary,
-                DATE_FORMAT(n.articleDate, "%d %b %Y") AS publish_date,
+                n.articleDate AS raw_article_date,
+                n.status AS article_status,
+                DATE_FORMAT(n.articleDate, "%d %b %Y %H:%i") AS publish_date,
                 COALESCE(ANY_VALUE(c.categoryName), "Market") AS kanal,
                 COALESCE(ANY_VALUE(thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail
             ')
@@ -192,7 +215,8 @@ class ArticleModel extends Model
             ->join('articlemeta thumb', 'thumb.articleID = n.articleID AND thumb.metakey = "thumbnail"', 'left')
             ->where('n.status', 'Publish')
             ->groupBy('n.articleID')
-            ->orderBy('n.articleDate', 'DESC')
+            ->orderBy('n.createdAt', 'DESC')
+            ->orderBy('n.articleID', 'DESC')
             ->limit($limit);
 
         return $builder->get()->getResultArray();
@@ -311,11 +335,13 @@ class ArticleModel extends Model
             }
         }
 
+        $slug = $data['slug'] ?? url_title($data['title'], '-', true);
+
         $this->insert([
             'userID'      => $data['userID'] ?? $data['ref_entity_acc_id'] ?? 1,
             'source'      => '',
             'headline'    => $data['title'],
-            'slug'        => $data['slug'] ?? url_title($data['title'], '-', true),
+            'slug'        => $slug,
             'articleDate' => $articleDate,
             'posttype'    => 'article',
             'viewed'      => 0,
@@ -387,6 +413,7 @@ class ArticleModel extends Model
             'news_source'           => $data['source'] ?? 'Investor.id / Riset',
             'kanal'                 => $data['kanal'] ?? '',
             'sub_kanal'             => $data['sub_kanal'] ?? '',
+            'shorturl'              => 'https://investor.id/' . ($data['kanal'] ? url_title($data['kanal'], '-', true) : 'market') . '/' . $articleId . '/' . $slug,
         ];
 
         foreach ($metaEntries as $k => $v) {
@@ -516,7 +543,7 @@ class ArticleModel extends Model
         }
 
         // 5. Update Metadata
-        $metaKeys = ['thumbnail', 'thumbnail_description', 'thumbnail_caption', 'is_premium', 'headline_type', 'upper_deck', 'news_source', 'kanal', 'sub_kanal'];
+        $metaKeys = ['thumbnail', 'thumbnail_description', 'thumbnail_caption', 'is_premium', 'headline_type', 'upper_deck', 'news_source', 'kanal', 'sub_kanal', 'shorturl'];
         $this->db->table('articlemeta')
             ->where('articleID', $id)
             ->whereIn('metakey', array_merge($metaKeys, ['point']))
@@ -532,6 +559,7 @@ class ArticleModel extends Model
             'news_source'           => $data['source'] ?? 'Investor.id / Riset',
             'kanal'                 => $data['kanal'] ?? '',
             'sub_kanal'             => $data['sub_kanal'] ?? '',
+            'shorturl'              => 'https://investor.id/' . ($data['kanal'] ? url_title($data['kanal'], '-', true) : 'market') . '/' . $id . '/' . ($oldArticle['slug'] ?: url_title($data['title'], '-', true)),
         ];
 
         foreach ($metaEntries as $k => $v) {

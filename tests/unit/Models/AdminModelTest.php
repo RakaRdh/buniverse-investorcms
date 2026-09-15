@@ -21,30 +21,37 @@ final class AdminModelTest extends CIUnitTestCase
         $this->assertSame(128, strlen($defaultSalt));
         $this->assertTrue(ctype_xdigit($defaultSalt));
 
-        $salt64 = AdminModel::generateSalt(64);
-        $this->assertSame(64, strlen($salt64));
+        $deterministicSalt = AdminModel::generateSalt('raka_h', 'password123');
+        $this->assertSame(128, strlen($deterministicSalt));
+        $this->assertSame(hash('sha512', '[raka_h>|<password123]'), $deterministicSalt);
     }
 
     public function testEncodePasswordProduces128HexChars(): void
     {
+        $username = 'raka_h';
         $password = 'SecretPass123!@#';
-        $salt = AdminModel::generateSalt(128);
+        $salt = AdminModel::generateSalt($username, $password);
 
         $encoded = AdminModel::encodePassword($password, $salt);
         $this->assertNotEmpty($encoded);
         $this->assertSame(128, strlen($encoded));
         $this->assertTrue(ctype_xdigit($encoded));
-        $this->assertSame(hash('sha512', $salt . $password), $encoded);
+        $this->assertSame(hash('sha512', $salt . AdminModel::LEGACY_PEPPER . $password . $salt), $encoded);
     }
 
     public function testVerifyPassword(): void
     {
+        $username = 'raka_h';
         $password = 'SecretPass123!@#';
-        $salt = AdminModel::generateSalt(128);
+        $salt = AdminModel::generateSalt($username, $password);
         $hash = AdminModel::encodePassword($password, $salt);
 
+        // Test verify with username
+        $this->assertTrue(AdminModel::verifyPassword($password, $salt, $hash, $username));
+        // Test verify without username (stored salt)
         $this->assertTrue(AdminModel::verifyPassword($password, $salt, $hash));
-        $this->assertFalse(AdminModel::verifyPassword('wrong_pass', $salt, $hash));
+        // Test invalid password / salt
+        $this->assertFalse(AdminModel::verifyPassword('wrong_pass', $salt, $hash, $username));
         $this->assertFalse(AdminModel::verifyPassword($password, 'wrong_salt', $hash));
     }
 

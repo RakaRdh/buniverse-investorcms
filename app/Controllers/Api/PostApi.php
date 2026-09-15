@@ -7,6 +7,7 @@ use App\Models\ArticleModel;
 use App\Models\AuthorModel;
 use App\Models\CategoryModel;
 use App\Libraries\ImageProcessor;
+use App\Libraries\HtmlSanitizer;
 
 class PostApi extends BaseController
 {
@@ -69,11 +70,15 @@ class PostApi extends BaseController
 
         $sessionUser = session()->get('user_id') ?: 1;
 
+        $cleanTitle = HtmlSanitizer::cleanTitle($title);
+        $cleanSummary = HtmlSanitizer::cleanSummary($data['summary'] ?? '');
+        $cleanContent = HtmlSanitizer::clean($content);
+
         $articleData = [
-            'title'             => !empty($title) ? $title : 'Draft Tanpa Judul (' . date('d M H:i') . ')',
-            'slug'              => url_title(!empty($title) ? $title : 'draft-' . time(), '-', true),
-            'summary'           => $data['summary'] ?? '',
-            'content'           => $content,
+            'title'             => !empty($cleanTitle) ? $cleanTitle : 'Draft Tanpa Judul (' . date('d M H:i') . ')',
+            'slug'              => url_title(!empty($cleanTitle) ? $cleanTitle : 'draft-' . time(), '-', true),
+            'summary'           => $cleanSummary,
+            'content'           => $cleanContent,
             'status'            => 'Draft',
             'publish_date'      => date('Y-m-d H:i:s'),
             'thumbnail'         => !empty($data['thumbnail']) ? $data['thumbnail'] : '/img/investor_placeholder.jpg',
@@ -193,6 +198,26 @@ class PostApi extends BaseController
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Gembok artikel #' . $id . ' berhasil dilepas.'
+        ]);
+    }
+
+    /**
+     * GET /api/post/revision/(:num)
+     * Detail riwayat revisi (Before vs After Diff) untuk modal di dalam editor
+     */
+    public function revisionDetail(int $historyId)
+    {
+        $detail = $this->articleModel->getRevisionDetail($historyId);
+        if (!$detail) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'success' => false,
+                'error'   => 'Riwayat revisi tidak ditemukan.'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data'    => $detail
         ]);
     }
 }

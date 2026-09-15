@@ -61,7 +61,7 @@ $valuesText = implode(", ", $valuesArr);
 <div class="space-y-6 max-w-4xl">
     <!-- FORM CONFIGURATION CARD -->
     <div class="surface-card p-6 rounded-xl border border-border shadow-xs">
-        <form id="customChartForm" method="post" action="<?= $actionUrl ?>" class="space-y-5">
+        <form id="customChartForm" method="post" action="<?= $actionUrl ?>" enctype="multipart/form-data" class="space-y-5">
             <?= csrf_field() ?>
 
             <!-- Field 1: Judul Grafik -->
@@ -120,7 +120,22 @@ $valuesText = implode(", ", $valuesArr);
                        class="flex h-10 w-full rounded-lg border border-input bg-background px-3.5 py-2 text-sm shadow-2xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             </div>
 
-            <!-- Field 4: Pengaturan Values X & Y (Berdampingan Rapi) -->
+            <!-- Field 4: Unggah Berkas Data CSV (Legacy parity) -->
+            <div class="rounded-lg border border-dashed border-input bg-muted/20 p-4 space-y-2">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-foreground">Import dari Berkas CSV</span>
+                        <p class="text-[11px] text-muted-foreground">Unggah file .csv untuk mengisi data sumbu X dan Y secara otomatis (Kolom 1: Kategori, Kolom 2: Nilai).</p>
+                    </div>
+                    <label for="csvFileInput" class="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-semibold hover:bg-muted transition-colors shadow-2xs">
+                        <span>Pilih Berkas CSV</span>
+                    </label>
+                    <input type="file" id="csvFileInput" name="csv_file" accept=".csv" class="hidden" onchange="handleCsvUpload(this)">
+                </div>
+                <div id="csvFileInfo" class="hidden text-xs text-emerald-600 dark:text-emerald-400 font-medium"></div>
+            </div>
+
+            <!-- Field 5: Pengaturan Values X & Y (Berdampingan Rapi) -->
             <div class="chart-form-row">
                 <div class="chart-form-col">
                     <div class="flex items-center justify-between mb-1.5">
@@ -427,6 +442,79 @@ function updateLivePreview() {
     }
 
     liveChartInstance = new Chart(ctx, chartConfig);
+}
+
+function handleCsvUpload(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const infoEl = document.getElementById('csvFileInfo');
+    
+    if (infoEl) {
+        infoEl.textContent = `Memproses: ${file.name}...`;
+        infoEl.classList.remove('hidden');
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split(/\r\n|\n/).map(l => l.trim()).filter(Boolean);
+        if (!lines.length) return;
+
+        // Detect delimiter
+        const delimiter = lines[0].includes(';') ? ';' : ',';
+        const rows = lines.map(line => line.split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, '')));
+
+        if (!rows.length) return;
+
+        let labels = [];
+        let values = [];
+
+        // Check if row 0 has header
+        let startIndex = 0;
+        if (rows.length > 1 && rows[0].length >= 2) {
+            const secondVal = parseFloat(rows[0][1].replace(/[^\d.-]/g, ''));
+            if (isNaN(secondVal)) {
+                startIndex = 1;
+                const xAxisInput = document.getElementById('xAxisTitle');
+                if (xAxisInput && !xAxisInput.value) {
+                    xAxisInput.value = rows[0][0];
+                }
+            }
+        }
+
+        if (rows[0].length >= 2 && rows.length >= 2) {
+            for (let i = startIndex; i < rows.length; i++) {
+                if (rows[i].length >= 2) {
+                    labels.push(rows[i][0]);
+                    const cleanVal = rows[i][1].replace(/[^\d.-]/g, '');
+                    values.push(cleanVal || '0');
+                }
+            }
+        } else if (rows.length >= 2) {
+            labels = rows[0];
+            values = rows[1].map(v => v.replace(/[^\d.-]/g, '') || '0');
+        }
+
+        if (labels.length && values.length) {
+            const xLabelsEl = document.getElementById('xLabels');
+            const yValuesEl = document.getElementById('yValues');
+            if (xLabelsEl) xLabelsEl.value = labels.join(', ');
+            if (yValuesEl) yValuesEl.value = values.join(', ');
+
+            if (infoEl) {
+                infoEl.textContent = `Berhasil mengimpor ${labels.length} titik data dari "${file.name}"`;
+                infoEl.classList.remove('hidden');
+            }
+            updateLivePreview();
+        } else {
+            if (infoEl) {
+                infoEl.textContent = 'Format CSV tidak dikenali. Pastikan berisi minimal 2 kolom (Kategori, Nilai).';
+                infoEl.classList.remove('text-emerald-600', 'dark:text-emerald-400');
+                infoEl.classList.add('text-destructive');
+            }
+        }
+    };
+    reader.readAsText(file);
 }
 
 document.addEventListener('DOMContentLoaded', function() {

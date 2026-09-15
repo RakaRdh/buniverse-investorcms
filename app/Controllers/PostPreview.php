@@ -27,7 +27,7 @@ class PostPreview extends BaseController
         $rawParsedContent = $this->parseEmbeds($article['content'] ?? '');
 
         // Page break pattern support (Multi-page article splitting)
-        $pageBreakPattern = '/(?:<div[^>]*class=["\'][^"\']*article-page-break[^"\']*["\'][^>]*>.*?<\/div>|<div[^>]*data-page-break=["\']true["\'][^>]*>.*?<\/div>|<!--\s*pagebreak\s*-->|<hr[^>]*>\s*<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>\s*<hr[^>]*>|<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>|--- HALAMAN BERIKUTNYA [^-\n]+ ---)/is';
+        $pageBreakPattern = '/(?:<blockquote[^>]*class=["\'][^"\']*article-page-break[^"\']*["\'][^>]*>.*?<\/blockquote>|<blockquote[^>]*data-page-break=["\']true["\'][^>]*>.*?<\/blockquote>|<div[^>]*class=["\'][^"\']*article-page-break[^"\']*["\'][^>]*>.*?<\/div>|<div[^>]*data-page-break=["\']true["\'][^>]*>.*?<\/div>|<!--\s*pagebreak\s*-->|<hr[^>]*>\s*<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>\s*<hr[^>]*>|<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>|--- HALAMAN BERIKUTNYA [^-\n]+ ---)/is';
         $contentPages = preg_split($pageBreakPattern, $rawParsedContent);
         $contentPages = array_values(array_filter(array_map('trim', $contentPages), fn($p) => $p !== ''));
 
@@ -93,7 +93,7 @@ class PostPreview extends BaseController
         $rawParsedContent = $this->parseEmbeds($content);
 
         // Page break pattern support (Multi-page article splitting)
-        $pageBreakPattern = '/(?:<div[^>]*class=["\'][^"\']*article-page-break[^"\']*["\'][^>]*>.*?<\/div>|<div[^>]*data-page-break=["\']true["\'][^>]*>.*?<\/div>|<!--\s*pagebreak\s*-->|<hr[^>]*>\s*<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>\s*<hr[^>]*>|<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>|--- HALAMAN BERIKUTNYA [^-\n]+ ---)/is';
+        $pageBreakPattern = '/(?:<blockquote[^>]*class=["\'][^"\']*article-page-break[^"\']*["\'][^>]*>.*?<\/blockquote>|<blockquote[^>]*data-page-break=["\']true["\'][^>]*>.*?<\/blockquote>|<div[^>]*class=["\'][^"\']*article-page-break[^"\']*["\'][^>]*>.*?<\/div>|<div[^>]*data-page-break=["\']true["\'][^>]*>.*?<\/div>|<!--\s*pagebreak\s*-->|<hr[^>]*>\s*<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>\s*<hr[^>]*>|<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>|--- HALAMAN BERIKUTNYA [^-\n]+ ---)/is';
         $contentPages = preg_split($pageBreakPattern, $rawParsedContent);
         $contentPages = array_values(array_filter(array_map('trim', $contentPages), fn($p) => $p !== ''));
 
@@ -179,7 +179,7 @@ class PostPreview extends BaseController
         $rawParsedContent = $this->parseEmbeds($rawContent);
 
         // Page break pattern support (Multi-page article splitting)
-        $pageBreakPattern = '/(?:<div[^>]*class=["\'][^"\']*article-page-break[^"\']*["\'][^>]*>.*?<\/div>|<div[^>]*data-page-break=["\']true["\'][^>]*>.*?<\/div>|<!--\s*pagebreak\s*-->|<hr[^>]*>\s*<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>\s*<hr[^>]*>|<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>|--- HALAMAN BERIKUTNYA [^-\n]+ ---)/is';
+        $pageBreakPattern = '/(?:<blockquote[^>]*class=["\'][^"\']*article-page-break[^"\']*["\'][^>]*>.*?<\/blockquote>|<blockquote[^>]*data-page-break=["\']true["\'][^>]*>.*?<\/blockquote>|<div[^>]*class=["\'][^"\']*article-page-break[^"\']*["\'][^>]*>.*?<\/div>|<div[^>]*data-page-break=["\']true["\'][^>]*>.*?<\/div>|<!--\s*pagebreak\s*-->|<hr[^>]*>\s*<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>\s*<hr[^>]*>|<p[^>]*>--- HALAMAN BERIKUTNYA.*?<\/p>|--- HALAMAN BERIKUTNYA [^-\n]+ ---)/is';
         $contentPages = preg_split($pageBreakPattern, $rawParsedContent);
         $contentPages = array_values(array_filter(array_map('trim', $contentPages), fn($p) => $p !== ''));
 
@@ -304,20 +304,20 @@ class PostPreview extends BaseController
 
         // 3. Google Docs / Sheets via <blockquote>[embed type=googledoc|googlesheet url=URL]Title[/embed]</blockquote> or ::Google Doc: URL::
         $content = preg_replace_callback(
-            '/(?:<blockquote>\s*\[embed\s+type=["\']?(googledoc|googlesheet)["\']?(?:\s+url=["\']([^"\']+)["\'])?[^\]]*\](.*?)\[\/embed\]\s*<\/blockquote>|::Google (Doc|Sheet|Spreadsheet):\s*(https?:\/\/[^\s:]+)(?:\s*\|\s*([^:]+))?::)/i',
+            '/(?:<blockquote[^>]*>\s*(?:<p>)?\s*\[embed\s+type=["\']?(googledoc|googlesheet)["\']?(?:\s+url=["\']([^"\']+)["\'])?[^\]]*\](.*?)\[\/embed\](?:\s*<\/p>)?\s*<\/blockquote>|::Google (Doc|Sheet|Spreadsheet):\s*(https?:\/\/[^\s:]+)(?:\s*\|\s*([^:]+))?::)/is',
             function ($m) {
                 if (!empty($m[1])) {
                     $type = strtolower($m[1]) === 'googlesheet' ? 'sheet' : 'doc';
-                    $url = trim($m[2] ?? '');
-                    $title = trim($m[3] ?? '');
+                    $url = html_entity_decode(trim($m[2] ?? ''));
+                    $title = trim(strip_tags($m[3] ?? ''));
                     if (empty($url) && filter_var($title, FILTER_VALIDATE_URL)) {
                         $url = $title;
                         $title = ($type === 'sheet' ? 'Google Spreadsheet' : 'Google Document');
                     }
                 } else {
                     $type = strtolower($m[4] ?? 'doc');
-                    $url = trim($m[5] ?? '');
-                    $title = !empty($m[6]) ? trim($m[6]) : ($type === 'doc' ? 'Google Document' : 'Google Spreadsheet');
+                    $url = html_entity_decode(trim($m[5] ?? ''));
+                    $title = !empty($m[6]) ? trim(strip_tags($m[6])) : ($type === 'doc' ? 'Google Document' : 'Google Spreadsheet');
                 }
                 return $this->renderGoogleEmbed($type, $url, $title ?: 'Google Document');
             },
@@ -462,16 +462,31 @@ class PostPreview extends BaseController
      */
     protected function renderGoogleEmbed(string $type, string $url, string $title): string
     {
+        $url = html_entity_decode(trim($url));
         $safeUrl = htmlspecialchars($url);
         $safeTitle = htmlspecialchars($title);
+
+        // Auto-detect type if URL contains distinct Google Docs/Sheets identifiers
+        if (str_contains($url, 'spreadsheets')) {
+            $type = 'sheet';
+        } elseif (str_contains($url, 'document')) {
+            $type = 'doc';
+        }
+
         $isSheet = in_array($type, ['sheet', 'spreadsheet']);
         
         $embedUrl = $url;
         // Transform standard edit URLs to preview / pub embed URLs
         if (str_contains($url, 'docs.google.com/document/d/')) {
-            $embedUrl = preg_replace('/\/edit.*$/', '/preview', $url);
+            if (str_contains($url, '/pub')) {
+                $embedUrl = str_contains($url, '?') ? $url . '&embedded=true' : $url . '?embedded=true';
+            } else {
+                $embedUrl = preg_replace('/\/edit.*$/', '/preview', $url);
+            }
         } elseif (str_contains($url, 'docs.google.com/spreadsheets/d/')) {
-            $embedUrl = preg_replace('/\/edit.*$/', '/pubhtml?widget=true&headers=false', $url);
+            if (!str_contains($url, '/pubchart') && !str_contains($url, '/pubhtml')) {
+                $embedUrl = preg_replace('/\/edit.*$/', '/pubhtml?widget=true&headers=false', $url);
+            }
         }
 
         $badgeColor = $isSheet ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white';
@@ -490,7 +505,7 @@ class PostPreview extends BaseController
                 </a>
             </div>
             <div class="w-full relative" style="height: 480px;">
-                <iframe src="' . htmlspecialchars($embedUrl) . '" class="w-full h-full border-0" loading="lazy" title="' . $safeTitle . '"></iframe>
+                <iframe src="' . htmlspecialchars($embedUrl) . '" class="w-full h-full border-0" loading="lazy" title="' . $safeTitle . '" allow="fullscreen" referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
         </div>';
     }

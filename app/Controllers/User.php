@@ -89,7 +89,7 @@ class User extends BaseController
 
             $passwordInput = trim($this->request->getPost('password') ?? '');
             $plainPassword = !empty($passwordInput) ? $passwordInput : 'password123';
-            $salt = AdminModel::generateSalt(128);
+            $salt = AdminModel::generateSalt($username, $plainPassword);
             $hash = AdminModel::encodePassword($plainPassword, $salt);
 
             $aliasInput = trim($this->request->getPost('alias') ?? '');
@@ -222,7 +222,7 @@ class User extends BaseController
     }
 
     /**
-     * User Profile Page (Read-only for details, editable alias only)
+     * User Profile Page (Read-only for details, editable alias, and security tab)
      */
     public function profile()
     {
@@ -230,13 +230,38 @@ class User extends BaseController
         $user = $this->adminModel->find($userId);
 
         if (!$user) {
-            return redirect()->to('/dashboard')->with('error', 'User account not found.');
+            return redirect()->to('/dashboard')->with('error', 'Akun pengguna tidak ditemukan.');
+        }
+
+        // Kalkulasi sisa masa berlaku kata sandi (90 hari)
+        $isPasswordExpired = false;
+        $daysRemaining = 90;
+        $expiredDate = null;
+
+        if (!empty($user['passwordExpired'])) {
+            $expiredDate = $user['passwordExpired'];
+            $nowTs = time();
+            $expiredTs = strtotime($user['passwordExpired']);
+            $diffSeconds = $expiredTs - $nowTs;
+            $daysRemaining = (int)floor($diffSeconds / (60 * 60 * 24));
+            if ($daysRemaining < 0) {
+                $isPasswordExpired = true;
+            }
+        }
+
+        $activeTab = $this->request->getGet('tab') ?? 'profile';
+        if (!in_array($activeTab, ['profile', 'security'])) {
+            $activeTab = 'profile';
         }
 
         return view('user/profile', [
-            'title'      => 'User Profile',
-            'breadcrumb' => 'Account / Profile',
-            'user'       => $user,
+            'title'             => 'User Profile',
+            'breadcrumb'        => 'Account / Profile',
+            'user'              => $user,
+            'activeTab'         => $activeTab,
+            'isPasswordExpired' => $isPasswordExpired,
+            'daysRemaining'     => $daysRemaining,
+            'expiredDate'       => $expiredDate,
         ]);
     }
 
@@ -265,12 +290,14 @@ class User extends BaseController
             "Updated alias to '{$alias}' for user '{$user['username']}'"
         );
 
-        return redirect()->to('/user/profile')->with('success', 'Profile alias updated successfully.');
+        return redirect()->to('/user/profile?tab=profile')->with('success', 'Profile alias updated successfully.');
     }
 
     /**
-     * Ubah kata sandi mandiri dari halaman profil pengguna
-     * Memvalidasi kata sandi lama, kemudian menyimpan hash SHA-512 + 128 chars salt baru
+     * Ubah kata sandi mandiri dari halaman profil pengguna (Tab Keamanan)
+     * Memvalidasi kata sandi lama, mencegah reuse kata sandi lama, mengecek kekuatan password,
+     * lalu menyimpan hash SHA-512 + 128 chars deterministik salt baru,
+     * dan menghancurkan sesi untuk memaksa re-login demi keamanan (standar legacy).
      */
     public function changePasswordProfile()
     {
@@ -286,23 +313,29 @@ class User extends BaseController
         $confirmPassword = (string)$this->request->getPost('confirm_password');
 
         if (empty($currentPassword) || empty($newPassword)) {
-            return redirect()->to('/user/profile')->with('error', 'Kata sandi saat ini dan kata sandi baru wajib diisi.');
+            return redirect()->to('/user/profile?tab=security')->with('error', 'Kata sandi saat ini dan kata sandi baru wajib diisi.');
         }
 
-        if (strlen($newPassword) < 8) {
-            return redirect()->to('/user/profile')->with('error', 'Kata sandi baru minimal harus 8 karakter.');
+        if ($newPassword === $currentPassword) {
+            return redirect()->to('/user/profile?tab=security')->with('error', 'Kata sandi baru tidak boleh sama persis dengan kata sandi saat ini.');
+        }
+
+        $strengthErrors = \App\Models\AdminModel::validatePasswordStrength($newPassword);
+        if (!empty($strengthErrors)) {
+            return redirect()->to('/user/profile?tab=security')->with('error', 'Kombinasi kata sandi baru belum memenuhi standar: ' . implode(' ', $strengthErrors));
         }
 
         if ($newPassword !== $confirmPassword) {
-            return redirect()->to('/user/profile')->with('error', 'Konfirmasi kata sandi baru tidak cocok.');
+            return redirect()->to('/user/profile?tab=security')->with('error', 'Konfirmasi kata sandi baru tidak cocok.');
         }
 
         // Verifikasi kata sandi saat ini
         $salt = $user['salt'] ?? '';
         $storedHash = $user['password'] ?? '';
+        $username = $user['username'] ?? '';
         $isValidCurrent = false;
 
-        if (!empty($salt) && \App\Models\AdminModel::verifyPassword($currentPassword, $salt, $storedHash)) {
+        if (\App\Models\AdminModel::verifyPassword($currentPassword, $salt, $storedHash, $username)) {
             $isValidCurrent = true;
         } elseif (!empty($salt) && \App\Models\AdminModel::decodePassword($storedHash, $salt) === $currentPassword) {
             $isValidCurrent = true;
@@ -313,17 +346,18 @@ class User extends BaseController
         }
 
         if (!$isValidCurrent) {
-            return redirect()->to('/user/profile')->with('error', 'Kata sandi saat ini tidak sesuai.');
+            return redirect()->to('/user/profile?tab=security')->with('error', 'Kata sandi saat ini tidak sesuai.');
         }
 
-        // Update password baru dengan SHA-512
-        $newSalt = \App\Models\AdminModel::generateSalt(128);
+        // Update password baru dengan skema legacy SHA-512 salt deterministik + pepper
+        $newSalt = \App\Models\AdminModel::generateSalt($username, $newPassword);
         $newHash = \App\Models\AdminModel::encodePassword($newPassword, $newSalt);
+        $newExpiry = date('Y-m-d H:i:s', strtotime('+90 days'));
 
         $this->adminModel->update($userId, [
             'password'        => $newHash,
             'salt'            => $newSalt,
-            'passwordExpired' => date('Y-m-d H:i:s', strtotime('+90 days')),
+            'passwordExpired' => $newExpiry,
         ]);
 
         $this->activityLogModel->logAction(
@@ -333,7 +367,10 @@ class User extends BaseController
             "User {$user['username']} changed password via profile page"
         );
 
-        return redirect()->to('/user/profile')->with('success', 'Kata sandi Anda berhasil diperbarui!');
+        // Standar keamanan legacy: destroy session dan paksa user re-login dengan password baru
+        session()->destroy();
+
+        return redirect()->to('/login')->with('success', 'Kata sandi berhasil diperbarui! Demi keamanan, silakan masuk kembali menggunakan kata sandi baru Anda.');
     }
 
     /**
@@ -345,7 +382,7 @@ class User extends BaseController
         $user = $this->adminModel->find($userId);
 
         if (!$user || empty($user['email'])) {
-            return redirect()->to('/user/profile')->with('error', 'Alamat email pengguna tidak ditemukan.');
+            return redirect()->to('/user/profile?tab=security')->with('error', 'Alamat email pengguna tidak ditemukan.');
         }
 
         $resetToken = (string)random_int(100000, 999999);
@@ -360,7 +397,7 @@ class User extends BaseController
             $email = \Config\Services::email();
             $email->setTo($user['email']);
             $email->setSubject('Konfirmasi Perubahan Kata Sandi - CMS Investor');
-            $resetUrl = base_url('auth/reset-password?token=' . urlencode($resetToken) . '&user=' . urlencode($user['username']));
+            $resetUrl = site_url('auth/reset-password?token=' . urlencode($resetToken) . '&user=' . urlencode($user['username']));
             
             $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">';
             $body .= '<div style="margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;">';
@@ -369,11 +406,14 @@ class User extends BaseController
             $body .= '</div>';
             $body .= '<p style="font-size: 14px; line-height: 1.5;">Halo, <strong>' . esc($user['name'] ?: $user['username']) . '</strong>,</p>';
             $body .= '<p style="font-size: 14px; line-height: 1.5; color: #334155;">Anda telah meminta tautan konfirmasi untuk memperbarui kata sandi akun editorial Anda. Silakan klik tombol di bawah ini:</p>';
-            $body .= '<div style="text-align: center; margin: 24px 0;">';
-            $body .= '<div style="margin-bottom: 16px;"><span style="display: inline-block; font-size: 28px; font-weight: 800; font-family: monospace; letter-spacing: 6px; padding: 10px 24px; background-color: #EBF8FF; color: #2B6CB0; border-radius: 8px; border: 1.5px dashed #2B6CB0;">' . $resetToken . '</span></div>';
-            $body .= '<a href="' . $resetUrl . '" style="display: inline-block; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #0077CC; padding: 12px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 4px rgba(0,119,204,0.3);">Konfirmasi & Set Sandi Baru</a>';
+            $body .= '<div style="text-align: center; margin: 28px 0;">';
+            $body .= '<a href="' . $resetUrl . '" style="display: inline-block; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #0077CC; padding: 14px 32px; border-radius: 8px; text-decoration: none; box-shadow: 0 3px 6px rgba(0,119,204,0.25);">Konfirmasi & Set Sandi Baru</a>';
             $body .= '</div>';
-            $body .= '<p style="color: #64748B; font-size: 12px; line-height: 1.5;">Atau salin tautan berikut ke peramban Anda:<br><a href="' . $resetUrl . '" style="color: #0077CC; word-break: break-all;">' . $resetUrl . '</a></p>';
+            $body .= '<div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px 16px; margin: 20px 0; font-size: 12px; color: #475569;">';
+            $body .= '<strong style="color: #1e293b; display: block; margin-bottom: 4px;">Tombol tidak dapat diklik?</strong>';
+            $body .= 'Salin tautan ini ke peramban Anda:<br><a href="' . $resetUrl . '" style="color: #0077CC; word-break: break-all; text-decoration: underline;">' . $resetUrl . '</a><br><br>';
+            $body .= 'Atau kode token alternatif: <strong style="font-family: monospace; font-size: 14px; color: #0077CC; letter-spacing: 2px;">' . $resetToken . '</strong>';
+            $body .= '</div>';
             $body .= '<p style="color: #ef4444; font-size: 12px; line-height: 1.5; font-weight: 600;">Tautan ini hanya berlaku selama 15 menit.</p>';
             $body .= '<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0 16px 0;">';
             $body .= '<p style="color: #94a3b8; font-size: 11px; margin: 0; text-align: center;">&copy; ' . date('Y') . ' Investor.ID Editorial Newsroom</p>';
@@ -385,7 +425,7 @@ class User extends BaseController
             log_message('error', 'Gagal kirim email reset dari profile: ' . $e->getMessage());
         }
 
-        return redirect()->to('/user/profile')->with('success', 'Tautan dan kode verifikasi perubahan kata sandi telah dikirimkan ke email resmi Anda (' . $user['email'] . '). Silakan periksa inbox.');
+        return redirect()->to('/user/profile?tab=security')->with('success', 'Tautan konfirmasi perubahan kata sandi telah dikirimkan ke email resmi Anda (' . $user['email'] . '). Silakan periksa inbox.');
     }
 
     /**

@@ -42,19 +42,13 @@
             <p class="mt-1 text-xs sm:text-sm text-muted-foreground">Matriks sebaran artikel harian, produktivitas personil, serta heatmap jam terbit berita pasar modal.</p>
         </div>
 
-        <!-- Role & Heatmap Tab Filter -->
-        <div class="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-muted/40 p-1 text-xs font-semibold self-start sm:self-auto">
-            <a href="<?= base_url('statistic/report?tab=author&from=' . $fromDate . '&to=' . $toDate) ?>" class="rounded-md px-2.5 py-1 sm:px-3 sm:py-1.5 transition-all <?= $tab === 'author' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground' ?>">
-                Author (Jurnalis)
+        <!-- Role Tab Filter (Author vs Editor) -->
+        <div class="flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1 text-xs font-semibold self-start sm:self-auto">
+            <a href="<?= base_url('statistic/report?tab=author&from=' . $fromDate . '&to=' . $toDate) ?>" class="rounded-md px-3 py-1.5 transition-all <?= $tab === 'author' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground' ?>">
+                Author
             </a>
-            <a href="<?= base_url('statistic/report?tab=editor&from=' . $fromDate . '&to=' . $toDate) ?>" class="rounded-md px-2.5 py-1 sm:px-3 sm:py-1.5 transition-all <?= $tab === 'editor' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground' ?>">
-                Editor Redaksi
-            </a>
-            <a href="<?= base_url('statistic/report?tab=heatmap&from=' . $fromDate . '&to=' . $toDate) ?>" class="rounded-md px-2.5 py-1 sm:px-3 sm:py-1.5 transition-all <?= $tab === 'heatmap' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground' ?>">
-                <span class="inline-flex items-center gap-1.5">
-                    <i data-lucide="flame" class="size-3.5 text-amber-500"></i>
-                    <span>Hourly Heatmap (24 Jam)</span>
-                </span>
+            <a href="<?= base_url('statistic/report?tab=editor&from=' . $fromDate . '&to=' . $toDate) ?>" class="rounded-md px-3 py-1.5 transition-all <?= $tab === 'editor' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground' ?>">
+                Editor
             </a>
         </div>
     </div>
@@ -66,7 +60,7 @@
     <form method="get" action="<?= base_url('statistic/report') ?>" class="flex flex-wrap items-center gap-2.5 sm:gap-3">
         <input type="hidden" name="tab" value="<?= esc($tab) ?>">
 
-        <?php if ($tab !== 'heatmap'): ?>
+        <?php if (!in_array($tab, ['heatmap', 'publish', 'popular'])): ?>
         <!-- Search Name Filter (Lengthened to flex-1 to fill the space smoothly) -->
         <div class="relative flex-1 min-w-[200px]">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"></i>
@@ -89,11 +83,18 @@
         </button>
 
         <?php if ($tab !== 'heatmap'): ?>
-        <!-- Export CSV Button -->
+        <?php if (in_array($tab, ['publish', 'popular'])): ?>
+        <a href="<?= base_url('statistic/export?tab=' . $tab . '&from=' . $fromDate . '&to=' . $toDate) ?>" class="report-toolbar-item inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3.5 text-xs font-semibold text-foreground shadow-xs hover:bg-muted transition-colors shrink-0">
+            <i data-lucide="download" class="size-3.5 text-primary"></i>
+            <span>Export Spreadsheet</span>
+        </a>
+        <?php else: ?>
+        <!-- Export CSV Button for client matrix -->
         <button type="button" id="exportReportCsvBtn" class="report-toolbar-item inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3.5 text-xs font-semibold text-foreground shadow-xs hover:bg-muted transition-colors shrink-0">
             <i data-lucide="download" class="size-3.5 text-primary"></i>
             <span>Export CSV</span>
         </button>
+        <?php endif; ?>
         <?php endif; ?>
     </form>
 </div>
@@ -168,6 +169,180 @@
                         <?php endfor; ?>
                         <td class="py-2 px-3 text-center border-l border-border bg-primary/5 font-bold text-primary font-mono">
                             <?= number_format($dayTotal) ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<?php elseif ($tab === 'publish'): ?>
+<!-- Publish Log with Editor Initial View (Legacy parity) -->
+<div class="surface-card overflow-hidden mb-8">
+    <div class="px-5 py-3.5 border-b border-border bg-muted/20 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i data-lucide="newspaper" class="size-4 text-primary"></i>
+            <h2 class="text-sm font-bold text-foreground">Log Terbit Berita &amp; Inisial Editor</h2>
+        </div>
+        <span class="text-xs font-medium text-muted-foreground"><?= count($publishLog) ?> Ditampilkan</span>
+    </div>
+
+    <div class="relative w-full overflow-x-auto custom-sidebar-scroll">
+        <table class="w-full text-left text-xs matrix-table">
+            <thead class="border-b border-border bg-muted/50 font-bold text-muted-foreground uppercase text-[11px] sticky top-0">
+                <tr>
+                    <th class="py-3 px-3.5 min-w-[70px]">ID</th>
+                    <th class="py-3 px-3.5 min-w-[280px]">Judul Berita</th>
+                    <th class="py-3 px-3 text-center min-w-[100px]">Kanal</th>
+                    <th class="py-3 px-3 text-center min-w-[130px]">Waktu Terbit</th>
+                    <th class="py-3 px-3 text-center min-w-[130px]">Waktu Dibuat</th>
+                    <th class="py-3 px-3 text-center min-w-[80px]">Inisial</th>
+                    <th class="py-3 px-3.5 min-w-[140px]">Editor</th>
+                    <th class="py-3 px-3.5 text-right min-w-[80px]">Views</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+                <?php if (empty($publishLog)): ?>
+                <tr>
+                    <td colspan="8" class="p-8 text-center text-muted-foreground text-xs">
+                        Tidak ada berita terbit pada rentang tanggal ini.
+                    </td>
+                </tr>
+                <?php else: ?>
+                    <?php foreach ($publishLog as $p): ?>
+                    <tr class="hover:bg-muted/40 transition-colors">
+                        <td class="py-2.5 px-3.5 font-mono text-muted-foreground">#<?= esc($p['articleID']) ?></td>
+                        <td class="py-2.5 px-3.5 font-medium text-foreground">
+                            <a href="<?= base_url('post/edit/' . $p['articleID']) ?>" target="_blank" class="hover:text-primary transition-colors line-clamp-1">
+                                <?= esc($p['articleTitle']) ?>
+                            </a>
+                        </td>
+                        <td class="py-2.5 px-3 text-center">
+                            <span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold bg-primary/10 text-primary">
+                                <?= esc($p['kanal_title'] ?? 'Market') ?>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-center font-mono text-[11px] text-muted-foreground">
+                            <?= date('d/m/Y H:i', strtotime($p['articleDate'])) ?>
+                        </td>
+                        <td class="py-2.5 px-3 text-center font-mono text-[11px] text-muted-foreground">
+                            <?= !empty($p['createDate']) ? date('d/m/Y H:i', strtotime($p['createDate'])) : '-' ?>
+                        </td>
+                        <td class="py-2.5 px-3 text-center">
+                            <span class="inline-flex items-center rounded font-mono font-bold px-2 py-0.5 text-[11px] bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                                <?= esc($p['kode'] ?: '-') ?>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3.5 text-foreground font-medium truncate max-w-[140px]">
+                            <?= esc($p['editor_name'] ?? '-') ?>
+                        </td>
+                        <td class="py-2.5 px-3.5 text-right font-mono font-bold text-foreground">
+                            <?= number_format($p['viewed'] ?? 0) ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <?php if (!empty($pagination) && $pagination['totalPages'] > 1): ?>
+        <?php
+        $queryParams = $_GET;
+        $buildReportPageUrl = function($pageNum) use ($queryParams) {
+            $params = $queryParams;
+            $params['page'] = $pageNum;
+            return base_url('statistic/report?' . http_build_query($params));
+        };
+        ?>
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-border bg-muted/10 text-xs">
+            <span class="text-muted-foreground">
+                Menampilkan <span class="font-medium text-foreground"><?= $pagination['from'] ?></span> s/d <span class="font-medium text-foreground"><?= $pagination['to'] ?></span> dari <span class="font-medium text-foreground"><?= $pagination['totalItems'] ?></span> artikel
+            </span>
+            <div class="flex items-center gap-1">
+                <?php if ($pagination['page'] > 1): ?>
+                    <a href="<?= $buildReportPageUrl($pagination['page'] - 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Prev</a>
+                <?php else: ?>
+                    <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Prev</span>
+                <?php endif; ?>
+
+                <?php for ($p = 1; $p <= min(10, $pagination['totalPages']); $p++): ?>
+                    <?php if ($p === $pagination['page']): ?>
+                        <span class="rounded-md bg-primary px-2.5 py-1 font-bold text-primary-foreground"><?= $p ?></span>
+                    <?php else: ?>
+                        <a href="<?= $buildReportPageUrl($p) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors"><?= $p ?></a>
+                    <?php endif; ?>
+                <?php endfor; ?>
+
+                <?php if ($pagination['page'] < $pagination['totalPages']): ?>
+                    <a href="<?= $buildReportPageUrl($pagination['page'] + 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Next</a>
+                <?php else: ?>
+                    <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Next</span>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
+
+<?php elseif ($tab === 'popular'): ?>
+<!-- Popular Articles View (Legacy parity) -->
+<div class="surface-card overflow-hidden mb-8">
+    <div class="px-5 py-3.5 border-b border-border bg-muted/20 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i data-lucide="trending-up" class="size-4 text-emerald-500"></i>
+            <h2 class="text-sm font-bold text-foreground">Peringkat Artikel Terpopuler Berdasarkan Pembaca</h2>
+        </div>
+        <span class="text-xs font-medium text-muted-foreground">Top <?= count($popularArticles) ?> Artikel</span>
+    </div>
+
+    <div class="relative w-full overflow-x-auto custom-sidebar-scroll">
+        <table class="w-full text-left text-xs matrix-table">
+            <thead class="border-b border-border bg-muted/50 font-bold text-muted-foreground uppercase text-[11px] sticky top-0">
+                <tr>
+                    <th class="py-3 px-3 text-center min-w-[50px]">#</th>
+                    <th class="py-3 px-3.5 min-w-[80px]">ID</th>
+                    <th class="py-3 px-3.5 min-w-[320px]">Judul Berita</th>
+                    <th class="py-3 px-3 text-center min-w-[110px]">Kanal</th>
+                    <th class="py-3 px-3 text-center min-w-[130px]">Tanggal Terbit</th>
+                    <th class="py-3 px-3.5 min-w-[140px]">Editor</th>
+                    <th class="py-3 px-3.5 text-right min-w-[110px] bg-primary/5 text-primary font-bold">Total Views</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+                <?php if (empty($popularArticles)): ?>
+                <tr>
+                    <td colspan="7" class="p-8 text-center text-muted-foreground text-xs">
+                        Tidak ada data artikel untuk rentang waktu ini.
+                    </td>
+                </tr>
+                <?php else: ?>
+                    <?php $rank = 1; foreach ($popularArticles as $art): ?>
+                    <tr class="hover:bg-muted/40 transition-colors">
+                        <td class="py-2.5 px-3 text-center font-mono font-bold <?= $rank <= 3 ? 'text-amber-500' : 'text-muted-foreground' ?>">
+                            <?= $rank++ ?>
+                        </td>
+                        <td class="py-2.5 px-3.5 font-mono text-muted-foreground">#<?= esc($art['articleID']) ?></td>
+                        <td class="py-2.5 px-3.5 font-medium text-foreground">
+                            <a href="<?= base_url('post/edit/' . $art['articleID']) ?>" target="_blank" class="hover:text-primary transition-colors line-clamp-1">
+                                <?= esc($art['articleTitle']) ?>
+                            </a>
+                        </td>
+                        <td class="py-2.5 px-3 text-center">
+                            <span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold bg-primary/10 text-primary">
+                                <?= esc($art['kanal_title'] ?? 'Market') ?>
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-center font-mono text-[11px] text-muted-foreground">
+                            <?= date('d/m/Y H:i', strtotime($art['articleDate'])) ?>
+                        </td>
+                        <td class="py-2.5 px-3.5 text-foreground truncate max-w-[140px]">
+                            <?= esc($art['editor_name'] ?? '-') ?>
+                        </td>
+                        <td class="py-2.5 px-3.5 text-right font-mono font-bold text-foreground bg-primary/5">
+                            <?= number_format($art['viewed'] ?? 0) ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

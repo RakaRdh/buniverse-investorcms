@@ -111,12 +111,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike'] },
                 { name: 'paragraph', items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', 'CreateDiv', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-', 'BidiLtr', 'BidiRtl'] },
                 { name: 'links', items: ['Link', 'Unlink'] },
-                { name: 'insert', items: ['Image', 'Table', 'SpecialChar'] },
+                { name: 'insert', items: ['Table', 'SpecialChar'] },
                 { name: 'document', items: ['Source'] }
             ],
             allowedContent: true,
             extraAllowedContent: 'figure(*); figcaption(*); blockquote(*)[*]; div(*)[*]; iframe(*)[*]; span(*)[*]; p(*)[*]; table(*)[*];',
+            disallowedContent: 'script; *[on*]; *[style*expression*]; link; meta; object; embed; applet; form; input; button; select;',
             removePlugins: 'exportpdf'
+        });
+
+        // Lapis 2: Client-side Sanitizer saat berpindah dari mode Source ke WYSIWYG
+        ckEditorInstance.on('mode', function() {
+            if (this.mode === 'wysiwyg') {
+                let data = this.getData();
+                if (data && (/<script\b|onerror=|onload=|onclick=|javascript:/i.test(data))) {
+                    // Bersihkan tag script dan inline event
+                    data = data.replace(/<script\b[^>]*>.*?<\/script>/gis, '');
+                    data = data.replace(/<script\b[^>]*\/?>/gis, '');
+                    data = data.replace(/\s*on[a-zA-Z0-9_-]+\s*=\s*(["']).*?\1/gis, '');
+                    data = data.replace(/\s*on[a-zA-Z0-9_-]+\s*=\s*[^"'\s>]+/gis, '');
+                    data = data.replace(/\b(href|src)\s*=\s*(["'])javascript:[^"']*\2/gis, '$1=$2#$2');
+                    this.setData(data);
+                }
+            }
         });
 
         // Theme synchronization function for CKEditor 4
@@ -154,8 +171,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        ckEditorInstance.on('instanceReady', syncCkEditorTheme);
-        ckEditorInstance.on('mode', syncCkEditorTheme);
+        function ensureBlockquotesNonEditable() {
+            if (!ckEditorInstance || !ckEditorInstance.document || !ckEditorInstance.document.$) return;
+            const bqs = ckEditorInstance.document.$.querySelectorAll('blockquote');
+            bqs.forEach(bq => {
+                if (bq.getAttribute('contenteditable') !== 'false') {
+                    bq.setAttribute('contenteditable', 'false');
+                }
+            });
+        }
+
+        ckEditorInstance.on('instanceReady', () => {
+            syncCkEditorTheme();
+            ensureBlockquotesNonEditable();
+        });
+        ckEditorInstance.on('mode', () => {
+            syncCkEditorTheme();
+            ensureBlockquotesNonEditable();
+        });
         window.addEventListener('newsroom_theme_change', syncCkEditorTheme);
 
         // Observe class changes on html element to sync instantly
@@ -571,8 +604,6 @@ function updateSubKanalLabel() {
 
 // 7. Interactive Embed Tools & Modals
 function insertEmbedTool(type) {
-    if (!quill) return;
-
     if (type === 'embed_chart') {
         openEmbedChartModal();
         return;
@@ -589,16 +620,16 @@ function insertEmbedTool(type) {
     }
 
     if (type === 'page_break') {
-        const range = quill.getSelection(true);
-        const index = range ? range.index : quill.getLength();
-        const embedHtml = `
-            <div class="article-page-break my-6 py-2.5 px-4 rounded-lg bg-amber-500/10 border border-dashed border-amber-500/40 text-center text-xs font-mono font-bold text-amber-700 dark:text-amber-300" data-page-break="true">
-                --- HALAMAN BERIKUTNYA (PAGE BREAK) ---
-            </div>
-            <p><br></p>
-        `;
-        quill.clipboard.dangerouslyPasteHTML(index, embedHtml);
-        quill.setSelection(index + 1);
+        const embedHtml = `<blockquote class="article-page-break" data-page-break="true" contenteditable="false"><p><strong>[PAGE BREAK]</strong></p></blockquote><p><br></p>`;
+        
+        if (ckEditorInstance) {
+            ckEditorInstance.insertHtml(embedHtml);
+        } else if (quill) {
+            const range = quill.getSelection(true);
+            const index = range ? range.index : quill.getLength();
+            quill.clipboard.dangerouslyPasteHTML(index, embedHtml);
+            quill.setSelection(index + 1);
+        }
         markEditorDirty();
         if (typeof showToast === 'function') {
             showToast('Page break (halaman berikutnya) berhasil disisipkan.', 'success');
@@ -654,7 +685,7 @@ function insertSelectedChart(idOrTitle, title, symbol, type, source) {
 
     const idAttr = chartId ? ` id="${chartId}"` : '';
     const symbolAttr = chartSymbol ? ` symbol="${chartSymbol}"` : '';
-    const embedCode = `<blockquote>[embed type=chart${idAttr}${symbolAttr} title="${chartTitle}"]${chartTitle}[/embed]</blockquote>`;
+    const embedCode = `<blockquote class="article-embed-box embed-chart" contenteditable="false">[embed type=chart${idAttr}${symbolAttr} title="${chartTitle}"]${chartTitle}[/embed]</blockquote>`;
 
     if (ckEditorInstance) {
         ckEditorInstance.insertHtml(`${embedCode}<p><br></p>`);
@@ -707,7 +738,7 @@ function submitSocmedEmbed() {
     else if (pLower.includes('drive')) embedType = 'googledrive';
     else if (pLower.includes('scribd')) embedType = 'scribd';
 
-    const embedCode = `<blockquote>[embed type=${embedType}]${url}${caption ? ' | ' + caption : ''}[/embed]</blockquote>`;
+    const embedCode = `<blockquote class="article-embed-box embed-socmed" contenteditable="false">[embed type=${embedType}]${url}${caption ? ' | ' + caption : ''}[/embed]</blockquote>`;
 
     if (ckEditorInstance) {
         ckEditorInstance.insertHtml(`${embedCode}<p><br></p>`);
@@ -732,12 +763,73 @@ function openEmbedGoogleDocModal() {
         if (urlInput) urlInput.value = '';
         const titleInput = document.getElementById('googleDocTitleInput');
         if (titleInput) titleInput.value = '';
+        switchDocTab('google');
     }
 }
 
 function closeEmbedGoogleDocModal() {
     const modal = document.getElementById('embedGoogleDocModal');
     if (modal) modal.style.display = 'none';
+}
+
+function switchDocTab(tab) {
+    const googleBtn = document.getElementById('docTabGoogleBtn');
+    const localBtn = document.getElementById('docTabLocalBtn');
+    const googleContent = document.getElementById('docTabGoogleContent');
+    const localContent = document.getElementById('docTabLocalContent');
+
+    if (tab === 'google') {
+        if (googleBtn) {
+            googleBtn.className = 'px-3 py-1.5 font-bold border-b-2 border-primary text-primary flex items-center gap-1.5 transition-colors';
+        }
+        if (localBtn) {
+            localBtn.className = 'px-3 py-1.5 font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors';
+        }
+        if (googleContent) googleContent.classList.remove('hidden');
+        if (localContent) localContent.classList.add('hidden');
+    } else {
+        if (localBtn) {
+            localBtn.className = 'px-3 py-1.5 font-bold border-b-2 border-primary text-primary flex items-center gap-1.5 transition-colors';
+        }
+        if (googleBtn) {
+            googleBtn.className = 'px-3 py-1.5 font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors';
+        }
+        if (localContent) localContent.classList.remove('hidden');
+        if (googleContent) googleContent.classList.add('hidden');
+    }
+}
+
+function filterLocalFilesList(query) {
+    const q = (query || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('#localFilesModalList .local-file-item');
+    rows.forEach(r => {
+        const title = r.getAttribute('data-title') || '';
+        const uploader = r.getAttribute('data-uploader') || '';
+        r.style.display = (!q || title.includes(q) || uploader.includes(q)) ? '' : 'none';
+    });
+}
+
+function insertSelectedLocalFile(fileName, fileUrl) {
+    if (!fileUrl) {
+        alert('URL berkas tidak valid.');
+        return;
+    }
+
+    const title = fileName || 'Unduh Berkas';
+    const embedCode = `<blockquote class="article-embed-box embed-file" contenteditable="false">[embed type=file url="${fileUrl}"]${title}[/embed]</blockquote>`;
+
+    if (ckEditorInstance) {
+        ckEditorInstance.insertHtml(`${embedCode}<p><br></p>`);
+    } else if (quill) {
+        const range = quill.getSelection(true);
+        const index = range ? range.index : quill.getLength();
+        quill.clipboard.dangerouslyPasteHTML(index, `${embedCode}<p><br></p>`);
+    }
+    markEditorDirty();
+    closeEmbedGoogleDocModal();
+    if (typeof showToast === 'function') {
+        showToast(`Berkas "${title}" berhasil disisipkan.`, 'success');
+    }
 }
 
 function submitGoogleDocEmbed() {
@@ -756,7 +848,7 @@ function submitGoogleDocEmbed() {
     }
 
     const embedType = docType === 'Sheet' ? 'googlesheet' : 'googledoc';
-    const embedCode = `<blockquote>[embed type=${embedType} url="${url}"]${title}[/embed]</blockquote>`;
+    const embedCode = `<blockquote class="article-embed-box embed-googledoc" contenteditable="false">[embed type=${embedType} url="${url}"]${title}[/embed]</blockquote>`;
 
     if (ckEditorInstance) {
         ckEditorInstance.insertHtml(`${embedCode}<p><br></p>`);
@@ -876,12 +968,13 @@ function openEmbedStockModal() {
         modal.style.display = 'flex';
         const input = document.getElementById('stockTickerInput');
         const dropdown = document.getElementById('stockAutocompleteDropdown');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
         if (dropdown) {
             dropdown.classList.add('hidden');
             dropdown.innerHTML = '';
-        }
-        if (input) {
-            input.focus();
         }
     }
 }
@@ -961,6 +1054,28 @@ function selectMediaImage(url, caption = '', description = '') {
     const finalCaption = rawCaption || rawDesc || 'Dokumentasi Investor.id';
     const finalDesc = rawDesc || rawCaption || 'Dokumentasi Investor.id';
 
+    if (mediaChooserTarget === 'wysiwyg_modal') {
+        const urlInput = document.getElementById('wysiwygImageUrlInput');
+        const descInput = document.getElementById('wysiwygImageDescInput');
+        const capInput = document.getElementById('wysiwygImageCaptionInput');
+        const previewEl = document.getElementById('wysiwygImagePreviewEl');
+        const previewContainer = document.getElementById('wysiwygImagePreviewContainer');
+        const promptEl = document.getElementById('wysiwygDropzonePrompt');
+
+        if (urlInput) urlInput.value = url;
+        if (descInput && !descInput.value) descInput.value = finalDesc;
+        if (capInput && !capInput.value) capInput.value = finalCaption;
+        if (previewEl) previewEl.src = url;
+        if (previewContainer) previewContainer.classList.remove('hidden');
+        if (promptEl) promptEl.classList.add('hidden');
+
+        closeMediaChooserModal();
+        if (typeof showToast === 'function') {
+            showToast('Foto dari Media Library dipilih ke dialog sisipan.', 'success');
+        }
+        return;
+    }
+
     if (mediaChooserTarget === 'quill' || mediaChooserTarget === 'ckeditor') {
         const figureHtml = `
             <figure style="text-align: center; margin: 18px auto; display: block; max-width: 100%;">
@@ -994,6 +1109,187 @@ function selectMediaImage(url, caption = '', description = '') {
     closeMediaChooserModal();
     if (typeof showToast === 'function') {
         showToast('Gambar berhasil dipilih.', 'success');
+    }
+}
+
+// 8B. WYSIWYG Insert Image Modal Handlers (Legacy Parity + Drag & Drop)
+function openWysiwygImageModal() {
+    const modal = document.getElementById('wysiwygImageModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Reset inputs on fresh open
+        clearWysiwygImageSelection();
+        const descInput = document.getElementById('wysiwygImageDescInput');
+        const capInput = document.getElementById('wysiwygImageCaptionInput');
+        const sizeSelect = document.getElementById('wysiwygImageSizeSelect');
+        const alignSelect = document.getElementById('wysiwygImageAlignSelect');
+
+        if (descInput) descInput.value = '';
+        if (capInput) capInput.value = '';
+        if (sizeSelect) sizeSelect.value = '100';
+        if (alignSelect) alignSelect.value = 'center';
+    }
+}
+
+function closeWysiwygImageModal() {
+    const modal = document.getElementById('wysiwygImageModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function clearWysiwygImageSelection(e) {
+    if (e) e.stopPropagation();
+    const urlInput = document.getElementById('wysiwygImageUrlInput');
+    const fileInput = document.getElementById('wysiwygImageFileInput');
+    const previewContainer = document.getElementById('wysiwygImagePreviewContainer');
+    const previewEl = document.getElementById('wysiwygImagePreviewEl');
+    const promptEl = document.getElementById('wysiwygDropzonePrompt');
+
+    if (urlInput) urlInput.value = '';
+    if (fileInput) fileInput.value = '';
+    if (previewEl) previewEl.src = '';
+    if (previewContainer) previewContainer.classList.add('hidden');
+    if (promptEl) promptEl.classList.remove('hidden');
+}
+
+async function handleWysiwygImageFileSelected(inputEl) {
+    if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+    const file = inputEl.files[0];
+
+    // Allowed types check
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+        alert('Format berkas tidak didukung. Harap pilih gambar JPG, PNG, atau WebP.');
+        inputEl.value = '';
+        return;
+    }
+
+    // Instant local preview
+    const previewContainer = document.getElementById('wysiwygImagePreviewContainer');
+    const previewEl = document.getElementById('wysiwygImagePreviewEl');
+    const promptEl = document.getElementById('wysiwygDropzonePrompt');
+    const descInput = document.getElementById('wysiwygImageDescInput');
+    const capInput = document.getElementById('wysiwygImageCaptionInput');
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        if (previewEl) previewEl.src = e.target.result;
+        if (previewContainer) previewContainer.classList.remove('hidden');
+        if (promptEl) promptEl.classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+
+    // Auto-fill filename stem as default alt/desc if empty
+    const fileNameStem = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+    if (descInput && !descInput.value) descInput.value = fileNameStem;
+
+    // Upload to server via /api/upload-image
+    const submitBtn = document.getElementById('submitWysiwygImageBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="inline-block animate-spin mr-1">↻</span> Mengunggah...';
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await res.json();
+        if (data.success && data.url) {
+            const urlInput = document.getElementById('wysiwygImageUrlInput');
+            if (urlInput) urlInput.value = data.url;
+            if (typeof showToast === 'function') {
+                showToast('Foto berhasil diunggah dan siap disisipkan.', 'success');
+            }
+        } else {
+            alert(data.error || 'Gagal mengunggah foto.');
+            clearWysiwygImageSelection();
+        }
+    } catch (err) {
+        console.error('Wysiwyg image upload error:', err);
+        alert('Terjadi kesalahan jaringan saat mengunggah foto.');
+        clearWysiwygImageSelection();
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i data-lucide="plus" class="size-3.5"></i><span>Sisipkan ke Naskah</span>';
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+}
+
+function submitWysiwygImageEmbed() {
+    const imgUrl = (document.getElementById('wysiwygImageUrlInput')?.value || '').trim();
+    const caption = (document.getElementById('wysiwygImageCaptionInput')?.value || '').trim();
+    const desc = (document.getElementById('wysiwygImageDescInput')?.value || '').trim() || caption || 'Dokumentasi Investor.id';
+    const size = document.getElementById('wysiwygImageSizeSelect')?.value || '100';
+    const align = document.getElementById('wysiwygImageAlignSelect')?.value || 'center';
+
+    if (!imgUrl) {
+        alert('Silakan pilih atau unggah foto gambar terlebih dahulu.');
+        return;
+    }
+
+    if (!caption) {
+        alert('Silakan masukkan keterangan / caption foto terlebih dahulu.');
+        document.getElementById('wysiwygImageCaptionInput')?.focus();
+        return;
+    }
+
+    // Compute styles & width identical to legacy cms.embedToPost
+    let style = 'margin: 14px auto; display: block; clear: both; ';
+    let widthStyle = '100%';
+
+    switch(size) {
+        case "30":
+            widthStyle = '30%';
+            break;
+        case "50":
+            widthStyle = '50%';
+            break;
+        case "100":
+            widthStyle = '100%';
+            break;
+        case "150": // Original
+            widthStyle = 'auto';
+            break;
+        default:
+            widthStyle = '100%';
+            break;
+    }
+
+    if (align === 'left') {
+        style = `float: left; margin: 10px 18px 14px 0; max-width: ${widthStyle === 'auto' ? '100%' : widthStyle}; `;
+    } else if (align === 'right') {
+        style = `float: right; margin: 10px 0 14px 18px; max-width: ${widthStyle === 'auto' ? '100%' : widthStyle}; `;
+    } else { // Center
+        style = `text-align: center; margin: 16px auto; display: block; clear: both; max-width: ${widthStyle === 'auto' ? '100%' : widthStyle}; `;
+    }
+
+    const altAttr = `alt="${escapeHtml(desc)}"`;
+    const figureHtml = `
+        <figure class="image" style="${style}">
+            <img ${altAttr} src="${imgUrl}" width="${widthStyle}" height="auto" style="max-width: 100%; height: auto; border-radius: 6px; display: block; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
+            <figcaption style="font-size: 11px; font-style: italic; color: #64748b; margin-top: 6px; text-align: ${align === 'left' ? 'left' : (align === 'right' ? 'right' : 'center')}; font-family: Verdana, sans-serif; display: block;">${escapeHtml(caption)}</figcaption>
+        </figure>
+        <p><br></p>
+    `;
+
+    if (ckEditorInstance) {
+        ckEditorInstance.insertHtml(figureHtml);
+    } else if (quill) {
+        const range = quill.getSelection(true);
+        const index = range ? range.index : quill.getLength();
+        quill.clipboard.dangerouslyPasteHTML(index, figureHtml);
+    }
+
+    markEditorDirty();
+    closeWysiwygImageModal();
+    if (typeof showToast === 'function') {
+        showToast('Gambar naskah berhasil disisipkan ke editor.', 'success');
     }
 }
 
@@ -1069,7 +1365,7 @@ function filterArticleModalList() {
 }
 
 function insertSelectedArticleLink(title, url, summary) {
-    const html = `<blockquote><p><strong>Baca Juga: </strong><a href="${url}" target="_blank">${title}</a></p></blockquote><p><br></p>`;
+    const html = `<blockquote class="article-embed-box embed-baca-juga" contenteditable="false"><p><strong>Baca Juga: </strong><a href="${url}" target="_blank">${title}</a></p></blockquote><p><br></p>`;
     if (ckEditorInstance) {
         ckEditorInstance.insertHtml(html);
     } else if (quill) {
@@ -1646,12 +1942,22 @@ function initAutoSave() {
         performAutoSave();
     }, 30000);
 
+    // Track any input or change on the article form to flag dirty state
+    const form = document.getElementById('postEditorForm') || document.querySelector('form');
+    if (form) {
+        form.addEventListener('input', () => markEditorDirty());
+        form.addEventListener('change', () => markEditorDirty());
+        form.addEventListener('submit', () => {
+            isFormSubmitting = true;
+        });
+    }
+
     // Unsaved changes beforeunload protection
     window.addEventListener('beforeunload', (e) => {
         if (isEditorDirty && !isFormSubmitting) {
             e.preventDefault();
-            e.returnValue = 'Perubahan artikel belum disimpan. Yakin ingin menutup halaman?';
-            return e.returnValue;
+            e.returnValue = '';
+            return '';
         }
     });
 }
@@ -2030,13 +2336,136 @@ async function uploadCoverFile(file) {
 document.addEventListener('DOMContentLoaded', () => {
     if (window.ModalUtils) {
         window.ModalUtils.register('mediaChooserModal', { onClose: () => closeMediaChooserModal() });
+        window.ModalUtils.register('wysiwygImageModal', { onClose: () => closeWysiwygImageModal() });
         window.ModalUtils.register('articleLinkModal', { onClose: () => closeArticleLinkModal() });
         window.ModalUtils.register('embedChartModal', { onClose: () => closeEmbedChartModal() });
         window.ModalUtils.register('embedGoogleDocModal', { onClose: () => closeEmbedGoogleDocModal() });
         window.ModalUtils.register('unsavedChangesModal', { onClose: () => closeUnsavedChangesModal() });
         window.ModalUtils.register('embedSocmedModal', { onClose: () => closeEmbedSocmedModal() });
         window.ModalUtils.register('embedStockModal', { onClose: () => closeEmbedStockModal() });
+        window.ModalUtils.register('revisionDiffModal', { onClose: () => closeRevisionDiffModal() });
+    }
+
+    // Attach click and drag-drop events for WYSIWYG modal image dropzone
+    const wysiwygDropzone = document.getElementById('wysiwygImageDropzone');
+    const wysiwygFileInput = document.getElementById('wysiwygImageFileInput');
+    if (wysiwygDropzone && wysiwygFileInput) {
+        wysiwygDropzone.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            wysiwygFileInput.click();
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            wysiwygDropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                wysiwygDropzone.classList.add('border-primary', 'bg-primary/5');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            wysiwygDropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                wysiwygDropzone.classList.remove('border-primary', 'bg-primary/5');
+            }, false);
+        });
+
+        wysiwygDropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                wysiwygFileInput.files = dt.files;
+                handleWysiwygImageFileSelected(wysiwygFileInput);
+            }
+        }, false);
     }
 });
+
+// =========================================================================
+// 13. Revision History Diff & Live Post Helpers
+// =========================================================================
+async function openRevisionDiffModal(historyId) {
+    const modal = document.getElementById('revisionDiffModal');
+    if (!modal) return;
+    
+    if (window.ModalUtils) {
+        window.ModalUtils.open('revisionDiffModal');
+    } else {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    const titlePrev = document.getElementById('diffTitlePrev');
+    const titleAfter = document.getElementById('diffTitleAfter');
+    const statusPrev = document.getElementById('diffStatusPrev');
+    const statusAfter = document.getElementById('diffStatusAfter');
+    const contentPrev = document.getElementById('diffContentPrev');
+    const contentAfter = document.getElementById('diffContentAfter');
+
+    if (titlePrev) titlePrev.textContent = 'Memuat...';
+    if (titleAfter) titleAfter.textContent = 'Memuat...';
+    if (statusPrev) statusPrev.textContent = '...';
+    if (statusAfter) statusAfter.textContent = '...';
+    if (contentPrev) contentPrev.innerHTML = '<div class="text-xs text-muted-foreground italic">Memuat konten riwayat...</div>';
+    if (contentAfter) contentAfter.innerHTML = '<div class="text-xs text-muted-foreground italic">Memuat konten riwayat...</div>';
+
+    try {
+        const res = await fetch(`/api/post/revision/${historyId}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const result = await res.json();
+        if (result.success && result.data) {
+            const d = result.data;
+            if (titlePrev) titlePrev.textContent = d.title_before || '(Tidak ada judul)';
+            if (titleAfter) titleAfter.textContent = d.title_after || '(Tidak ada judul)';
+            if (statusPrev) statusPrev.textContent = d.status_before || '-';
+            if (statusAfter) statusAfter.textContent = d.status_after || '-';
+            if (contentPrev) contentPrev.innerHTML = d.content_before || '<span class="text-xs text-muted-foreground italic">(Kosong)</span>';
+            if (contentAfter) contentAfter.innerHTML = d.content_after || '<span class="text-xs text-muted-foreground italic">(Kosong)</span>';
+        } else {
+            alert(result.message || 'Gagal memuat detail riwayat revisi.');
+            closeRevisionDiffModal();
+        }
+    } catch (err) {
+        console.error('Failed to load revision diff:', err);
+        alert('Gagal mengambil data revisi.');
+        closeRevisionDiffModal();
+    }
+}
+
+function closeRevisionDiffModal() {
+    const modal = document.getElementById('revisionDiffModal');
+    if (!modal) return;
+    if (window.ModalUtils) {
+        window.ModalUtils.close('revisionDiffModal');
+    } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function copyLivePostUrl(url) {
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+        if (typeof showToast === 'function') {
+            showToast('Tautan publik berhasil disalin ke clipboard!', 'success');
+        } else {
+            alert('Tautan publik berhasil disalin!');
+        }
+    }).catch(() => {
+        const tempInput = document.createElement('input');
+        tempInput.value = url;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        if (typeof showToast === 'function') {
+            showToast('Tautan publik berhasil disalin ke clipboard!', 'success');
+        } else {
+            alert('Tautan publik berhasil disalin!');
+        }
+    });
+}
+
 
 
