@@ -148,9 +148,11 @@ class SeoScorer
         $summaryLen    = mb_strlen($cleanSummary);
         $wordCount     = str_word_count($cleanBody);
 
-        // Normalize keywords
+        // Normalize keywords & extract primary keyword (User rule: Maksimal 3 keyword, hanya keyword pertama yang dipakai scoring)
         $normalizedKeywords = array_map(fn($k) => mb_strtolower(trim($k)), $keywords);
         $normalizedKeywords = array_values(array_filter($normalizedKeywords, fn($k) => !empty($k)));
+        $primaryKeyword     = !empty($normalizedKeywords) ? $normalizedKeywords[0] : null;
+        $totalKeywordsCount = count($normalizedKeywords);
 
         // -------------------------------------------------------------
         // Parameter 1: Title Length (Bobot: 10)
@@ -184,7 +186,7 @@ class SeoScorer
         $totalScore += $p1['score'];
 
         // -------------------------------------------------------------
-        // Parameter 2: Keyword in Title (Bobot: 10)
+        // Parameter 2: Keyword in Title (Bobot: 10) - Acuan: Keyword Pertama
         // -------------------------------------------------------------
         $p2 = [
             'key'         => 'keyword_in_title',
@@ -193,34 +195,24 @@ class SeoScorer
             'score'       => 0,
             'status'      => 'fail',
             'message'     => '',
-            'current_val' => count($normalizedKeywords) > 0 ? 'Dicek terhadap tag terdaftar' : 'Belum ada tag',
-            'ideal_val'   => 'Minimal 1 kata kunci muncul di judul'
+            'current_val' => $primaryKeyword ? "Keyword utama: '{$primaryKeyword}'" : 'Belum ada keyword',
+            'ideal_val'   => 'Kata kunci pertama/utama muncul di judul'
         ];
-        if (empty($normalizedKeywords)) {
+        if (!$primaryKeyword) {
             $p2['score']   = 0;
             $p2['status']  = 'fail';
             $p2['message'] = 'Artikel belum memiliki tag/kata kunci terdaftar.';
         } else {
             $lowerHeadline = mb_strtolower($cleanHeadline);
-            $foundInTitle = false;
-            $matchedKeyword = '';
-            foreach ($normalizedKeywords as $kw) {
-                if (mb_strpos($lowerHeadline, $kw) !== false) {
-                    $foundInTitle = true;
-                    $matchedKeyword = $kw;
-                    break;
-                }
-            }
-
-            if ($foundInTitle) {
+            if (mb_strpos($lowerHeadline, $primaryKeyword) !== false) {
                 $p2['score']   = 10;
                 $p2['status']  = 'pass';
-                $p2['message'] = "Kata kunci '{$matchedKeyword}' ditemukan di dalam judul.";
-                $p2['current_val'] = "Ditemukan: {$matchedKeyword}";
+                $p2['message'] = "Kata kunci utama '{$primaryKeyword}' ditemukan di dalam judul.";
+                $p2['current_val'] = "Ditemukan: {$primaryKeyword}";
             } else {
                 $p2['score']   = 0;
                 $p2['status']  = 'fail';
-                $p2['message'] = 'Tidak ada kata kunci terdaftar yang ditemukan di judul.';
+                $p2['message'] = "Kata kunci utama '{$primaryKeyword}' tidak ditemukan di judul.";
             }
         }
         $params[] = $p2;
@@ -258,7 +250,7 @@ class SeoScorer
         $totalScore += $p3['score'];
 
         // -------------------------------------------------------------
-        // Parameter 4: Keyword in Meta Description (Bobot: 5)
+        // Parameter 4: Keyword in Meta Description (Bobot: 5) - Acuan: Keyword Pertama
         // -------------------------------------------------------------
         $p4 = [
             'key'         => 'keyword_in_summary',
@@ -267,33 +259,24 @@ class SeoScorer
             'score'       => 0,
             'status'      => 'fail',
             'message'     => '',
-            'current_val' => count($normalizedKeywords) > 0 ? 'Dicek terhadap tag terdaftar' : 'Belum ada tag',
-            'ideal_val'   => 'Minimal 1 kata kunci muncul di ringkasan'
+            'current_val' => $primaryKeyword ? "Keyword utama: '{$primaryKeyword}'" : 'Belum ada keyword',
+            'ideal_val'   => 'Kata kunci pertama/utama muncul di ringkasan'
         ];
-        if (empty($normalizedKeywords) || $summaryLen === 0) {
+        if (!$primaryKeyword || $summaryLen === 0) {
             $p4['score']   = 0;
             $p4['status']  = 'fail';
             $p4['message'] = $summaryLen === 0 ? 'Ringkasan kosong.' : 'Belum ada kata kunci terdaftar.';
         } else {
             $lowerSummary = mb_strtolower($cleanSummary);
-            $foundInSummary = false;
-            $matchedKw = '';
-            foreach ($normalizedKeywords as $kw) {
-                if (mb_strpos($lowerSummary, $kw) !== false) {
-                    $foundInSummary = true;
-                    $matchedKw = $kw;
-                    break;
-                }
-            }
-            if ($foundInSummary) {
+            if (mb_strpos($lowerSummary, $primaryKeyword) !== false) {
                 $p4['score']   = 5;
                 $p4['status']  = 'pass';
-                $p4['message'] = "Kata kunci '{$matchedKw}' ditemukan di ringkasan.";
-                $p4['current_val'] = "Ditemukan: {$matchedKw}";
+                $p4['message'] = "Kata kunci utama '{$primaryKeyword}' ditemukan di ringkasan.";
+                $p4['current_val'] = "Ditemukan: {$primaryKeyword}";
             } else {
                 $p4['score']   = 0;
                 $p4['status']  = 'fail';
-                $p4['message'] = 'Tidak ada kata kunci terdaftar di ringkasan.';
+                $p4['message'] = "Kata kunci utama '{$primaryKeyword}' tidak ditemukan di ringkasan.";
             }
         }
         $params[] = $p4;
@@ -333,7 +316,7 @@ class SeoScorer
         $totalScore += $p5['score'];
 
         // -------------------------------------------------------------
-        // Parameter 6: Keyword in First Paragraph (Bobot: 10)
+        // Parameter 6: Keyword in First Paragraph (Bobot: 10) - Acuan: Keyword Pertama
         // -------------------------------------------------------------
         $p6 = [
             'key'         => 'keyword_in_first_p',
@@ -343,35 +326,26 @@ class SeoScorer
             'status'      => 'fail',
             'message'     => '',
             'current_val' => '-',
-            'ideal_val'   => 'Minimal 1 kata kunci muncul di 100 kata pertama'
+            'ideal_val'   => 'Kata kunci pertama/utama muncul di 100 kata pertama'
         ];
         // Extract first ~100 words or first paragraph
         $first100Words = implode(' ', array_slice(explode(' ', $cleanBody), 0, 100));
         $lowerFirst100 = mb_strtolower($first100Words);
 
-        if (empty($normalizedKeywords)) {
+        if (!$primaryKeyword) {
             $p6['score']   = 0;
             $p6['status']  = 'fail';
             $p6['message'] = 'Belum ada kata kunci terdaftar untuk diperiksa.';
         } else {
-            $foundInFirstP = false;
-            $firstPMatch = '';
-            foreach ($normalizedKeywords as $kw) {
-                if (mb_strpos($lowerFirst100, $kw) !== false) {
-                    $foundInFirstP = true;
-                    $firstPMatch = $kw;
-                    break;
-                }
-            }
-            if ($foundInFirstP) {
+            if (mb_strpos($lowerFirst100, $primaryKeyword) !== false) {
                 $p6['score']   = 10;
                 $p6['status']  = 'pass';
-                $p6['message'] = "Kata kunci '{$firstPMatch}' ditemukan di lead/paragraf pembuka.";
-                $p6['current_val'] = "Ditemukan: {$firstPMatch}";
+                $p6['message'] = "Kata kunci utama '{$primaryKeyword}' ditemukan di lead/paragraf pembuka.";
+                $p6['current_val'] = "Ditemukan: {$primaryKeyword}";
             } else {
                 $p6['score']   = 0;
                 $p6['status']  = 'fail';
-                $p6['message'] = 'Kata kunci terdaftar tidak ditemukan di 100 kata pertama artikel.';
+                $p6['message'] = "Kata kunci utama '{$primaryKeyword}' tidak ditemukan di 100 kata pertama artikel.";
             }
         }
         $params[] = $p6;
@@ -599,54 +573,52 @@ class SeoScorer
 
         // -------------------------------------------------------------
         // Parameter 12: Keyword Count & Density (Bobot: 10)
+        // Aturan Khusus: Maksimal 3 keyword per artikel (jika > 3 dicap SPAM).
+        // Densitas dihitung HANYA untuk keyword pertama (utama).
         // -------------------------------------------------------------
         $p12 = [
             'key'         => 'keyword_density',
-            'title'       => 'Kerapatan & Jumlah Tag Terdaftar',
+            'title'       => 'Kerapatan & Jumlah Keyword Terdaftar',
             'weight'      => 10,
             'score'       => 0,
             'status'      => 'fail',
             'message'     => '',
-            'current_val' => count($normalizedKeywords) . ' tag',
-            'ideal_val'   => '3 - 8 tag terdaftar dengan distribusi alami (0.8% - 2.5%)'
+            'current_val' => "{$totalKeywordsCount} keyword",
+            'ideal_val'   => 'Maksimal 3 keyword (densitas keyword pertama 0.8% - 2.5%)'
         ];
-        $tagCount = count($normalizedKeywords);
 
-        if ($tagCount === 0) {
+        if ($totalKeywordsCount === 0) {
             $p12['score']   = 0;
             $p12['status']  = 'fail';
-            $p12['message'] = 'Tidak ada tag/kata kunci yang dipilih untuk artikel ini.';
-        } elseif ($tagCount < 2) {
-            $p12['score']   = 4;
-            $p12['status']  = 'warning';
-            $p12['message'] = "Tag terlalu sedikit ({$tagCount} tag). Disarankan 3-6 tag spesifik.";
-        } elseif ($tagCount > 10) {
-            $p12['score']   = 5;
-            $p12['status']  = 'warning';
-            $p12['message'] = "Terlalu banyak tag ({$tagCount} tag). Berisiko tag-dilution, batasi maksimal 8-10 tag.";
+            $p12['message'] = 'Tidak ada kata kunci/tag yang dipilih untuk artikel ini.';
+        } elseif ($totalKeywordsCount > 3) {
+            // Lebih dari 3 keyword dicap SPAM sesuai instruksi user
+            $p12['score']   = 2;
+            $p12['status']  = 'fail';
+            $p12['message'] = "Terdeteksi {$totalKeywordsCount} keyword (melebihi batas maksimal 3). Kelebihan keyword dicap sebagai SPAM / keyword stuffing. Batasi maksimal 3 kata kunci per artikel.";
+            $p12['current_val'] = "{$totalKeywordsCount} keyword (SPAM: >3 keyword)";
         } else {
-            // Check density of primary tag
-            $primaryTag = $normalizedKeywords[0];
+            // 1 - 3 keyword: Ideal. Cek densitas HANYA pada keyword pertama
             $lowerBody = mb_strtolower($cleanBody);
-            $occurrences = mb_substr_count($lowerBody, $primaryTag);
-            $tagWords = str_word_count($primaryTag);
+            $occurrences = mb_substr_count($lowerBody, $primaryKeyword);
+            $tagWords = str_word_count($primaryKeyword);
             $density = $wordCount > 0 ? round(($occurrences * $tagWords / $wordCount) * 100, 2) : 0;
 
             if ($density > 3.5) {
                 $p12['score']   = 5;
                 $p12['status']  = 'warning';
-                $p12['message'] = "Tag {$tagCount} memadai, namun tag utama '{$primaryTag}' terdeteksi terlalu sering ({$density}% density). Hindari keyword stuffing.";
-                $p12['current_val'] = "{$tagCount} tag, densitas '{$primaryTag}': {$density}%";
+                $p12['message'] = "Jumlah keyword ({$totalKeywordsCount}) ideal (maks. 3), namun keyword utama '{$primaryKeyword}' terlalu sering muncul ({$density}% density). Waspadai keyword stuffing.";
+                $p12['current_val'] = "{$totalKeywordsCount} keyword, densitas '{$primaryKeyword}': {$density}%";
             } elseif ($density >= 0.5 && $density <= 3.0) {
                 $p12['score']   = 10;
                 $p12['status']  = 'pass';
-                $p12['message'] = "Jumlah tag ideal ({$tagCount} tag) dengan frekuensi alami di teks (densitas {$density}%).";
-                $p12['current_val'] = "{$tagCount} tag, densitas '{$primaryTag}': {$density}%";
+                $p12['message'] = "Jumlah keyword ideal ({$totalKeywordsCount} keyword, maks. 3) dengan distribusi alami di teks (densitas '{$primaryKeyword}': {$density}%).";
+                $p12['current_val'] = "{$totalKeywordsCount} keyword, densitas '{$primaryKeyword}': {$density}%";
             } else {
                 $p12['score']   = 8;
                 $p12['status']  = 'pass';
-                $p12['message'] = "Jumlah tag ideal ({$tagCount} tag).";
-                $p12['current_val'] = "{$tagCount} tag";
+                $p12['message'] = "Jumlah keyword ideal ({$totalKeywordsCount} keyword, maks. 3).";
+                $p12['current_val'] = "{$totalKeywordsCount} keyword";
             }
         }
         $params[] = $p12;

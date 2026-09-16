@@ -143,6 +143,7 @@ $routes->post('/api/ai/scrape', 'AiAssistant::scrape');
 $routes->get('/scoring', 'Scoring::index');
 $routes->get('/scoring/logs', 'Scoring::logs');
 $routes->get('/scoring/detail/(:num)', 'Scoring::detailView/$1');
+$routes->post('/scoring/calculate', 'Scoring::calculate');
 $routes->get('/api/scoring/search-articles', 'Scoring::searchArticles');
 $routes->get('/api/scoring/article/(:num)', 'Scoring::getArticle/$1');
 $routes->post('/api/scoring/calculate', 'Scoring::calculate');

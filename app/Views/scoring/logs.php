@@ -79,12 +79,12 @@
             <thead class="border-b border-border bg-muted/40 text-muted-foreground uppercase tracking-wider font-bold">
                 <tr>
                     <th class="py-3 px-3 w-[6%] text-center">ID</th>
-                    <th class="py-3 px-3 w-[36%]">Artikel / Headline</th>
-                    <th class="py-3 px-2 w-[14%] text-center">Skor Akhir</th>
-                    <th class="py-3 px-2 w-[14%] text-center">Komposisi (Rule/AI)</th>
-                    <th class="py-3 px-2.5 w-[14%]">Used By (User)</th>
-                    <th class="py-3 px-2 w-[16%]">Waktu Audit</th>
-                    <th class="py-3 px-3 w-[8%] text-right">Aksi</th>
+                    <th class="py-3 px-3 w-[40%]">Artikel / Headline</th>
+                    <th class="py-3 px-2 w-[13%] text-center">Skor Akhir</th>
+                    <th class="py-3 px-2 w-[13%] text-center">Komposisi (Rule/AI)</th>
+                    <th class="py-3 px-2.5 w-[12%]">Used By (User)</th>
+                    <th class="py-3 px-2 w-[10%]">Waktu Audit</th>
+                    <th class="py-3 px-3 w-[6%] text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-border">
@@ -156,7 +156,7 @@
                         <td class="py-3 px-2 text-muted-foreground font-mono text-[11px]">
                             <?= !empty($log['created_at']) ? date('d M Y H:i', strtotime($log['created_at'])) : '-' ?>
                         </td>
-                        <td class="py-3 px-3 text-right">
+                        <td class="py-3 px-3 text-center">
                             <a href="<?= base_url('scoring/detail/' . $log['id']) ?>" class="inline-flex items-center justify-center gap-1 rounded border border-input bg-background px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary hover:text-white transition-colors shadow-2xs" title="Lihat Detail Hasil Scoring di Halaman Khusus">
                                 <i data-lucide="eye" class="size-3"></i>
                                 <span>Detail</span>

@@ -41,6 +41,12 @@
                     <span>Simpan Draft</span>
                 </button>
 
+                <!-- Quick SEO Scoring Modal Trigger Button -->
+                <button type="button" onclick="openEditorSeoModal()" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-bold uppercase tracking-wider shadow transition-all cursor-pointer" style="background-color: #059669 !important; color: #ffffff !important; border: 1px solid #047857;" onmouseover="this.style.backgroundColor='#047857'" onmouseout="this.style.backgroundColor='#059669'" title="Cek Overall SEO Scoring Naskah Ini">
+                    <i data-lucide="gauge" class="size-4" style="color: #ffffff !important; stroke: #ffffff !important;"></i>
+                    <span style="color: #ffffff !important; font-weight: 700;">Skor SEO</span>
+                </button>
+
                 <!-- Primary Publish / Save Button -->
                 <button type="submit" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md bg-[#2B6CB0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
                     <i data-lucide="save" class="size-4"></i>
@@ -370,7 +376,8 @@
                         <span>GENERATE JUDUL VIA AI</span>
                     </button>
                 </div>
-                <input type="text" name="title" id="articleTitleInput" required maxlength="70" value="<?= esc($article['title'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Masukkan judul artikel berita yang lugas dan menarik...">
+                <!-- maxlength="70" di-comment out sementara sesuai permintaan editorial, batasan scoring tetap 50-70 karakter -->
+                <input type="text" name="title" id="articleTitleInput" required <?php /* maxlength="70" */ ?> value="<?= esc($article['title'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Masukkan judul artikel berita yang lugas dan menarik...">
                 
                 <div class="flex items-center justify-between text-[11px] pt-0.5">
                     <!-- Mobile Bottom AI Button -->
@@ -454,7 +461,8 @@
                         <span>GENERATE SUMMARY VIA AI</span>
                     </button>
                 </div>
-                <textarea name="summary" id="articleSummaryInput" rows="3" maxlength="160" class="flex w-full rounded-md border border-input bg-background p-3 text-xs leading-relaxed shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Ringkasan 1-2 kalimat pengantar artikel untuk cuplikan sosial media dan feed..."><?= esc($article['summary'] ?? '') ?></textarea>
+                <!-- maxlength="160" di-comment out sementara sesuai instruksi, patokan ideal scoring tetap 120-160 char -->
+                <textarea name="summary" id="articleSummaryInput" rows="3" <?php /* maxlength="160" */ ?> class="flex w-full rounded-md border border-input bg-background p-3 text-xs leading-relaxed shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Ringkasan 1-2 kalimat pengantar artikel untuk cuplikan sosial media dan feed..."><?= esc($article['summary'] ?? '') ?></textarea>
                 
                 <div class="flex items-center justify-between text-[11px] pt-0.5">
                     <!-- Mobile Bottom AI Button -->
@@ -717,6 +725,10 @@
 
             <!-- Bottom Action Footer -->
             <div class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-border">
+                <button type="button" onclick="openEditorSeoModal()" class="inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-xs font-bold uppercase tracking-wider shadow transition-all cursor-pointer" style="background-color: #059669 !important; color: #ffffff !important; border: 1px solid #047857;" onmouseover="this.style.backgroundColor='#047857'" onmouseout="this.style.backgroundColor='#059669'" title="Cek Overall SEO Scoring Naskah Ini">
+                    <i data-lucide="gauge" class="size-4" style="color: #ffffff !important; stroke: #ffffff !important;"></i>
+                    <span style="color: #ffffff !important; font-weight: 700;">SKOR SEO</span>
+                </button>
                 <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-md bg-[#2B6CB0] px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow hover:bg-[#2B6CB0]/90 transition-colors">
                     <i data-lucide="save" class="size-4"></i>
                     <span>SIMPAN ARTIKEL</span>
@@ -1346,6 +1358,74 @@
                 Tutup Komparasi
             </button>
         </div>
+<!-- Modal Pop-up Quick SEO Scoring di Editor -->
+<div id="editorSeoModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.75); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    <div class="surface-card w-full max-w-md flex flex-col p-6 shadow-2xl space-y-4 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-150">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-border pb-3">
+            <div class="flex items-center gap-2">
+                <div class="size-8 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                    <i data-lucide="gauge" class="size-4.5"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-foreground">Kesiapan SEO Artikel</h3>
+                    <p class="text-[11px] text-muted-foreground">Analisis singkat teknis on-page &amp; mutu naskah</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeEditorSeoModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <i data-lucide="x" class="size-4"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body: Loading State -->
+        <div id="editorSeoLoading" class="py-8 flex flex-col items-center justify-center gap-3 text-center">
+            <div class="size-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs font-medium text-muted-foreground">Menganalisis teknis &amp; kata kunci naskah...</p>
+        </div>
+
+        <!-- Modal Body: Result State -->
+        <div id="editorSeoContent" class="space-y-4 hidden">
+            <!-- Overall Score Card -->
+            <div class="p-4 rounded-xl bg-muted/40 border border-border flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Skor Keseluruhan</span>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <span id="editorSeoScoreVal" class="text-3xl font-extrabold font-mono text-foreground">--%</span>
+                        <span id="editorSeoBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase">--</span>
+                    </div>
+                </div>
+                <!-- Circular Gauge -->
+                <div class="size-14 relative flex items-center justify-center shrink-0">
+                    <svg class="size-full -rotate-90" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="14" fill="none" class="stroke-muted" stroke-width="3"></circle>
+                        <circle id="editorSeoCircleProgress" cx="18" cy="18" r="14" fill="none" stroke="#10b981" stroke-width="3.5" stroke-dasharray="88" stroke-dashoffset="88" stroke-linecap="round" class="transition-all duration-700"></circle>
+                    </svg>
+                    <i data-lucide="award" id="editorSeoIcon" class="size-5 text-emerald-600 absolute"></i>
+                </div>
+            </div>
+
+            <!-- Ringkasan Singkat & Padat -->
+            <div class="space-y-2">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-foreground">Ringkasan Evaluasi</h4>
+                <p id="editorSeoSummaryDesc" class="text-xs text-muted-foreground leading-relaxed">
+                    <!-- Populated dynamically -->
+                </p>
+                <div id="editorSeoKeyPoints" class="space-y-1 pt-1">
+                    <!-- 2-3 key takeaways -->
+                </div>
+            </div>
+
+            <!-- Footer Action Buttons -->
+            <div class="pt-3 border-t border-border flex items-center justify-between gap-2">
+                <button type="button" onclick="closeEditorSeoModal()" class="px-3.5 py-1.5 rounded-md border border-input bg-background text-xs font-medium text-muted-foreground hover:bg-muted transition-colors">
+                    Tutup
+                </button>
+                <a id="editorSeoDetailLink" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-2xs">
+                    <span>Lihat Detail Scoring</span>
+                    <i data-lucide="arrow-up-right" class="size-3.5"></i>
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1391,4 +1471,201 @@ function forceUnlockArticle(articleId) {
 }
 </script>
 <?php endif; ?>
+
+<script>
+/**
+ * Interactive Handler: Quick Overall SEO Scoring Modal in Editor
+ */
+async function openEditorSeoModal() {
+    const modal = document.getElementById('editorSeoModal');
+    const loading = document.getElementById('editorSeoLoading');
+    const content = document.getElementById('editorSeoContent');
+
+    // 1. Ekstraksi dan Validasi Kolom Wajib (Judul, Summary, Body, Keyword)
+    const titleInput = document.getElementById('articleTitleInput');
+    const summaryInput = document.getElementById('articleSummaryInput');
+    const tagsInput = document.getElementById('articleTagsInput');
+    const thumbInput = document.getElementById('thumbnailInput');
+
+    let title = titleInput ? titleInput.value.trim() : '';
+    let summary = summaryInput ? summaryInput.value.trim() : '';
+    
+    let body = '';
+    if (window.CKEDITOR && CKEDITOR.instances.articleEditor) {
+        body = CKEDITOR.instances.articleEditor.getData();
+    } else if (typeof quill !== 'undefined' && quill) {
+        body = quill.root.innerHTML;
+    } else {
+        const el = document.getElementById('articleEditor');
+        body = el ? el.value : '';
+    }
+    const cleanBody = body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+
+    let tags = [];
+    if (tagsInput && tagsInput.value) {
+        tags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    }
+
+    // Periksa jika ada salah satu kolom wajib yang masih kosong
+    const missingFields = [];
+    if (!title) missingFields.push('Judul Artikel');
+    if (!summary) missingFields.push('Uraian Singkat (Summary)');
+    if (!cleanBody) missingFields.push('Body Artikel');
+    if (tags.length === 0) missingFields.push('Kata Kunci (Keyword / Tag)');
+
+    if (missingFields.length > 0) {
+        const fieldList = missingFields.map(f => '  • ' + f).join('\n');
+        alert("Peringatan: Tidak dapat melakukan Skor SEO!\n\nKolom berikut wajib diisi dan tidak boleh kosong:\n" + fieldList + "\n\nSilakan lengkapi naskah artikel terlebih dahulu.");
+        return;
+    }
+
+    if (!modal) return;
+    modal.style.display = 'flex';
+    if (loading) loading.classList.remove('hidden');
+    if (content) content.classList.add('hidden');
+
+    try {
+        const idInput = document.getElementById('articleIdInput');
+        let articleId = idInput ? parseInt(idInput.value, 10) : 0;
+
+        // If new article without ID yet, auto-save draft first to generate an articleID
+        if (!articleId || isNaN(articleId) || articleId <= 0) {
+            const kanalSelect = document.getElementById('kanalSelect');
+            const autosaveRes = await fetch('/api/autosave', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({
+                    id: '',
+                    title: title || 'Draft Tanpa Judul',
+                    summary: summary,
+                    content: body,
+                    thumbnail: thumbInput ? thumbInput.value : '',
+                    kanal: (kanalSelect && kanalSelect.value) ? kanalSelect.value : 'Market',
+                    tags: tags.join(',')
+                })
+            });
+            const autosaveJson = await autosaveRes.json();
+            if (autosaveJson.success && autosaveJson.id) {
+                articleId = autosaveJson.id;
+                if (idInput) idInput.value = articleId;
+                const formEl = document.getElementById('postEditorForm');
+                if (formEl && formEl.action.includes('/post/save')) {
+                    formEl.action = '/post/update/' + articleId;
+                }
+            }
+        }
+
+        if (!articleId) {
+            throw new Error('Harap simpan naskah sebagai draft terlebih dahulu sebelum menjalankan scoring.');
+        }
+
+        // Send scoring calculation request with real-time editor content
+        const calcRes = await fetch('<?= base_url('scoring/calculate') ?>', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({
+                article_id: articleId,
+                headline: title,
+                summary: summary,
+                body: body,
+                keywords: tags,
+                thumbnail: thumbInput ? thumbInput.value : '',
+                skip_ai: false
+            })
+        });
+
+        const calcJson = await calcRes.json();
+        if (!calcRes.ok || calcJson.status !== 'success') {
+            throw new Error(calcJson.message || 'Gagal menghitung skor SEO.');
+        }
+
+        const data = calcJson.data;
+        const score = Math.round(data.final_score || 0);
+        const category = data.score_category || 'Needs Improvement';
+
+        // Update score display
+        const scoreValEl = document.getElementById('editorSeoScoreVal');
+        const badgeEl = document.getElementById('editorSeoBadge');
+        const circleProgress = document.getElementById('editorSeoCircleProgress');
+        const descEl = document.getElementById('editorSeoSummaryDesc');
+        const keyPointsEl = document.getElementById('editorSeoKeyPoints');
+        const detailLink = document.getElementById('editorSeoDetailLink');
+
+        if (scoreValEl) scoreValEl.textContent = score + '%';
+
+        // Category Badge
+        if (badgeEl) {
+            badgeEl.textContent = category;
+            badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ';
+            if (category === 'Excellent') {
+                badgeEl.className += 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30';
+            } else if (category === 'Good') {
+                badgeEl.className += 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30';
+            } else if (category === 'Needs Improvement') {
+                badgeEl.className += 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30';
+            } else {
+                badgeEl.className += 'bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30';
+            }
+        }
+
+        // Circular Progress stroke offset
+        if (circleProgress) {
+            const offset = 88 - (88 * Math.min(100, Math.max(0, score)) / 100);
+            circleProgress.style.strokeDashoffset = offset;
+            circleProgress.setAttribute('stroke', score >= 85 ? '#10b981' : (score >= 70 ? '#0ea5e9' : (score >= 50 ? '#f59e0b' : '#ef4444')));
+        }
+
+        // Concise tailored description
+        if (descEl) {
+            if (score >= 85) {
+                descEl.textContent = 'Kesiapan SEO naskah sangat prima dan memenuhi standar editorial portal berita.';
+            } else if (score >= 70) {
+                descEl.textContent = 'Artikel sudah cukup baik, sedikit penyesuaian pada kata kunci atau heading akan menyempurnakannya.';
+            } else if (score >= 50) {
+                descEl.textContent = 'Naskah memerlukan optimasi pada panjang judul, ringkasan, atau sebaran kata kunci.';
+            } else {
+                descEl.textContent = 'Kesiapan SEO masih rendah. Pastikan artikel memiliki kata kunci utama (maksimal 3) dan isi berita yang cukup.';
+            }
+        }
+
+        // Key Points (limit to 2-3 concise points)
+        if (keyPointsEl && data.rule_details) {
+            keyPointsEl.innerHTML = '';
+            const details = data.rule_details;
+            const relevant = details.filter(d => d.status === 'pass' || d.status === 'fail').slice(0, 3);
+            relevant.forEach(item => {
+                const isPass = item.status === 'pass';
+                const div = document.createElement('div');
+                div.className = 'flex items-start gap-1.5 text-xs text-foreground';
+                div.innerHTML = `
+                    <span class="${isPass ? 'text-emerald-600' : 'text-amber-600'} font-bold mt-0.5">•</span>
+                    <span><strong>${item.title}:</strong> ${item.message}</span>
+                `;
+                keyPointsEl.appendChild(div);
+            });
+        }
+
+        // Detail link carrying articleID to the logs page
+        if (detailLink) {
+            detailLink.href = '<?= base_url('scoring/logs') ?>?q=' + articleId;
+        }
+
+        // Toggle state
+        if (loading) loading.classList.add('hidden');
+        if (content) content.classList.remove('hidden');
+
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    } catch (err) {
+        alert(err.message);
+        closeEditorSeoModal();
+    }
+}
+
+function closeEditorSeoModal() {
+    const modal = document.getElementById('editorSeoModal');
+    if (modal) modal.style.display = 'none';
+}
+</script>
 <?= $this->endSection() ?>

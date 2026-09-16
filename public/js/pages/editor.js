@@ -1679,10 +1679,11 @@ async function executeScrapeArticle() {
                 capInput.value = data.thumbnail_caption;
             }
 
-            // 4. Set article title if currently empty
+            // 4. Set article title if currently empty (limitasi 70 karakter di-comment out sementara)
             const titleInput = document.getElementById('articleTitleInput');
             if (titleInput && !titleInput.value.trim() && data.title) {
-                titleInput.value = data.title.substring(0, 70);
+                // titleInput.value = data.title.substring(0, 70);
+                titleInput.value = data.title;
                 const countEl = document.getElementById('titleCharCount');
                 if (countEl) countEl.textContent = titleInput.value.length;
             }

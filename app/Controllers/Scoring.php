@@ -158,9 +158,24 @@ class Scoring extends BaseController
             ])->setStatusCode(404);
         }
 
-        // Keywords
-        $keywordsData = $this->keywordModel->getArticleKeywords($articleId);
-        $keywords = array_column($keywordsData, 'keyword');
+        // Keywords: jika dikirim dari payload editor gunakan itu, jika tidak ambil dari database
+        if (!empty($input['keywords']) && is_array($input['keywords'])) {
+            $keywords = $input['keywords'];
+        } else {
+            $keywordsData = $this->keywordModel->getArticleKeywords($articleId);
+            $keywords = array_column($keywordsData, 'keyword');
+        }
+
+        // Override field artikel dengan naskah real-time editor jika disediakan
+        if (!empty($input['headline'])) {
+            $article['headline'] = trim($input['headline']);
+        }
+        if (isset($input['body'])) {
+            $article['body'] = $input['body'];
+        }
+        if (isset($input['summary'])) {
+            $article['summary'] = $input['summary'];
+        }
 
         // Metadata
         $db = \Config\Database::connect();
@@ -168,6 +183,9 @@ class Scoring extends BaseController
         $meta = [];
         foreach ($metaRows as $row) {
             $meta[$row['metakey']] = $row['metaval'];
+        }
+        if (!empty($input['thumbnail'])) {
+            $meta['thumbnail'] = $input['thumbnail'];
         }
 
         try {
