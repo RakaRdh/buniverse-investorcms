@@ -39,7 +39,7 @@ class Headline extends BaseController
             'status'   => 'Publish',
             'q'        => $keyword,
             'kanal'    => $categoryFilter,
-            'order_by' => 'createdAt',
+            'order_by' => 'articleDate',
         ];
 
         $perPage = 25;

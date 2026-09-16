@@ -347,13 +347,15 @@ class PostPreview extends BaseController
             $content
         );
 
-        // 5. Baca Juga blockquote polish
+        // 5. Baca Juga blockquote polish (Investor.id parity .id-group)
         $content = preg_replace_callback(
-            '/<blockquote>\s*<p>\s*<strong>Baca Juga:\s*<\/strong>\s*<a href="([^"]+)"[^>]*>(.*?)<\/a>\s*<\/p>\s*<\/blockquote>/i',
+            '/<blockquote[^>]*>\s*(?:<p>)?\s*<strong>Baca Juga:\s*<\/strong>\s*<a href="([^"]+)"[^>]*>(.*?)<\/a>\s*(?:<\/p>)?\s*<\/blockquote>/i',
             function ($m) {
-                return '<div class="my-5 p-4 rounded-lg bg-[#EBF8FF] border-l-4 border-[#2B6CB0] flex items-start gap-3 shadow-2xs font-sans">
-                    <span class="text-[#1F4E79] font-bold text-xs uppercase tracking-wider shrink-0 mt-0.5">Baca Juga:</span>
-                    <a href="' . htmlspecialchars($m[1]) . '" class="text-xs font-bold text-slate-900 hover:text-[#2B6CB0] transition leading-snug underline decoration-[#2B6CB0]/40 hover:decoration-[#2B6CB0]">' . $m[2] . '</a>
+                return '<div class="id-group mb-4 position-relative">
+                    <h2 class="h6 text-muted mb-1 fw-bold" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Baca Juga:</h2>
+                    <b class="d-block">
+                        <a class="text-theme text-decoration-none" href="' . htmlspecialchars($m[1]) . '">' . $m[2] . '</a>
+                    </b>
                 </div>';
             },
             $content

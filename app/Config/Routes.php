@@ -175,3 +175,6 @@ $routes->get('/api/market/movers', 'Api\MarketApi::movers');
 
 $routes->post('/api/auth/client-login', 'Api\AuthApi::clientLogin');
 $routes->post('/api/auth/client-register', 'Api\AuthApi::clientRegister');
+
+// Data Quality & Comparison Tool
+$routes->get('/datacomparator/sample', 'DataComparator::sample');

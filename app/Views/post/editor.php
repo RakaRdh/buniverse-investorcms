@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="/css/pages/post.css">
 <link rel="stylesheet" href="/css/pages/editor.css">
+<link rel="stylesheet" href="/css/pages/scoring.css">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -42,7 +43,7 @@
                 </button>
 
                 <!-- Quick SEO Scoring Modal Trigger Button -->
-                <button type="button" onclick="openEditorSeoModal()" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-bold uppercase tracking-wider shadow transition-all cursor-pointer" style="background-color: #059669 !important; color: #ffffff !important; border: 1px solid #047857;" onmouseover="this.style.backgroundColor='#047857'" onmouseout="this.style.backgroundColor='#059669'" title="Cek Overall SEO Scoring Naskah Ini">
+                <button type="button" id="btnEditorSeoScoreTop" onclick="openEditorSeoModal()" class="editor-seo-score-btn inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-bold uppercase tracking-wider shadow transition-all cursor-pointer" style="background-color: #059669 !important; color: #ffffff !important; border: 1px solid #047857;" onmouseover="this.style.backgroundColor='#047857'" onmouseout="this.style.backgroundColor='#059669'" title="Cek Overall SEO Scoring Naskah Ini">
                     <i data-lucide="gauge" class="size-4" style="color: #ffffff !important; stroke: #ffffff !important;"></i>
                     <span style="color: #ffffff !important; font-weight: 700;">Skor SEO</span>
                 </button>
@@ -161,33 +162,6 @@
                     </button>
                 </div>
 
-                <?php if ($isEdit && !empty($article['status']) && in_array(strtolower($article['status']), ['publish', 'published'])): ?>
-                <!-- Live Post URL Box (Replika Legacy View Post) -->
-                <?php 
-                    $liveCategorySlug = !empty($article['kanal']) ? url_title($article['kanal'], '-', true) : 'market';
-                    $liveSlug = !empty($article['slug']) ? $article['slug'] : url_title($article['title'] ?? '', '-', true);
-                    $liveUrl = "https://investor.id/{$liveCategorySlug}/{$article['id']}/{$liveSlug}";
-                ?>
-                <div class="pt-3 border-t border-border space-y-2">
-                    <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-foreground">
-                        <span class="flex items-center gap-1.5">
-                            <i data-lucide="globe" class="size-3.5 text-emerald-600"></i>
-                            <span>View Live Post</span>
-                        </span>
-                        <span class="inline-flex items-center rounded-sm bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 uppercase">Live</span>
-                    </div>
-                    <div class="rounded-lg border border-border bg-background p-2.5 space-y-2 shadow-2xs">
-                        <a href="<?= esc($liveUrl) ?>" target="_blank" class="text-xs text-primary font-mono hover:underline break-all block leading-tight">
-                            <?= esc($liveUrl) ?>
-                        </a>
-                        <button type="button" onclick="copyLivePostUrl('<?= esc(addslashes($liveUrl)) ?>')" class="inline-flex w-full items-center justify-center gap-1.5 rounded border border-input bg-muted/60 px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-muted transition-colors">
-                            <i data-lucide="copy" class="size-3"></i>
-                            <span>Salin Tautan Live</span>
-                        </button>
-                    </div>
-                </div>
-                <?php endif; ?>
-
                 <?php if ($isEdit && !empty($revisions) && is_array($revisions)): ?>
                 <!-- Riwayat Perubahan Naskah (Replika Legacy adm_articleform.tpl) -->
                 <div class="pt-3 border-t border-border space-y-2">
@@ -217,26 +191,6 @@
                             </div>
                         <?php endforeach; ?>
                     </div>
-                </div>
-                <?php endif; ?>
-
-                <?php if ($isEdit && !empty($article['id'])): ?>
-                <!-- SEO Readiness Scoring Link Card -->
-                <div class="pt-3 border-t border-border space-y-2">
-                    <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-foreground">
-                        <span class="flex items-center gap-1.5">
-                            <i data-lucide="check-circle-2" class="size-3.5 text-primary"></i>
-                            <span>SEO Readiness</span>
-                        </span>
-                        <span class="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary uppercase">Feature</span>
-                    </div>
-                    <p class="text-[11px] text-muted-foreground leading-snug">
-                        Periksa kesiapan SEO on-page naskah ini (analisis teknis 12 parameter &amp; AI Quality Score).
-                    </p>
-                    <a href="<?= base_url('scoring?article_id=' . (int)$article['id']) ?>" class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600/10 border border-emerald-600/30 px-3.5 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-colors shadow-2xs">
-                        <i data-lucide="sparkles" class="size-3.5"></i>
-                        <span>Cek Skor SEO Artikel Ini</span>
-                    </a>
                 </div>
                 <?php endif; ?>
             </div>
@@ -725,7 +679,7 @@
 
             <!-- Bottom Action Footer -->
             <div class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-border">
-                <button type="button" onclick="openEditorSeoModal()" class="inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-xs font-bold uppercase tracking-wider shadow transition-all cursor-pointer" style="background-color: #059669 !important; color: #ffffff !important; border: 1px solid #047857;" onmouseover="this.style.backgroundColor='#047857'" onmouseout="this.style.backgroundColor='#059669'" title="Cek Overall SEO Scoring Naskah Ini">
+                <button type="button" id="btnEditorSeoScoreBottom" onclick="openEditorSeoModal()" class="editor-seo-score-btn inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-xs font-bold uppercase tracking-wider shadow transition-all cursor-pointer" style="background-color: #059669 !important; color: #ffffff !important; border: 1px solid #047857;" onmouseover="this.style.backgroundColor='#047857'" onmouseout="this.style.backgroundColor='#059669'" title="Cek Overall SEO Scoring Naskah Ini">
                     <i data-lucide="gauge" class="size-4" style="color: #ffffff !important; stroke: #ffffff !important;"></i>
                     <span style="color: #ffffff !important; font-weight: 700;">SKOR SEO</span>
                 </button>
@@ -1358,73 +1312,73 @@
                 Tutup Komparasi
             </button>
         </div>
-<!-- Modal Pop-up Quick SEO Scoring di Editor -->
-<div id="editorSeoModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.75); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
+    </div>
+</div>
+
+<!-- Modal Pop-up Quick SEO Scoring di Editor (Dedicated Root Modal Overlay) -->
+<div id="editorSeoModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.8); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 1.25rem;" onclick="if(event.target === this) closeEditorSeoModal()">
     <div class="surface-card w-full max-w-md flex flex-col p-6 shadow-2xl space-y-4 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-150">
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-border pb-3">
-            <div class="flex items-center gap-2">
-                <div class="size-8 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                    <i data-lucide="gauge" class="size-4.5"></i>
+            <div class="flex items-center gap-2.5">
+                <div class="size-8 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center">
+                    <i data-lucide="gauge" class="size-4.5 text-emerald-600"></i>
                 </div>
                 <div>
                     <h3 class="text-sm font-bold text-foreground">Kesiapan SEO Artikel</h3>
-                    <p class="text-[11px] text-muted-foreground">Analisis singkat teknis on-page &amp; mutu naskah</p>
+                    <p class="text-[11px] text-muted-foreground">Analisis singkat teknis on-page &amp; mutu editorial</p>
                 </div>
             </div>
-            <button type="button" onclick="closeEditorSeoModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <button type="button" onclick="closeEditorSeoModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Tutup Modal">
                 <i data-lucide="x" class="size-4"></i>
             </button>
         </div>
 
         <!-- Modal Body: Loading State -->
-        <div id="editorSeoLoading" class="py-8 flex flex-col items-center justify-center gap-3 text-center">
-            <div class="size-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-xs font-medium text-muted-foreground">Menganalisis teknis &amp; kata kunci naskah...</p>
+        <div id="editorSeoLoading" class="py-10 flex flex-col items-center justify-center gap-3 text-center">
+            <div class="custom-spinner" style="width: 2.5rem; height: 2.5rem; border-width: 3px;"></div>
+            <div class="space-y-1">
+                <p class="text-xs font-bold text-foreground">Sedang Menganalisis Kesiapan SEO...</p>
+                <p class="text-[11px] text-muted-foreground">Mengevaluasi inferensi Gemini AI dan 12 parameter teknis on-page</p>
+            </div>
         </div>
 
-        <!-- Modal Body: Result State -->
-        <div id="editorSeoContent" class="space-y-4 hidden">
-            <!-- Overall Score Card -->
-            <div class="p-4 rounded-xl bg-muted/40 border border-border flex items-center justify-between">
-                <div>
-                    <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Skor Keseluruhan</span>
-                    <div class="flex items-baseline gap-2 mt-1">
-                        <span id="editorSeoScoreVal" class="text-3xl font-extrabold font-mono text-foreground">--%</span>
-                        <span id="editorSeoBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase">--</span>
-                    </div>
-                </div>
-                <!-- Circular Gauge -->
-                <div class="size-14 relative flex items-center justify-center shrink-0">
-                    <svg class="size-full -rotate-90" viewBox="0 0 36 36">
-                        <circle cx="18" cy="18" r="14" fill="none" class="stroke-muted" stroke-width="3"></circle>
-                        <circle id="editorSeoCircleProgress" cx="18" cy="18" r="14" fill="none" stroke="#10b981" stroke-width="3.5" stroke-dasharray="88" stroke-dashoffset="88" stroke-linecap="round" class="transition-all duration-700"></circle>
-                    </svg>
-                    <i data-lucide="award" id="editorSeoIcon" class="size-5 text-emerald-600 absolute"></i>
+        <!-- Modal Body: Result State (Hanya Gauge Skor Akhir, Persentase, Status Nilai, dan 2 Tombol) -->
+        <div id="editorSeoContent" class="py-2 flex flex-col items-center justify-center text-center hidden">
+            <!-- Full Circle Score Gauge (100% Identik dengan Dedicated Scoring Page) -->
+            <div class="relative w-44 h-44 flex items-center justify-center mx-auto">
+                <svg class="w-44 h-44 overflow-visible" viewBox="0 0 100 100">
+                    <!-- Background Full Circle Track -->
+                    <circle class="full-circle-track" cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="8" />
+                    <!-- Active Animated Full Circle Bar -->
+                    <circle id="editorSeoCircleProgress" class="full-circle-bar" cx="50" cy="50" r="40" fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span id="editorSeoScoreVal" class="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-foreground leading-none">
+                        0%
+                    </span>
+                    <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-1.5">SKOR AKHIR</span>
                 </div>
             </div>
 
-            <!-- Ringkasan Singkat & Padat -->
-            <div class="space-y-2">
-                <h4 class="text-xs font-bold uppercase tracking-wider text-foreground">Ringkasan Evaluasi</h4>
-                <p id="editorSeoSummaryDesc" class="text-xs text-muted-foreground leading-relaxed">
-                    <!-- Populated dynamically -->
-                </p>
-                <div id="editorSeoKeyPoints" class="space-y-1 pt-1">
-                    <!-- 2-3 key takeaways -->
-                </div>
+            <!-- Status Nilai Badge & Keterangan (100% Identik dengan Dedicated Scoring Page) -->
+            <div class="mt-3">
+                <span id="editorSeoBadge" class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold">
+                    -
+                </span>
             </div>
+            <p class="text-[11px] text-muted-foreground mt-1">Status Kesiapan SEO On-Page</p>
+        </div>
 
-            <!-- Footer Action Buttons -->
-            <div class="pt-3 border-t border-border flex items-center justify-between gap-2">
-                <button type="button" onclick="closeEditorSeoModal()" class="px-3.5 py-1.5 rounded-md border border-input bg-background text-xs font-medium text-muted-foreground hover:bg-muted transition-colors">
-                    Tutup
-                </button>
-                <a id="editorSeoDetailLink" href="#" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-2xs">
-                    <span>Lihat Detail Scoring</span>
-                    <i data-lucide="arrow-up-right" class="size-3.5"></i>
-                </a>
-            </div>
+        <!-- Footer Action Buttons (Hanya 2 Tombol: Tutup & Lihat Detail Scoring) -->
+        <div class="pt-4 border-t border-border flex items-center justify-between gap-3">
+            <button type="button" onclick="closeEditorSeoModal()" class="px-4 py-2 rounded-md border border-input bg-background text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors">
+                Tutup
+            </button>
+            <a id="editorSeoDetailLink" href="<?= base_url('scoring/logs') ?>" target="_blank" class="inline-flex items-center gap-1.5 px-5 py-2 rounded-md bg-[#2B6CB0] text-white text-xs font-bold hover:bg-[#2B6CB0]/90 transition-colors shadow-2xs">
+                <span>Lihat Detail Scoring</span>
+                <i data-lucide="arrow-up-right" class="size-3.5"></i>
+            </a>
         </div>
     </div>
 </div>
@@ -1519,7 +1473,29 @@ async function openEditorSeoModal() {
         return;
     }
 
-    if (!modal) return;
+    // 2. Set button loading state with spinner on editor trigger buttons
+    const seoButtons = document.querySelectorAll('.editor-seo-score-btn');
+    const originalBtnContents = [];
+    seoButtons.forEach(btn => {
+        originalBtnContents.push({ btn: btn, html: btn.innerHTML, disabled: btn.disabled });
+        btn.disabled = true;
+        btn.innerHTML = `<span class="inline-block animate-spin mr-1"><svg class="size-3.5 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg></span><span>MENILAI...</span>`;
+    });
+
+    const restoreButtons = () => {
+        originalBtnContents.forEach(item => {
+            if (item.btn) {
+                item.btn.disabled = item.disabled;
+                item.btn.innerHTML = item.html;
+            }
+        });
+        if (window.lucide) lucide.createIcons();
+    };
+
+    if (!modal) {
+        restoreButtons();
+        return;
+    }
     modal.style.display = 'flex';
     if (loading) loading.classList.remove('hidden');
     if (content) content.classList.add('hidden');
@@ -1581,73 +1557,59 @@ async function openEditorSeoModal() {
 
         const data = calcJson.data;
         const score = Math.round(data.final_score || 0);
-        const category = data.score_category || 'Needs Improvement';
 
         // Update score display
         const scoreValEl = document.getElementById('editorSeoScoreVal');
         const badgeEl = document.getElementById('editorSeoBadge');
         const circleProgress = document.getElementById('editorSeoCircleProgress');
-        const descEl = document.getElementById('editorSeoSummaryDesc');
-        const keyPointsEl = document.getElementById('editorSeoKeyPoints');
         const detailLink = document.getElementById('editorSeoDetailLink');
 
         if (scoreValEl) scoreValEl.textContent = score + '%';
 
-        // Category Badge
-        if (badgeEl) {
-            badgeEl.textContent = category;
-            badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ';
-            if (category === 'Excellent') {
-                badgeEl.className += 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30';
-            } else if (category === 'Good') {
-                badgeEl.className += 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30';
-            } else if (category === 'Needs Improvement') {
-                badgeEl.className += 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30';
-            } else {
-                badgeEl.className += 'bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30';
-            }
+        // 100% Identical Color & Label Config matching dedicated scoring page
+        let color = '#ef4444';
+        let label = 'Belum Siap Publikasi';
+        let badgeClass = 'badge-score-poor';
+
+        if (score >= 85) {
+            color = '#10b981'; // Emerald
+            label = 'Sangat Siap (Siap Rilis)';
+            badgeClass = 'badge-score-excellent';
+        } else if (score >= 70) {
+            color = '#6366f1'; // Indigo/Blue (#6366f1 matching dedicated page)
+            label = 'Cukup Baik (Siap Rilis)';
+            badgeClass = 'badge-score-good';
+        } else if (score >= 50) {
+            color = '#f59e0b'; // Amber
+            label = 'Perlu Perbaikan';
+            badgeClass = 'badge-score-warning';
         }
 
-        // Circular Progress stroke offset
+        // Update Circular Gauge (r=40, circumference = 2 * PI * 40 ~= 251.32)
         if (circleProgress) {
-            const offset = 88 - (88 * Math.min(100, Math.max(0, score)) / 100);
+            const circumference = 2 * Math.PI * 40;
+            const clampedScore = Math.min(100, Math.max(0, score));
+            const offset = circumference - (clampedScore / 100) * circumference;
+
+            circleProgress.style.strokeDasharray = circumference;
             circleProgress.style.strokeDashoffset = offset;
-            circleProgress.setAttribute('stroke', score >= 85 ? '#10b981' : (score >= 70 ? '#0ea5e9' : (score >= 50 ? '#f59e0b' : '#ef4444')));
+            circleProgress.style.stroke = color;
         }
 
-        // Concise tailored description
-        if (descEl) {
-            if (score >= 85) {
-                descEl.textContent = 'Kesiapan SEO naskah sangat prima dan memenuhi standar editorial portal berita.';
-            } else if (score >= 70) {
-                descEl.textContent = 'Artikel sudah cukup baik, sedikit penyesuaian pada kata kunci atau heading akan menyempurnakannya.';
-            } else if (score >= 50) {
-                descEl.textContent = 'Naskah memerlukan optimasi pada panjang judul, ringkasan, atau sebaran kata kunci.';
-            } else {
-                descEl.textContent = 'Kesiapan SEO masih rendah. Pastikan artikel memiliki kata kunci utama (maksimal 3) dan isi berita yang cukup.';
-            }
+        // Update Category Badge (Identical styling)
+        if (badgeEl) {
+            badgeEl.textContent = label;
+            badgeEl.className = 'inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold ' + badgeClass;
         }
 
-        // Key Points (limit to 2-3 concise points)
-        if (keyPointsEl && data.rule_details) {
-            keyPointsEl.innerHTML = '';
-            const details = data.rule_details;
-            const relevant = details.filter(d => d.status === 'pass' || d.status === 'fail').slice(0, 3);
-            relevant.forEach(item => {
-                const isPass = item.status === 'pass';
-                const div = document.createElement('div');
-                div.className = 'flex items-start gap-1.5 text-xs text-foreground';
-                div.innerHTML = `
-                    <span class="${isPass ? 'text-emerald-600' : 'text-amber-600'} font-bold mt-0.5">•</span>
-                    <span><strong>${item.title}:</strong> ${item.message}</span>
-                `;
-                keyPointsEl.appendChild(div);
-            });
-        }
-
-        // Detail link carrying articleID to the logs page
+        // Detail link carrying score ID directly to the specific detail page
         if (detailLink) {
-            detailLink.href = '<?= base_url('scoring/logs') ?>?q=' + articleId;
+            if (data && data.id) {
+                detailLink.href = '<?= base_url('scoring/detail') ?>/' + data.id;
+            } else {
+                detailLink.href = '<?= base_url('scoring/logs') ?>?q=' + articleId;
+            }
+            detailLink.target = '_blank';
         }
 
         // Toggle state
@@ -1660,6 +1622,8 @@ async function openEditorSeoModal() {
     } catch (err) {
         alert(err.message);
         closeEditorSeoModal();
+    } finally {
+        restoreButtons();
     }
 }
 
@@ -1667,5 +1631,12 @@ function closeEditorSeoModal() {
     const modal = document.getElementById('editorSeoModal');
     if (modal) modal.style.display = 'none';
 }
+
+// Close SEO modal when pressing ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEditorSeoModal();
+    }
+});
 </script>
 <?= $this->endSection() ?>

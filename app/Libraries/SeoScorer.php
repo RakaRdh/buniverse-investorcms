@@ -27,12 +27,63 @@ class SeoScorer
      * Run full hybrid score on an article
      *
      * @param array $article Article data: headline, body, summary, slug, etc.
+    /**
+     * =========================================================================
+     * ORIGINAL METHOD (COMMENTED OUT SEMENTARA SESUAI INSTRUKSI)
+     * Versi dengan batasan ketat minimal 150 kata sebelum dikirim ke AI
+     * =========================================================================
+     *
+     * public function scoreArticleOriginal(array $article, array $keywords = [], array $meta = [], bool $skipAi = false): array
+     * {
+     *     $headline  = $article['headline'] ?? '';
+     *     $body      = $article['body'] ?? '';
+     *     $summary   = $article['summary'] ?? '';
+     *     $slug      = $article['slug'] ?? '';
+     *     $thumbnail = $meta['thumbnail'] ?? '';
+     *
+     *     $ruleResult = $this->calculateRuleScore($headline, $body, $summary, $slug, $thumbnail, $keywords);
+     *     $aiResult = null;
+     *     $aiError = null;
+     *     $modelUsed = null;
+     *
+     *     if (!$skipAi) {
+     *         $cleanBody = strip_tags($body);
+     *         $wordCount = str_word_count($cleanBody);
+     *         if ($wordCount < 150) {
+     *             $aiError = "Artikel terlalu pendek ({$wordCount} kata, minimal 150 kata). Penilaian AI dilewati.";
+     *         } else {
+     *             try {
+     *                 $aiResult = $this->gemini->generateSeoQualityScore($headline, $body, $summary, $keywords);
+     *                 $modelUsed = $this->gemini->getLastModelUsed();
+     *             } catch (\Throwable $e) {
+     *                 $aiError = $e->getMessage();
+     *                 log_message('warning', 'SeoScorer AI scoring failed: ' . $aiError);
+     *             }
+     *         }
+     *     }
+     *     ...
+     * }
+     */
+
+    /**
+     * Calculate Complete SEO Score for an article
+     *
+     * @param array $article Array containing headline, body, summary, slug
      * @param array $keywords Array of keyword strings associated with this article
      * @param array $meta Array of metadata key-values (e.g. thumbnail)
      * @param bool $skipAi Whether to skip AI scoring (manual toggle or fallback)
      * @return array Complete scoring results
      */
     public function scoreArticle(array $article, array $keywords = [], array $meta = [], bool $skipAi = false): array
+    {
+        return $this->scoreArticleFlexible($article, $keywords, $meta, $skipAi);
+    }
+
+    /**
+     * Versi Fleksibel: Tidak membatasi pengiriman ke AI (tidak ada hard block < 150 kata).
+     * Seluruh naskah dikirim ke AI untuk dinilai kualitas dan proporsi bobotnya.
+     */
+    public function scoreArticleFlexible(array $article, array $keywords = [], array $meta = [], bool $skipAi = false): array
     {
         $headline  = $article['headline'] ?? '';
         $body      = $article['body'] ?? '';
@@ -47,21 +98,14 @@ class SeoScorer
         $aiError = null;
         $modelUsed = null;
 
-        // Step 2: Execute AI Scoring (if not skipped)
+        // Step 2: Execute AI Scoring (if not skipped) - langsung kirim tanpa batasan kata
         if (!$skipAi) {
-            $cleanBody = strip_tags($body);
-            $wordCount = str_word_count($cleanBody);
-
-            if ($wordCount < 150) {
-                $aiError = "Artikel terlalu pendek ({$wordCount} kata, minimal 150 kata). Penilaian AI dilewati.";
-            } else {
-                try {
-                    $aiResult = $this->gemini->generateSeoQualityScore($headline, $body, $summary, $keywords);
-                    $modelUsed = $this->gemini->getLastModelUsed();
-                } catch (\Throwable $e) {
-                    $aiError = $e->getMessage();
-                    log_message('warning', 'SeoScorer AI scoring failed: ' . $aiError);
-                }
+            try {
+                $aiResult = $this->gemini->generateSeoQualityScore($headline, $body, $summary, $keywords);
+                $modelUsed = $this->gemini->getLastModelUsed();
+            } catch (\Throwable $e) {
+                $aiError = $e->getMessage();
+                log_message('warning', 'SeoScorer AI scoring failed: ' . $aiError);
             }
         }
 

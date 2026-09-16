@@ -63,16 +63,16 @@
 
     <div class="surface-card p-3 sm:p-5 flex flex-col justify-between">
         <div class="flex items-center justify-between gap-1.5">
-            <span class="text-[10px] sm:text-xs font-semibold tracking-wider text-muted-foreground uppercase truncate">Read Time</span>
-            <span class="grid size-6.5 sm:size-8 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
-                <i data-lucide="clock" class="size-3.5 sm:size-[18px]"></i>
+            <span class="text-[10px] sm:text-xs font-semibold tracking-wider text-muted-foreground uppercase truncate">Kanal Aktif</span>
+            <span class="grid size-6.5 sm:size-8 shrink-0 place-items-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                <i data-lucide="layers" class="size-3.5 sm:size-[18px]"></i>
             </span>
         </div>
-        <p class="mt-2 sm:mt-3 text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground truncate"><?= esc($metrics['avgReadTime']) ?></p>
-        <p class="mt-1 sm:mt-2 inline-flex items-center gap-1 text-[10px] sm:text-xs font-medium text-success truncate">
-            <i data-lucide="arrow-up-right" class="size-3"></i>
-            <span>+8.5%</span>
-            <span class="hidden sm:inline text-muted-foreground">retention</span>
+        <p class="mt-2 sm:mt-3 text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground truncate"><?= esc($metrics['activeKanals']) ?></p>
+        <p class="mt-1 sm:mt-2 inline-flex items-center gap-1 text-[10px] sm:text-xs font-medium text-muted-foreground truncate">
+            <i data-lucide="folder-tree" class="size-3 text-indigo-500"></i>
+            <span><?= esc($metrics['subKanalsCount']) ?></span>
+            <span>sub-kanal terdaftar</span>
         </p>
     </div>
 

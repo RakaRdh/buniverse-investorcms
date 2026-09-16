@@ -268,10 +268,63 @@ class GeminiProvider
     }
 
     /**
+     * =========================================================================
+     * ORIGINAL METHOD (COMMENTED OUT SEMENTARA SESUAI INSTRUKSI)
+     * Batasan ketat didefinisikan langsung via backend (contoh: wordCount < 150 throw exception)
+     * =========================================================================
+     *
+     * public function generateSeoQualityScoreOriginal(string $title, string $body, string $summary = '', array $keywords = []): array
+     * {
+     *     if (empty($this->apiKey)) {
+     *         throw new \RuntimeException("Gemini API Key is not configured in .env.");
+     *     }
+     *
+     *     $cleanBody = strip_tags($body);
+     *     $wordCount = str_word_count($cleanBody);
+     *
+     *     if ($wordCount < 150) {
+     *         throw new \InvalidArgumentException("Artikel terlalu pendek untuk dinilai oleh AI (minimal 150 kata, saat ini {$wordCount} kata).");
+     *     }
+     *
+     *     $keywordStr = !empty($keywords) ? implode(', ', $keywords) : 'Tidak ada kata kunci terdaftar';
+     *
+     *     $prompt = <<<PROMPT
+     * Kamu adalah Senior Editorial SEO Analyst untuk media berita finansial dan investasi (Investor Daily / Investor.id).
+     * Tugasmu adalah menganalisis kualitas konten artikel berikut secara objektif dan mendalam dari sudut pandang editorial & SEO.
+     *
+     * DATA ARTIKEL:
+     * - Judul: {$title}
+     * - Ringkasan / Meta Description: {$summary}
+     * - Kata Kunci Terdaftar: {$keywordStr}
+     * - Isi Artikel:
+     * {$cleanBody}
+     *
+     * KRITERIA PENILAIAN (Skor 0-100 untuk tiap kriteria):
+     * 1. search_intent (bobot 30% dari skor AI)
+     * 2. content_depth (bobot 30% dari skor AI)
+     * 3. click_readiness (bobot 20% dari skor AI)
+     * 4. keyword_naturalness (bobot 20% dari skor AI)
+     * ...
+     * PROMPT;
+     *     ...
+     * }
+     */
+
+    /**
      * Generate SEO Quality Score (AI Analysis - 4 Criteria)
-     * Returns structured array with scores, reasonings, and recommendations
+     * Versi Fleksibel: Tidak menolak artikel pendek di backend, melainkan parameter panjang
+     * judul (maks 70 char), summary (110-160 char), dan artikel (min 300 kata/char) diinstruksikan
+     * ke AI untuk dinilai dan disesuaikan bobotnya secara dinamis & proporsional.
      */
     public function generateSeoQualityScore(string $title, string $body, string $summary = '', array $keywords = []): array
+    {
+        return $this->generateSeoQualityScoreFlexible($title, $body, $summary, $keywords);
+    }
+
+    /**
+     * Versi Fleksibel (Tanpa Hard Block Backend, Bobot Disesuaikan Proporsional oleh AI)
+     */
+    public function generateSeoQualityScoreFlexible(string $title, string $body, string $summary = '', array $keywords = []): array
     {
         if (empty($this->apiKey)) {
             throw new \RuntimeException("Gemini API Key is not configured in .env.");
@@ -279,10 +332,9 @@ class GeminiProvider
 
         $cleanBody = strip_tags($body);
         $wordCount = str_word_count($cleanBody);
-
-        if ($wordCount < 150) {
-            throw new \InvalidArgumentException("Artikel terlalu pendek untuk dinilai oleh AI (minimal 150 kata, saat ini {$wordCount} kata).");
-        }
+        $charCount = mb_strlen($cleanBody);
+        $titleLen = mb_strlen(trim($title));
+        $summaryLen = mb_strlen(trim($summary));
 
         $keywordStr = !empty($keywords) ? implode(', ', $keywords) : 'Tidak ada kata kunci terdaftar';
 
@@ -291,11 +343,17 @@ Kamu adalah Senior Editorial SEO Analyst untuk media berita finansial dan invest
 Tugasmu adalah menganalisis kualitas konten artikel berikut secara objektif dan mendalam dari sudut pandang editorial & SEO.
 
 DATA ARTIKEL:
-- Judul: {$title}
-- Ringkasan / Meta Description: {$summary}
+- Judul ({$titleLen} karakter): {$title}
+- Ringkasan / Meta Description ({$summaryLen} karakter): {$summary}
 - Kata Kunci Terdaftar: {$keywordStr}
+- Panjang Naskah Artikel: {$wordCount} kata ({$charCount} karakter)
 - Isi Artikel:
 {$cleanBody}
+
+ATURAN DAN STANDAR KONTEN (Perhitungkan dalam penilaian skor):
+- Judul: Ideal maksimal 70 karakter (agar tidak terpotong di Google SERP). Jika lebih dari 70 karakter atau terlalu pendek, sesuaikan nilai skor click_readiness.
+- Ringkasan / Meta Description: Ideal 110 - 160 karakter. Jika kurang dari 110 atau melebihi 160 karakter, sesuaikan nilai skor click_readiness.
+- Isi Artikel: Minimal 300 kata (atau > 300 karakter). Jika naskah terlalu pendek, kurangi skor content_depth secara proporsional. Jangan menolak artikel pendek, tapi turunkan skor kedalaman kontennya sesuai substansi.
 
 KRITERIA PENILAIAN (Skor 0-100 untuk tiap kriteria):
 
@@ -305,11 +363,11 @@ KRITERIA PENILAIAN (Skor 0-100 untuk tiap kriteria):
 
 2. content_depth (bobot 30% dari skor AI):
    - Kedalaman analisis, kelengkapan data/angka (misal persentase laba, harga saham, proyeksi, kutipan narasumber kompeten).
-   - Bukan sekadar rangkuman dangkal 2-3 paragraf tanpa substansi atau data pendukung.
+   - Perhitungkan panjang artikel (standar berita minimal 300 kata). Jika artikel terlalu singkat/minim data, berikan nilai content_depth yang rendah secara objektif.
 
 3. click_readiness (bobot 20% dari skor AI):
-   - Menariknya judul dan ringkasan (Click-Through Rate potential) tanpa menjadi clickbait murahan.
-   - Apakah judul dan summary memicu minat pembaca profesional/investor?
+   - Kesesuaian panjang judul (maksimal 70 karakter) dan ringkasan (110-160 karakter).
+   - Daya tarik judul dan ringkasan (Click-Through Rate potential) tanpa menjadi clickbait murahan.
 
 4. keyword_naturalness (bobot 20% dari skor AI):
    - Alami tidaknya penempatan kata kunci terdaftar ({$keywordStr}) dalam artikel.

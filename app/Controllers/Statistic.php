@@ -66,22 +66,10 @@ class Statistic extends BaseController
         $catSeries = array_map('intval', array_column($catDistribution, 'count'));
         $trafficDatasets = $this->articleModel->getTrafficChartData($fromDate, $toDate);
 
-        // Dynamic read time calculated from avg word count of published articles
-        $totalWords = 0;
-        $totalArticlesSampled = 0;
-        foreach ($recentArticles as $art) {
-            $stripped = strip_tags($art['content'] ?? '');
-            $words = str_word_count($stripped);
-            if ($words > 0) {
-                $totalWords += $words;
-                $totalArticlesSampled++;
-            }
-        }
-        $avgWords = $totalArticlesSampled > 0 ? (int)($totalWords / $totalArticlesSampled) : 480;
-        // Standard reading speed ~ 200 words per minute + engagement factor
-        $readMinutes = max(1, (int)floor($avgWords / 160));
-        $readSeconds = ($avgWords % 160) % 60;
-        $avgReadTimeStr = sprintf('%dm %02ds', $readMinutes, $readSeconds);
+        // Active Kanals Count directly from category table
+        $totalRootKanals = (int)$this->categoryModel->where('parent IS NULL')->countAllResults();
+        $totalSubKanals = (int)$this->categoryModel->where('parent IS NOT NULL')->countAllResults();
+        $activeKanalsCount = $totalRootKanals;
 
         // Premium subscribers from client_account_entity
         $memberModel = new \App\Models\MemberModel();
@@ -135,7 +123,8 @@ class Statistic extends BaseController
                 'premiumSubscribers' => $premiumSubscribersStr,
                 'premiumArticles'    => $premiumArticlesCount,
                 'publishedCount'     => $publishedCount,
-                'avgReadTime'        => $avgReadTimeStr,
+                'activeKanals'       => $activeKanalsCount,
+                'subKanalsCount'     => $totalSubKanals,
             ],
             'chartData'       => [
                 'catLabels' => $catLabels,
