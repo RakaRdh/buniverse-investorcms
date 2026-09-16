@@ -62,7 +62,7 @@ class Auth extends BaseController
 
                 // Butuh 2FA: generate kode baru 6-digit acak
                 $authCode = random_int(100000, 999999);
-                $authExpired = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+                $authExpired = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
                 $this->adminModel->update($user['userID'] ?? $user['id'], [
                     'authCode'    => (string)$authCode,
@@ -172,7 +172,7 @@ class Auth extends BaseController
         }
 
         $authCode = random_int(100000, 999999);
-        $authExpired = date('Y-m-d H:i:s', strtotime('+15 minutes'));
+        $authExpired = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
         $this->adminModel->update($user['userID'] ?? $user['id'], [
             'authCode'    => (string)$authCode,

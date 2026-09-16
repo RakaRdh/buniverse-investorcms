@@ -417,40 +417,7 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
     </div>
 
     <!-- Pagination Footer -->
-    <?php
-        $queryParams = $_GET;
-        $buildPageUrl = function($pageNum) use ($queryParams) {
-            $params = $queryParams;
-            $params['page'] = $pageNum;
-            return base_url('post') . '?' . http_build_query($params);
-        };
-    ?>
-    <div class="flex items-center justify-between border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
-        <div>
-            Page <strong class="text-foreground"><?= $pagination['page'] ?></strong> of <?= $pagination['totalPages'] ?>
-        </div>
-        <div class="flex items-center gap-1">
-            <?php if ($pagination['page'] > 1): ?>
-                <a href="<?= $buildPageUrl($pagination['page'] - 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Previous</a>
-            <?php else: ?>
-                <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Previous</span>
-            <?php endif; ?>
-
-            <?php for ($p = 1; $p <= $pagination['totalPages']; $p++): ?>
-                <?php if ($p == $pagination['page']): ?>
-                    <span class="rounded-md bg-primary px-2.5 py-1 font-bold text-primary-foreground"><?= $p ?></span>
-                <?php else: ?>
-                    <a href="<?= $buildPageUrl($p) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors"><?= $p ?></a>
-                <?php endif; ?>
-            <?php endfor; ?>
-
-            <?php if ($pagination['page'] < $pagination['totalPages']): ?>
-                <a href="<?= $buildPageUrl($pagination['page'] + 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Next</a>
-            <?php else: ?>
-                <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Next</span>
-            <?php endif; ?>
-        </div>
-    </div>
+    <?= view('layouts/partials/pagination', ['pagination' => $pagination, 'baseUrl' => base_url('post')]) ?>
 </div>
 
 <!-- Modal Konfirmasi Soft Delete Berbobot Alasan Redaksi -->

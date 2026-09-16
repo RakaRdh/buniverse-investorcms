@@ -59,26 +59,43 @@ if ($totalPages <= 7) {
 
     <?php if ($totalPages > 1): ?>
     <div class="flex items-center gap-1 flex-wrap justify-center">
+        <!-- First Button -->
+        <?php if ($currentPage > 1): ?>
+            <a href="<?= $buildPageUrl(1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors" title="First Page">&laquo; First</a>
+        <?php else: ?>
+            <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-40 cursor-not-allowed">&laquo; First</span>
+        <?php endif; ?>
+
+        <!-- Previous Button -->
         <?php if ($currentPage > 1): ?>
             <a href="<?= $buildPageUrl($currentPage - 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Previous</a>
         <?php else: ?>
-            <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Previous</span>
+            <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-40 cursor-not-allowed">Previous</span>
         <?php endif; ?>
 
+        <!-- Number Buttons with Ellipsis -->
         <?php foreach ($pagesToShow as $p): ?>
             <?php if ($p === '...'): ?>
-                <span class="px-2 py-1 text-muted-foreground">...</span>
+                <span class="px-2 py-1 text-muted-foreground select-none font-medium">&hellip;</span>
             <?php elseif ($p == $currentPage): ?>
-                <span class="rounded-md bg-primary px-2.5 py-1 font-bold text-primary-foreground"><?= $p ?></span>
+                <span class="rounded-md bg-primary px-3 py-1 font-bold text-primary-foreground shadow-xs"><?= $p ?></span>
             <?php else: ?>
                 <a href="<?= $buildPageUrl($p) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors"><?= $p ?></a>
             <?php endif; ?>
         <?php endforeach; ?>
 
+        <!-- Next Button -->
         <?php if ($currentPage < $totalPages): ?>
             <a href="<?= $buildPageUrl($currentPage + 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Next</a>
         <?php else: ?>
-            <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Next</span>
+            <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-40 cursor-not-allowed">Next</span>
+        <?php endif; ?>
+
+        <!-- Last Button -->
+        <?php if ($currentPage < $totalPages): ?>
+            <a href="<?= $buildPageUrl($totalPages) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors" title="Last Page">Last &raquo;</a>
+        <?php else: ?>
+            <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-40 cursor-not-allowed">Last &raquo;</span>
         <?php endif; ?>
     </div>
     <?php endif; ?>

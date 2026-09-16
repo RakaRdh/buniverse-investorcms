@@ -96,7 +96,7 @@
         </div>
 
         <select name="target_category" onchange="onTargetCategoryChange(this.value)" class="flex h-8.5 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs font-semibold shadow-sm focus-visible:outline-none">
-            <option value="headline" <?= ($targetCategory === 'headline' || $targetCategory === 'home') ? 'selected' : '' ?>>Headline Utama</option>
+            <option value="home" <?= ($targetCategory === 'home') ? 'selected' : '' ?>>Headline Utama (Home)</option>
             <option value="topical" <?= ($targetCategory === 'topical') ? 'selected' : '' ?>>Topical</option>
             <option value="trending" <?= ($targetCategory === 'trending') ? 'selected' : '' ?>>Trending</option>
             <option value="newsletter" <?= ($targetCategory === 'newsletter') ? 'selected' : '' ?>>Newsletter</option>
@@ -288,7 +288,7 @@
                     </span>
                 </div>
                 <select name="target_category" id="targetCategorySelect" onchange="onTargetCategoryChange(this.value)" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm font-semibold shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                    <option value="headline" <?= ($targetCategory === 'headline' || $targetCategory === 'home') ? 'selected' : '' ?>>Headline Utama</option>
+                    <option value="home" <?= ($targetCategory === 'home') ? 'selected' : '' ?>>Headline Utama (Home)</option>
                     <option value="topical" <?= ($targetCategory === 'topical') ? 'selected' : '' ?>>Topical</option>
                     <option value="trending" <?= ($targetCategory === 'trending') ? 'selected' : '' ?>>Trending</option>
                     <option value="newsletter" <?= ($targetCategory === 'newsletter') ? 'selected' : '' ?>>Newsletter</option>

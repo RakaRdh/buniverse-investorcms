@@ -5,6 +5,41 @@
 
 window.ModalUtils = (function () {
     const registeredModals = new Map();
+    let scrollLockCount = 0;
+
+    /**
+     * Lock body scroll to prevent background scrolling when modal is active.
+     */
+    function lockBodyScroll() {
+        scrollLockCount++;
+        if (scrollLockCount === 1) {
+            const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+            if (scrollBarWidth > 0) {
+                document.body.style.paddingRight = `${scrollBarWidth}px`;
+            }
+            document.body.classList.add('modal-open');
+        }
+    }
+
+    /**
+     * Unlock body scroll when all modals are closed.
+     */
+    function unlockBodyScroll() {
+        scrollLockCount = Math.max(0, scrollLockCount - 1);
+        if (scrollLockCount === 0) {
+            document.body.classList.remove('modal-open');
+            document.body.style.paddingRight = '';
+        }
+    }
+
+    /**
+     * Force reset body scroll if needed
+     */
+    function resetBodyScroll() {
+        scrollLockCount = 0;
+        document.body.classList.remove('modal-open');
+        document.body.style.paddingRight = '';
+    }
 
     /**
      * Check if a container/form has dirty (user-entered) input values.
@@ -33,7 +68,7 @@ window.ModalUtils = (function () {
     }
 
     /**
-     * Register a modal with backdrop click and dirty check confirmation.
+     * Register a modal with backdrop click, dirty check confirmation, and body scroll locking.
      * @param {string|HTMLElement} modalTarget - Modal ID string or HTMLElement
      * @param {Object} options
      * @param {Function} options.onClose - Function called to close the modal
@@ -44,9 +79,14 @@ window.ModalUtils = (function () {
         const modalEl = typeof modalTarget === 'string' ? document.getElementById(modalTarget) : modalTarget;
         if (!modalEl) return;
 
-        const onClose = options.onClose || function () {
+        const originalOnClose = options.onClose || function () {
             modalEl.style.display = 'none';
             modalEl.classList.add('hidden');
+        };
+
+        const onClose = function () {
+            originalOnClose();
+            unlockBodyScroll();
         };
 
         const confirmMsg = options.confirmMessage || 'Formulir memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin menutup?';
@@ -84,6 +124,54 @@ window.ModalUtils = (function () {
     }
 
     /**
+     * Observer to automatically lock/unlock body scroll for ANY modal in the DOM
+     * based on inline style (display) or Tailwind 'hidden' class changes.
+     */
+    function initGlobalModalObserver() {
+        const observer = new MutationObserver((mutations) => {
+            let anyModalOpen = false;
+
+            // Check all elements that act as full-screen modal overlays
+            const allModals = document.querySelectorAll(
+                '[id*="Modal"], [id*="Dialog"], [data-modal], .modal-backdrop, [style*="position: fixed"][style*="inset: 0"]'
+            );
+
+            allModals.forEach((el) => {
+                if (el.id === 'mobileDrawerOverlay' || el.id === 'toast-container' || el.classList.contains('pointer-events-none')) return;
+
+                const isInlineVisible = el.style.display && el.style.display !== 'none';
+                const isTailwindVisible = !el.classList.contains('hidden') && el.classList.contains('fixed');
+
+                if (isInlineVisible || (isTailwindVisible && getComputedStyle(el).display !== 'none')) {
+                    anyModalOpen = true;
+                }
+            });
+
+            if (anyModalOpen) {
+                if (!document.body.classList.contains('modal-open')) {
+                    const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+                    if (scrollBarWidth > 0) {
+                        document.body.style.paddingRight = `${scrollBarWidth}px`;
+                    }
+                    document.body.classList.add('modal-open');
+                }
+            } else {
+                if (document.body.classList.contains('modal-open')) {
+                    document.body.classList.remove('modal-open');
+                    document.body.style.paddingRight = '';
+                    scrollLockCount = 0;
+                }
+            }
+        });
+
+        observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['style', 'class'],
+            subtree: true
+        });
+    }
+
+    /**
      * Handle global Escape key to close topmost active modal
      */
     document.addEventListener('keydown', (e) => {
@@ -112,11 +200,18 @@ window.ModalUtils = (function () {
         });
     }
 
-    document.addEventListener('DOMContentLoaded', initAutoModals);
+    document.addEventListener('DOMContentLoaded', () => {
+        initAutoModals();
+        initGlobalModalObserver();
+    });
 
     return {
         register,
         hasFormChanges,
+        lockBodyScroll,
+        unlockBodyScroll,
+        resetBodyScroll,
         initAutoModals
     };
 })();
+

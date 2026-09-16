@@ -47,21 +47,25 @@ class ArticleApi extends BaseController
                 n.viewed AS views_count,
                 n.articleDate AS published_at,
                 n.status AS status,
-                ANY_VALUE(c.categoryName) AS category_name,
-                ANY_VALUE(c.label) AS category_slug,
+                ANY_VALUE(c.label) AS category_name,
+                ANY_VALUE(c.categoryName) AS category_slug,
                 ANY_VALUE(c.categoryID) AS category_id,
                 GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author_name,
-                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS featured_image,
+                COALESCE(NULLIF(ANY_VALUE(m.filename), ""), "/img/investor_placeholder.jpg") AS featured_image,
                 COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
-                COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium
+                CASE 
+                    WHEN LOWER(COALESCE(ANY_VALUE(nm_prem.metaval), "")) IN ("true", "1") THEN "1"
+                    ELSE "0"
+                END AS is_premium
             ')
             ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
             ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
             ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
             ->join('authors a', 'a.authorID = nal.authorID', 'left')
-            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
+            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
             ->whereIn('LOWER(n.status)', ['publish', 'published']);
 
         if (!empty($category) && $category !== 'all') {
@@ -149,23 +153,27 @@ class ArticleApi extends BaseController
                 n.viewed AS views_count,
                 n.articleDate AS published_at,
                 n.status AS status,
-                ANY_VALUE(c.categoryName) AS category_name,
-                ANY_VALUE(c.label) AS category_slug,
+                ANY_VALUE(c.label) AS category_name,
+                ANY_VALUE(c.categoryName) AS category_slug,
                 ANY_VALUE(c.categoryID) AS category_id,
                 GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author_name,
-                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS featured_image,
+                COALESCE(NULLIF(ANY_VALUE(m.filename), ""), "/img/investor_placeholder.jpg") AS featured_image,
                 COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
-                COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium,
+                CASE 
+                    WHEN LOWER(COALESCE(ANY_VALUE(nm_prem.metaval), "")) IN ("true", "1") THEN "1"
+                    ELSE "0"
+                END AS is_premium,
                 COALESCE(ANY_VALUE(nm_source.metaval), "Investor.id / Riset") AS source
             ')
             ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
             ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
             ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
             ->join('authors a', 'a.authorID = nal.authorID', 'left')
-            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
-            ->join('articlemeta nm_source', 'nm_source.articleID = n.articleID AND nm_source.metakey = "source"', 'left')
+            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
+            ->join('articlemeta nm_source', 'nm_source.articleID = n.articleID AND nm_source.metakey = "news_source"', 'left')
             ->groupBy('n.articleID');
 
         if (is_numeric($identifier)) {
@@ -197,20 +205,11 @@ class ArticleApi extends BaseController
         $article['featured_image'] = $article['featured_image'] ?: '/img/investor_placeholder.jpg';
 
         // Fetch Points (Singkatnya)
-        $pointsList = $db->table('article_points')
+        $pointsList = $db->table('articlepoints')
             ->where('article_id', $article['id'])
             ->orderBy('sort_order', 'ASC')
             ->get()->getResultArray();
-        if (!empty($pointsList)) {
-            $article['points'] = array_column($pointsList, 'point_text');
-        } else {
-            $pointsMeta = $db->table('articlemeta')
-                ->where('articleID', $article['id'])
-                ->where('metakey', 'point')
-                ->orderBy('metaID', 'ASC')
-                ->get()->getResultArray();
-            $article['points'] = array_column($pointsMeta, 'metaval');
-        }
+        $article['points'] = !empty($pointsList) ? array_column($pointsList, 'point_text') : [];
 
         // Fetch Tags
         $tags = $db->table('articletag ntl')
@@ -264,13 +263,14 @@ class ArticleApi extends BaseController
                 n.summary AS summary,
                 n.articleDate AS published_at,
                 n.viewed AS views_count,
-                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS featured_image,
-                ANY_VALUE(c.categoryName) AS category_name,
-                ANY_VALUE(c.label) AS category_slug
+                COALESCE(NULLIF(ANY_VALUE(m.filename), ""), "/img/investor_placeholder.jpg") AS featured_image,
+                ANY_VALUE(c.label) AS category_name,
+                ANY_VALUE(c.categoryName) AS category_slug
             ')
             ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
             ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->where('n.articleID !=', $article['id'])
             ->where('LOWER(n.status)', 'published');
 
@@ -343,13 +343,14 @@ class ArticleApi extends BaseController
                 n.summary AS summary,
                 n.viewed AS views_count,
                 n.articleDate AS published_at,
-                ANY_VALUE(c.categoryName) AS category_name,
-                ANY_VALUE(c.label) AS category_slug,
-                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS featured_image
+                ANY_VALUE(c.label) AS category_name,
+                ANY_VALUE(c.categoryName) AS category_slug,
+                COALESCE(NULLIF(ANY_VALUE(m.filename), ""), "/img/investor_placeholder.jpg") AS featured_image
             ')
             ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
             ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->whereIn('LOWER(n.status)', ['publish', 'published'])
             ->groupStart()
                 ->like('n.headline', $q)

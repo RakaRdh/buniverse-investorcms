@@ -107,8 +107,10 @@ class Apps extends BaseController
         // Push type routing sesuai variasi target legacy
         $pushUrl = '/news';
         $urlTarget = 'inbound';
+        $articleId = (int)($this->request->getPost('article_id') ?? 0);
+        $categoryName = trim($this->request->getPost('category_name') ?? $this->request->getPost('category') ?? '');
+
         if ($pushType === 'NewsLanding') {
-            $articleId = (int)($this->request->getPost('article_id') ?? 0);
             $pushUrl = $articleId > 0 ? "/article/detail/{$articleId}" : '/news';
         } elseif ($pushType === 'TVShow') {
             $pushUrl = '/tv/live';
@@ -129,6 +131,8 @@ class Apps extends BaseController
             'pushImage'      => $this->request->getPost('image') ?: '/img/investor_placeholder.jpg',
             'fcm_message_id' => null,
             'status'         => 'ready',
+            'articleID'      => $articleId > 0 ? $articleId : null,
+            'categoryName'   => !empty($categoryName) ? $categoryName : null,
         ]);
 
         return redirect()->to('/apps-push-notif')->with('success', 'Push notification recorded to database successfully!');
@@ -185,6 +189,10 @@ class Apps extends BaseController
             $type = 'banner';
         }
         $username = session()->get('user_username') ?: 'raka_h';
+        $position = trim($this->request->getPost('position') ?? 'top');
+        if (empty($position)) {
+            $position = 'top';
+        }
 
         $data = [
             'type'      => $type,
@@ -194,7 +202,7 @@ class Apps extends BaseController
             'setdate'   => date('Y-m-d H:i:s'),
             'imageUrl'  => $image ?: '/img/investor_placeholder.jpg',
             'linkUrl'   => ($type === 'banner') ? ($this->request->getPost('link_url') ?: '/post/1') : '',
-            'position'  => 'top',
+            'position'  => $position,
         ];
 
         if ($id > 0) {

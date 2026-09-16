@@ -171,19 +171,7 @@
 
     <!-- Pagination Footer -->
     <?php if ($pagination['totalPages'] > 1): ?>
-    <div class="p-3 border-t border-border bg-muted/20 flex items-center justify-between text-xs">
-        <div>
-            Halaman <strong><?= $pagination['page'] ?></strong> dari <strong><?= $pagination['totalPages'] ?></strong>
-        </div>
-        <div class="flex items-center gap-1">
-            <?php if ($pagination['page'] > 1): ?>
-                <a href="<?= base_url('scoring/logs?page=' . ($pagination['page'] - 1) . '&q=' . urlencode($filters['q']) . '&category=' . urlencode($filters['category'])) ?>" class="px-2.5 py-1 rounded border border-input bg-background text-foreground hover:bg-muted">Prev</a>
-            <?php endif; ?>
-            <?php if ($pagination['page'] < $pagination['totalPages']): ?>
-                <a href="<?= base_url('scoring/logs?page=' . ($pagination['page'] + 1) . '&q=' . urlencode($filters['q']) . '&category=' . urlencode($filters['category'])) ?>" class="px-2.5 py-1 rounded border border-input bg-background text-foreground hover:bg-muted">Next</a>
-            <?php endif; ?>
-        </div>
-    </div>
+        <?= view('layouts/partials/pagination', ['pagination' => $pagination, 'baseUrl' => base_url('scoring/logs')]) ?>
     <?php endif; ?>
 </div>
 

@@ -75,20 +75,34 @@ class User extends BaseController
 
         if (!empty($name) && !empty($email)) {
             if (!empty($usernameInput)) {
-                // Sanitize input username (lowercase, alphanumeric, underscores, dashes, dots)
                 $username = strtolower(preg_replace('/[^a-zA-Z0-9_.-]/', '', $usernameInput));
             } else {
-                $username = strtolower(explode(' ', $name)[0]) . '_' . rand(10, 99);
+                $username = strtolower(explode(' ', $name)[0]);
             }
 
-            // Ensure username uniqueness in useradministrator (username)
+            // Ensure username uniqueness in useradministrator
             $existing = $this->adminModel->where('username', $username)->first();
             if ($existing) {
-                $username .= '_' . rand(10, 99);
+                return redirect()->to('/user')->with('error', "Username '{$username}' sudah digunakan. Silakan pilih username lain.");
             }
 
             $passwordInput = trim($this->request->getPost('password') ?? '');
-            $plainPassword = !empty($passwordInput) ? $passwordInput : 'password123';
+            $passwordConfirm = trim($this->request->getPost('password_confirmation') ?? '');
+
+            if (empty($passwordInput)) {
+                return redirect()->to('/user')->with('error', 'Password wajib diisi.');
+            }
+
+            if ($passwordInput !== $passwordConfirm) {
+                return redirect()->to('/user')->with('error', 'Konfirmasi password tidak cocok dengan password yang dimasukkan.');
+            }
+
+            $passwordErrors = AdminModel::validatePasswordStrength($passwordInput);
+            if (!empty($passwordErrors)) {
+                return redirect()->to('/user')->with('error', 'Password belum memenuhi standar keamanan: ' . implode(' ', $passwordErrors));
+            }
+
+            $plainPassword = $passwordInput;
             $salt = AdminModel::generateSalt($username, $plainPassword);
             $hash = AdminModel::encodePassword($plainPassword, $salt);
 
@@ -105,7 +119,8 @@ class User extends BaseController
                 'salt'      => $salt,
                 'roleName'  => $role,
                 'active'    => '1',
-                'lastLogin' => date('Y-m-d H:i:s'),
+                'lastLogin' => null,
+                'passwordExpired' => date('Y-m-d', strtotime('+90 days')),
             ]);
 
             $sessionUser = session()->get('user_id') ?: 1;
@@ -113,6 +128,65 @@ class User extends BaseController
         }
 
         return redirect()->to('/user')->with('success', 'User staff account created in database.');
+    }
+
+    public function update($id)
+    {
+        $targetId = (int)$id;
+        $user = $this->adminModel->find($targetId);
+        if (!$user) {
+            return redirect()->to('/user')->with('error', 'User tidak ditemukan.');
+        }
+
+        $sessionUser = (int)(session()->get('user_id') ?: 1);
+        $sessionRole = session()->get('user_role') ?? 'Admin';
+
+        $name = trim($this->request->getPost('name') ?? '');
+        $email = trim($this->request->getPost('email') ?? '');
+        $role = trim($this->request->getPost('role') ?? $user['roleName']);
+        $alias = trim($this->request->getPost('alias') ?? '');
+        $passwordInput = trim($this->request->getPost('password') ?? '');
+        $passwordConfirm = trim($this->request->getPost('password_confirmation') ?? '');
+
+        if (empty($name) || empty($email)) {
+            return redirect()->to('/user')->with('error', 'Nama dan email wajib diisi.');
+        }
+
+        // Only Master can assign Master role
+        if (strcasecmp($role, 'Master') === 0 && strcasecmp($sessionRole, 'Master') !== 0) {
+            $role = $user['roleName'];
+        }
+
+        $updateData = [
+            'name'     => $name,
+            'email'    => $email,
+            'roleName' => $role,
+            'alias'    => !empty($alias) ? $alias : $user['alias'],
+            'slug'     => url_title($name, '-', true),
+        ];
+
+        // If new password provided, validate strength and confirmation
+        if (!empty($passwordInput)) {
+            if ($passwordInput !== $passwordConfirm) {
+                return redirect()->to('/user')->with('error', 'Konfirmasi password baru tidak cocok.');
+            }
+
+            $passwordErrors = AdminModel::validatePasswordStrength($passwordInput);
+            if (!empty($passwordErrors)) {
+                return redirect()->to('/user')->with('error', 'Password baru belum memenuhi standar keamanan: ' . implode(' ', $passwordErrors));
+            }
+
+            $salt = AdminModel::generateSalt($user['username'], $passwordInput);
+            $hash = AdminModel::encodePassword($passwordInput, $salt);
+            $updateData['password'] = $hash;
+            $updateData['salt'] = $salt;
+            $updateData['passwordExpired'] = date('Y-m-d', strtotime('+90 days'));
+        }
+
+        $this->adminModel->update($targetId, $updateData);
+        $this->activityLogModel->logAction($sessionUser, 'USER', 'UPDATE', "Updated user ID: {$targetId} ({$name})");
+
+        return redirect()->to('/user')->with('success', "Data user '{$name}' berhasil diperbarui.");
     }
 
     public function delete($id)

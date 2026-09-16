@@ -98,13 +98,21 @@ class Scoring extends BaseController
         $keywordsData = $this->keywordModel->getArticleKeywords($id);
         $keywords = array_column($keywordsData, 'keyword');
 
-        // Fetch metadata
+        // Fetch metadata & thumbnail
         $db = \Config\Database::connect();
         $metaRows = $db->table('articlemeta')->where('articleID', $id)->get()->getResultArray();
         $meta = [];
         foreach ($metaRows as $row) {
             $meta[$row['metakey']] = $row['metaval'];
         }
+
+        $mediaRow = $db->table('mediaarticle ma')
+            ->select('m.filename')
+            ->join('media m', 'm.mediaID = ma.mediaID')
+            ->where('ma.articleID', $id)
+            ->where('ma.position', 1)
+            ->get()->getRowArray();
+        $thumbnail = (!empty($mediaRow['filename'])) ? $mediaRow['filename'] : ($meta['thumbnail'] ?? '/img/investor_placeholder.jpg');
 
         // Fetch latest score
         $latestScore = $this->seoScoreModel->getLatestByArticleId($id);
@@ -124,7 +132,7 @@ class Scoring extends BaseController
                     'summary'     => $article['summary'],
                     'status'      => $article['status'],
                     'articleDate' => $article['articleDate'],
-                    'thumbnail'   => $meta['thumbnail'] ?? '/img/investor_placeholder.jpg',
+                    'thumbnail'   => $thumbnail,
                     'word_count'  => str_word_count(strip_tags($article['body'] ?? '')),
                 ],
                 'keywords'     => $keywords,

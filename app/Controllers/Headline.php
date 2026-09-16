@@ -23,11 +23,8 @@ class Headline extends BaseController
     {
         $categories = $this->categoryModel->getKanalTree();
 
-        // Selected target category (defaults to 'headline')
-        $targetCategory = $this->request->getGet('target_category') ?: 'headline';
-        if (strtolower($targetCategory) === 'home') {
-            $targetCategory = 'headline';
-        }
+        // Selected target category (defaults to 'home')
+        $targetCategory = $this->request->getGet('target_category') ?: 'home';
         $headlines = $this->headlineModel->getActiveHeadlines($targetCategory);
 
         // Filtering parameters for available posts
@@ -43,10 +40,16 @@ class Headline extends BaseController
         ];
 
         $perPage = 25;
-        $availableResult = $this->articleModel->getArticlesWithRelations($filters, $page, $perPage);
-
-        $totalItems = $availableResult['total'] ?? count($availableResult['data']);
+        $allArticles = $this->articleModel->getArticlesWithRelations($filters, $page, $perPage);
+        $availablePosts = $allArticles['data'];
+        $totalItems = $allArticles['total'];
         $totalPages = max(1, (int)ceil($totalItems / $perPage));
+
+        // Create quick lookup map for active headline articles
+        $activeHeadlineMap = [];
+        foreach ($headlines as $hl) {
+            $activeHeadlineMap[(int)$hl['id']] = (int)$hl['headline_position'];
+        }
 
         $pagination = [
             'page'       => $page,
@@ -57,20 +60,15 @@ class Headline extends BaseController
             'to'         => min($page * $perPage, $totalItems),
         ];
 
-        $activeHeadlineMap = [];
-        foreach ($headlines as $hl) {
-            $activeHeadlineMap[(int)$hl['id']] = (int)$hl['headline_position'];
-        }
-
         return view('headline/index', [
-            'title'             => 'Headline Management',
-            'breadcrumb'        => 'Headline / Placements',
-            'availablePosts'    => $availableResult['data'],
-            'pagination'        => $pagination,
-            'headlines'         => $headlines,
-            'activeHeadlineMap' => $activeHeadlineMap,
-            'targetCategory'    => $targetCategory,
+            'title'             => 'Manajemen Headline Redaksi',
+            'breadcrumb'        => 'Content / Headline',
             'categories'        => $categories,
+            'targetCategory'    => $targetCategory,
+            'headlines'         => $headlines,
+            'availablePosts'    => $availablePosts,
+            'activeHeadlineMap' => $activeHeadlineMap,
+            'pagination'        => $pagination,
             'filters'           => [
                 'q'        => $keyword ?? '',
                 'category' => $categoryFilter ?? 'all'
@@ -81,10 +79,7 @@ class Headline extends BaseController
     public function add()
     {
         $articleId = (int)$this->request->getPost('article_id');
-        $targetCategory = $this->request->getPost('target_category') ?: 'headline';
-        if (strtolower($targetCategory) === 'home') {
-            $targetCategory = 'headline';
-        }
+        $targetCategory = $this->request->getPost('target_category') ?: 'home';
 
         // Server-side validation: Verify article exists and is Published
         $article = $this->articleModel->find($articleId);
@@ -108,64 +103,55 @@ class Headline extends BaseController
 
         // 1. If already active in this category, reject with clear informative message
         if ($existing && (int)$existing['status'] === 1) {
-            $pos = $existing['num'] ?? 1;
-            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))
-                ->with('error', "Artikel sudah terdaftar sebagai headline aktif di kategori '{$targetCategory}' (pada posisi #{$pos}).");
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Artikel ini sudah aktif berada di posisi #{$existing['num']} antrean headline {$targetCategory}.");
         }
 
-        // 2. Enforce max 5 articles quota per category (Legacy parity)
-        $activeCount = $this->headlineModel
-            ->where('category', $targetCategory)
-            ->where('status', 1)
-            ->countAllResults();
+        $currentHeadlines = $this->headlineModel->getActiveHeadlines($targetCategory);
+        $totalActive = count($currentHeadlines);
 
-        if ($activeCount >= 5) {
-            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))
-                ->with('error', "Batas maksimal tercapai: Kategori '{$targetCategory}' sudah memiliki 5 artikel headline. Silakan hapus atau gantikan salah satu artikel terlebih dahulu.");
+        // 2. Strict Quota: Max 5 articles per category
+        if ($totalActive >= 5) {
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Batas maksimal 5 artikel headline untuk kategori '{$targetCategory}' sudah tercapai. Silakan hapus salah satu headline terlebih dahulu.");
         }
-
-        $maxPos = $this->headlineModel
-            ->where('category', $targetCategory)
-            ->where('status', 1)
-            ->selectMax('num')
-            ->first()['num'] ?? 0;
 
         $currentUser = session('user_username') ?: (session('username') ?: (session('user_name') ?: 'admin'));
+        $targetPosition = $totalActive + 1;
 
-        if (!$existing) {
-            $newPos = $maxPos + 1;
-            $this->headlineModel->insert([
-                'category'   => $targetCategory,
-                'articleID'  => $articleId,
-                'num'        => $newPos,
-                'timestamp'  => date('Y-m-d H:i:s'),
-                'status'     => 1,
-                'set_by'     => $currentUser,
-            ]);
-            $this->headlineModel->logHistory($articleId, $targetCategory, 'ADD', $newPos, $currentUser, "Menambahkan artikel ke headline posisi #{$newPos}");
-            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil ditambahkan ke antrean headline {$targetCategory}.");
-        } else if ((int)$existing['status'] === 0) {
-            // Re-activate previously removed headline
-            $newPos = $maxPos + 1;
-            $this->headlineModel->update($existing['id'], [
-                'num'       => $newPos,
-                'timestamp' => date('Y-m-d H:i:s'),
-                'status'    => 1,
-                'set_by'    => $currentUser,
-            ]);
-            $this->headlineModel->logHistory($articleId, $targetCategory, 'ADD', $newPos, $currentUser, "Mengaktifkan kembali artikel ke headline posisi #{$newPos}");
-            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil diaktifkan kembali di antrean headline {$targetCategory}.");
+        if ($existing) {
+            // Reactivate previous entry
+            $this->headlineModel
+                ->where('id', $existing['id'])
+                ->set([
+                    'num'       => $targetPosition,
+                    'status'    => 1,
+                    'set_by'    => $currentUser,
+                    'timestamp' => date('Y-m-d H:i:s'),
+                ])
+                ->update();
+
+            $this->headlineModel->logHistory($articleId, $targetCategory, 'ADD', $targetPosition, $currentUser, "Mengaktifkan kembali artikel ke headline posisi #{$targetPosition}");
+
+            return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil ditambahkan ke antrean headline {$targetCategory} di posisi #{$targetPosition}!");
         }
 
-        return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('info', "Artikel sudah terdaftar di antrean headline {$targetCategory}.");
+        // Fresh insertion
+        $this->headlineModel->insert([
+            'category'  => $targetCategory,
+            'articleID' => $articleId,
+            'num'       => $targetPosition,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'status'    => 1,
+            'set_by'    => $currentUser,
+        ]);
+
+        $this->headlineModel->logHistory($articleId, $targetCategory, 'ADD', $targetPosition, $currentUser, "Menambahkan artikel ke headline posisi #{$targetPosition}");
+
+        return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil ditambahkan ke antrean headline {$targetCategory} di posisi #{$targetPosition}!");
     }
 
     public function remove($id)
     {
-        $targetCategory = $this->request->getGet('target_category') ?: 'headline';
-        if (strtolower($targetCategory) === 'home') {
-            $targetCategory = 'headline';
-        }
+        $targetCategory = $this->request->getGet('target_category') ?: 'home';
 
         $currentUser = session('user_username') ?: (session('username') ?: (session('user_name') ?: 'admin'));
 
@@ -194,23 +180,17 @@ class Headline extends BaseController
 
     public function save()
     {
-        $targetCategory = $this->request->getPost('target_category') ?: 'headline';
-        if (strtolower($targetCategory) === 'home') {
-            $targetCategory = 'headline';
-        }
+        $targetCategory = $this->request->getPost('target_category') ?: 'home';
         return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Daftar headline kanal '{$targetCategory}' berhasil disimpan.");
     }
 
     /**
      * POST /headline/reorder
-     * Menerima JSON payload: { category: 'headline', order: [12, 45, 89] }
+     * Menerima JSON payload: { category: 'home', order: [12, 45, 89] }
      */
     public function reorder()
     {
-        $category = $this->request->getPost('category') ?: 'headline';
-        if (strtolower($category) === 'home') {
-            $category = 'headline';
-        }
+        $category = $this->request->getPost('category') ?: 'home';
         $rawOrder = $this->request->getPost('order');
 
         if (empty($rawOrder)) {

@@ -79,8 +79,12 @@ class Statistic extends BaseController
 
         // Premium articles count from articlemeta
         $premiumArticlesCount = (int)$this->articleModel->db->table('articlemeta')
-            ->where('metakey', 'is_premium')
-            ->where('metaval', '1')
+            ->groupStart()
+                ->where('metakey', 'premium')->whereIn('metaval', ['true', '1'])
+                ->orGroupStart()
+                    ->where('metakey', 'is_premium')->where('metaval', '1')
+                ->groupEnd()
+            ->groupEnd()
             ->countAllResults();
         if ($premiumArticlesCount === 0) {
             $premiumArticlesCount = 14;

@@ -37,9 +37,15 @@ class HeadlineModel extends Model
                 h.category AS category,
                 h.timestamp AS headline_set_at,
                 h.set_by AS set_by,
-                COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail,
+                COALESCE(
+                    NULLIF(ANY_VALUE(m.filename), ""),
+                    "/img/investor_placeholder.jpg"
+                ) AS thumbnail,
                 COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
-                COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium,
+                CASE 
+                    WHEN LOWER(COALESCE(ANY_VALUE(nm_prem.metaval), "")) IN ("true", "1") THEN "1"
+                    ELSE "0"
+                END AS is_premium,
                 GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author,
                 ANY_VALUE(p.username) AS post_by
             ')
@@ -47,9 +53,10 @@ class HeadlineModel extends Model
             ->join('useradministrator p', 'p.userID = n.userID', 'left')
             ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
             ->join('authors a', 'a.authorID = nal.authorID', 'left')
-            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left');
+            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left');
 
         $builder->where('h.status', 1);
 

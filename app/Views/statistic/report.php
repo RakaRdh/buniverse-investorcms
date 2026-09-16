@@ -250,40 +250,7 @@
 
     <!-- Pagination -->
     <?php if (!empty($pagination) && $pagination['totalPages'] > 1): ?>
-        <?php
-        $queryParams = $_GET;
-        $buildReportPageUrl = function($pageNum) use ($queryParams) {
-            $params = $queryParams;
-            $params['page'] = $pageNum;
-            return base_url('statistic/report?' . http_build_query($params));
-        };
-        ?>
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-border bg-muted/10 text-xs">
-            <span class="text-muted-foreground">
-                Menampilkan <span class="font-medium text-foreground"><?= $pagination['from'] ?></span> s/d <span class="font-medium text-foreground"><?= $pagination['to'] ?></span> dari <span class="font-medium text-foreground"><?= $pagination['totalItems'] ?></span> artikel
-            </span>
-            <div class="flex items-center gap-1">
-                <?php if ($pagination['page'] > 1): ?>
-                    <a href="<?= $buildReportPageUrl($pagination['page'] - 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Prev</a>
-                <?php else: ?>
-                    <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Prev</span>
-                <?php endif; ?>
-
-                <?php for ($p = 1; $p <= min(10, $pagination['totalPages']); $p++): ?>
-                    <?php if ($p === $pagination['page']): ?>
-                        <span class="rounded-md bg-primary px-2.5 py-1 font-bold text-primary-foreground"><?= $p ?></span>
-                    <?php else: ?>
-                        <a href="<?= $buildReportPageUrl($p) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors"><?= $p ?></a>
-                    <?php endif; ?>
-                <?php endfor; ?>
-
-                <?php if ($pagination['page'] < $pagination['totalPages']): ?>
-                    <a href="<?= $buildReportPageUrl($pagination['page'] + 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Next</a>
-                <?php else: ?>
-                    <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Next</span>
-                <?php endif; ?>
-            </div>
-        </div>
+        <?= view('layouts/partials/pagination', ['pagination' => $pagination, 'baseUrl' => base_url('statistic/report')]) ?>
     <?php endif; ?>
 </div>
 

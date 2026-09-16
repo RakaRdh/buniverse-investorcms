@@ -223,40 +223,7 @@
     </div>
 
     <!-- Pagination Footer -->
-    <?php
-        $queryParams = $_GET;
-        $buildPageUrl = function($pageNum) use ($queryParams) {
-            $params = $queryParams;
-            $params['page'] = $pageNum;
-            return base_url('headline/history') . '?' . http_build_query($params);
-        };
-    ?>
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-border text-xs text-muted-foreground bg-muted/20">
-        <div>
-            Halaman <strong class="text-foreground"><?= $pagination['page'] ?></strong> dari <strong class="text-foreground"><?= $pagination['totalPages'] ?></strong>
-        </div>
-        <div class="flex items-center gap-1">
-            <?php if ($pagination['page'] > 1): ?>
-                <a href="<?= $buildPageUrl($pagination['page'] - 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Prev</a>
-            <?php else: ?>
-                <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Prev</span>
-            <?php endif; ?>
-
-            <?php for ($p = max(1, $pagination['page'] - 2); $p <= min($pagination['totalPages'], $pagination['page'] + 2); $p++): ?>
-                <?php if ($p == $pagination['page']): ?>
-                    <span class="rounded-md bg-primary px-2.5 py-1 font-bold text-primary-foreground"><?= $p ?></span>
-                <?php else: ?>
-                    <a href="<?= $buildPageUrl($p) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors"><?= $p ?></a>
-                <?php endif; ?>
-            <?php endfor; ?>
-
-            <?php if ($pagination['page'] < $pagination['totalPages']): ?>
-                <a href="<?= $buildPageUrl($pagination['page'] + 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Next</a>
-            <?php else: ?>
-                <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Next</span>
-            <?php endif; ?>
-        </div>
-    </div>
+    <?= view('layouts/partials/pagination', ['pagination' => $pagination, 'baseUrl' => base_url('headline/history')]) ?>
 </div>
 
 <?= $this->endSection() ?>

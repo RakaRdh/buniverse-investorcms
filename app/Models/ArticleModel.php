@@ -73,23 +73,20 @@ class ArticleModel extends Model
                 p.username AS post_by,
                 p.name AS post_by_name,
                 p.alias AS post_by_alias,
-                COALESCE(ANY_VALUE(c_parent.categoryName), ANY_VALUE(nm_kanal.metaval), ANY_VALUE(c.categoryName), "Market") AS kanal,
-                COALESCE(ANY_VALUE(nm_sub.metaval), IF(ANY_VALUE(c.parent) IS NOT NULL, ANY_VALUE(c.categoryName), ""), "") AS sub_kanal,
-                COALESCE(ANY_VALUE(c_parent.categoryName), ANY_VALUE(nm_kanal.metaval), ANY_VALUE(c.categoryName), "Market") AS category,
-                ANY_VALUE(c.label) AS category_slug,
+                COALESCE(ANY_VALUE(c_parent.label), ANY_VALUE(c.label), "Market") AS kanal,
+                COALESCE(IF(ANY_VALUE(c.parent) IS NOT NULL, ANY_VALUE(c.label), ""), "") AS sub_kanal,
+                COALESCE(ANY_VALUE(c_parent.label), ANY_VALUE(c.label), "Market") AS category,
+                ANY_VALUE(c.categoryName) AS category_slug,
                 ANY_VALUE(c.parent) AS category_parent_id,
                 GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author,
                 CASE 
-                    WHEN LOWER(COALESCE(ANY_VALUE(nm_prem_legacy.metaval), "")) IN ("true", "1") THEN "1"
-                    WHEN COALESCE(ANY_VALUE(nm_prem.metaval), "0") = "1" THEN "1"
+                    WHEN LOWER(COALESCE(ANY_VALUE(nm_prem.metaval), "")) IN ("true", "1") THEN "1"
                     ELSE "0"
                 END AS is_premium,
                 COALESCE(
                     NULLIF(ANY_VALUE(m.filename), ""),
-                    ANY_VALUE(nm_thumb.metaval),
                     "/img/investor_placeholder.jpg"
                 ) AS thumbnail,
-                COALESCE(ANY_VALUE(nm_head.metaval), "none") AS headline_type,
                 COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
                 n.editlock AS editlock,
                 lock_u.name AS locked_by_name,
@@ -104,13 +101,8 @@ class ArticleModel extends Model
             ->join('authors a', 'a.authorID = nal.authorID', 'left')
             ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
             ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
-            ->join('articlemeta nm_prem_legacy', 'nm_prem_legacy.articleID = n.articleID AND nm_prem_legacy.metakey = "premium"', 'left')
-            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
-            ->join('articlemeta nm_head', 'nm_head.articleID = n.articleID AND nm_head.metakey = "headline_type"', 'left')
+            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
             ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
-            ->join('articlemeta nm_kanal', 'nm_kanal.articleID = n.articleID AND nm_kanal.metakey = "kanal"', 'left')
-            ->join('articlemeta nm_sub', 'nm_sub.articleID = n.articleID AND nm_sub.metakey = "sub_kanal"', 'left')
             ->groupBy('n.articleID');
 
         // Apply filters
@@ -208,11 +200,12 @@ class ArticleModel extends Model
                 n.status AS article_status,
                 DATE_FORMAT(n.articleDate, "%d %b %Y %H:%i") AS publish_date,
                 COALESCE(ANY_VALUE(c.categoryName), "Market") AS kanal,
-                COALESCE(ANY_VALUE(thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail
+                COALESCE(NULLIF(ANY_VALUE(m.filename), ""), "/img/investor_placeholder.jpg") AS thumbnail
             ')
             ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
             ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('articlemeta thumb', 'thumb.articleID = n.articleID AND thumb.metakey = "thumbnail"', 'left')
+            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->where('n.status', 'Publish')
             ->groupBy('n.articleID')
             ->orderBy('n.createdAt', 'DESC')
@@ -241,46 +234,37 @@ class ArticleModel extends Model
                 n.createdAt AS create_date,
                 p.username AS post_by,
                 p.name AS post_by_name,
-                ANY_VALUE(c.categoryName) AS category,
-                ANY_VALUE(c.label) AS category_slug,
+                ANY_VALUE(c.label) AS category,
+                ANY_VALUE(c.categoryName) AS category_slug,
                 ANY_VALUE(c.categoryID) AS category_id,
                 GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author,
                 CASE 
-                    WHEN LOWER(COALESCE(ANY_VALUE(nm_prem_legacy.metaval), "")) IN ("true", "1") THEN "1"
-                    WHEN COALESCE(ANY_VALUE(nm_prem.metaval), "0") = "1" THEN "1"
+                    WHEN LOWER(COALESCE(ANY_VALUE(nm_prem.metaval), "")) IN ("true", "1") THEN "1"
                     ELSE "0"
                 END AS is_premium,
                 COALESCE(
                     NULLIF(ANY_VALUE(m.filename), ""),
-                    ANY_VALUE(nm_thumb.metaval),
                     "/img/investor_placeholder.jpg"
                 ) AS thumbnail,
                 ANY_VALUE(ma_thumb.mediaID) AS media_id,
-                COALESCE(ANY_VALUE(nm_thumb_caption.metaval), ANY_VALUE(ma_thumb.caption), NULLIF(TRIM(ANY_VALUE(m.caption)), ""), "") AS thumbnail_caption,
-                COALESCE(ANY_VALUE(nm_thumb_desc.metaval), NULLIF(TRIM(ANY_VALUE(m.description)), ""), ANY_VALUE(ma_thumb.caption), NULLIF(TRIM(ANY_VALUE(m.caption)), ""), "") AS thumbnail_description,
-                COALESCE(ANY_VALUE(nm_head.metaval), "none") AS headline_type,
+                COALESCE(ANY_VALUE(ma_thumb.caption), NULLIF(TRIM(ANY_VALUE(m.caption)), ""), "") AS thumbnail_caption,
+                COALESCE(NULLIF(TRIM(ANY_VALUE(m.description)), ""), ANY_VALUE(ma_thumb.caption), NULLIF(TRIM(ANY_VALUE(m.caption)), ""), "") AS thumbnail_description,
                 COALESCE(ANY_VALUE(nm_deck.metaval), "") AS upper_deck,
                 COALESCE(ANY_VALUE(nm_source.metaval), "Investor.id / Riset") AS source,
-                COALESCE(ANY_VALUE(nm_sub.metaval), "") AS sub_kanal,
-                COALESCE(ANY_VALUE(nm_kanal.metaval), "") AS kanal
+                ANY_VALUE(c.label) AS sub_kanal,
+                COALESCE(ANY_VALUE(c_parent.label), ANY_VALUE(c.label), "Market") AS kanal
             ')
             ->join('useradministrator p', 'p.userID = n.userID', 'left')
             ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
             ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('category c_parent', 'c_parent.categoryID = c.parent', 'left')
             ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
             ->join('authors a', 'a.authorID = nal.authorID', 'left')
             ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
             ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
-            ->join('articlemeta nm_prem_legacy', 'nm_prem_legacy.articleID = n.articleID AND nm_prem_legacy.metakey = "premium"', 'left')
-            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
-            ->join('articlemeta nm_thumb_desc', 'nm_thumb_desc.articleID = n.articleID AND nm_thumb_desc.metakey = "thumbnail_description"', 'left')
-            ->join('articlemeta nm_thumb_caption', 'nm_thumb_caption.articleID = n.articleID AND nm_thumb_caption.metakey = "thumbnail_caption"', 'left')
-            ->join('articlemeta nm_head', 'nm_head.articleID = n.articleID AND nm_head.metakey = "headline_type"', 'left')
+            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
             ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
             ->join('articlemeta nm_source', 'nm_source.articleID = n.articleID AND nm_source.metakey = "news_source"', 'left')
-            ->join('articlemeta nm_sub', 'nm_sub.articleID = n.articleID AND nm_sub.metakey = "sub_kanal"', 'left')
-            ->join('articlemeta nm_kanal', 'nm_kanal.articleID = n.articleID AND nm_kanal.metakey = "kanal"', 'left')
             ->where('n.articleID', $id)
             ->where('n.status !=', 'Deleted')
             ->groupBy('n.articleID')
@@ -293,21 +277,12 @@ class ArticleModel extends Model
         $article['sumber_berita'] = $article['source'];
         $article['kanal'] = !empty($article['kanal']) ? $article['kanal'] : ($article['category'] ?? 'Market');
 
-        // Get points (from standalone articlepoints table or fallback to articlemeta)
+        // Get points (from standalone articlepoints table)
         $nanoPoints = $this->db->table('articlepoints')
             ->where('article_id', $id)
             ->orderBy('sort_order', 'ASC')
             ->get()->getResultArray();
-        if (!empty($nanoPoints)) {
-            $article['points'] = array_column($nanoPoints, 'point_text');
-        } else {
-            $points = $this->db->table('articlemeta')
-                ->where('articleID', $id)
-                ->where('metakey', 'point')
-                ->orderBy('id', 'ASC')
-                ->get()->getResultArray();
-            $article['points'] = array_column($points, 'metaval');
-        }
+        $article['points'] = !empty($nanoPoints) ? array_column($nanoPoints, 'point_text') : [];
 
         // Get keywords (replaces tags)
         $keywords = $this->db->table('articlekeyword akw')
@@ -402,18 +377,17 @@ class ArticleModel extends Model
             ]);
         }
 
-        // Meta entries
+        // Meta entries - Hanya 6 metakey valid sesuai skema legacy Investor.id
+        $isPremiumStr = (!empty($data['is_premium']) && $data['is_premium'] != '0') ? 'true' : 'false';
+        $shortUrl = 'https://investor.id/' . (!empty($data['kanal']) ? url_title($data['kanal'], '-', true) : 'market') . '/' . $articleId . '/' . $slug;
+
         $metaEntries = [
-            'thumbnail'             => $data['thumbnail'] ?? '/img/investor_placeholder.jpg',
-            'thumbnail_description' => $data['thumbnail_description'] ?? $data['thumbnail_caption'] ?? '',
-            'thumbnail_caption'     => $data['thumbnail_caption'] ?? '',
-            'is_premium'            => (string)($data['is_premium'] ?? 0),
-            'headline_type'         => $data['headline_type'] ?? 'none',
-            'upper_deck'            => $data['upper_deck'] ?? '',
-            'news_source'           => $data['source'] ?? 'Investor.id / Riset',
-            'kanal'                 => $data['kanal'] ?? '',
-            'sub_kanal'             => $data['sub_kanal'] ?? '',
-            'shorturl'              => 'https://investor.id/' . ($data['kanal'] ? url_title($data['kanal'], '-', true) : 'market') . '/' . $articleId . '/' . $slug,
+            'news_source'   => $data['source'] ?? ($data['sumber_berita'] ?? 'Investor.id / Riset'),
+            'shorturl'      => $shortUrl,
+            'premium'       => $isPremiumStr,
+            'upper_deck'    => $data['upper_deck'] ?? '',
+            'keyword_label' => !empty($tags) ? implode(',', is_array($tags) ? $tags : [$tags]) : '',
+            'keyword_slug'  => !empty($tags) ? implode(',', array_map(fn($t) => url_title($t, '-', true), is_array($tags) ? $tags : [$tags])) : '',
         ];
 
         foreach ($metaEntries as $k => $v) {
@@ -424,16 +398,10 @@ class ArticleModel extends Model
             ]);
         }
 
-        // Points (Save to both articlemeta and standalone articlepoints table)
+        // Points (Save to standalone articlepoints table)
         foreach ($points as $idx => $pt) {
             $trimmed = trim($pt);
             if (!empty($trimmed)) {
-                $this->db->table('articlemeta')->insert([
-                    'articleID' => $articleId,
-                    'metakey'   => 'point',
-                    'metaval'   => $trimmed,
-                ]);
-
                 $this->db->table('articlepoints')->insert([
                     'article_id' => $articleId,
                     'point_text' => $trimmed,
@@ -443,10 +411,29 @@ class ArticleModel extends Model
             }
         }
 
-        // Keywords
+        // Keywords & Tags
         if (!empty($tags)) {
             $kwModel = new KeywordModel();
             $kwModel->syncArticleKeywords($articleId, $tags);
+
+            // Backward compatibility sync ke tabel articletag
+            $this->db->table('articletag')->where('articleId', $articleId)->delete();
+            $tagList = is_array($tags) ? $tags : explode(',', (string)$tags);
+            foreach ($tagList as $tagName) {
+                $trimmedTag = trim($tagName);
+                if (!empty($trimmedTag)) {
+                    $tagRow = $this->db->table('tag')
+                        ->where('label', $trimmedTag)
+                        ->orWhere('slug', url_title($trimmedTag, '-', true))
+                        ->get()->getRowArray();
+                    if ($tagRow) {
+                        $this->db->table('articletag')->insert([
+                            'articleId' => $articleId,
+                            'tagID'     => $tagRow['tagID'],
+                        ]);
+                    }
+                }
+            }
         }
 
         $this->db->transComplete();
@@ -542,24 +529,21 @@ class ArticleModel extends Model
             ]);
         }
 
-        // 5. Update Metadata
-        $metaKeys = ['thumbnail', 'thumbnail_description', 'thumbnail_caption', 'is_premium', 'headline_type', 'upper_deck', 'news_source', 'kanal', 'sub_kanal', 'shorturl'];
+        // 5. Update Metadata - Hanya 6 metakey valid sesuai skema legacy Investor.id
         $this->db->table('articlemeta')
             ->where('articleID', $id)
-            ->whereIn('metakey', array_merge($metaKeys, ['point']))
             ->delete();
 
+        $isPremiumStr = (!empty($data['is_premium']) && $data['is_premium'] != '0') ? 'true' : 'false';
+        $shortUrl = 'https://investor.id/' . (!empty($data['kanal']) ? url_title($data['kanal'], '-', true) : 'market') . '/' . $id . '/' . ($oldArticle['slug'] ?: url_title($data['title'], '-', true));
+
         $metaEntries = [
-            'thumbnail'             => $data['thumbnail'] ?? '/img/investor_placeholder.jpg',
-            'thumbnail_description' => $data['thumbnail_description'] ?? $data['thumbnail_caption'] ?? '',
-            'thumbnail_caption'     => $data['thumbnail_caption'] ?? '',
-            'is_premium'            => (string)($data['is_premium'] ?? 0),
-            'headline_type'         => $data['headline_type'] ?? 'none',
-            'upper_deck'            => $data['upper_deck'] ?? '',
-            'news_source'           => $data['source'] ?? 'Investor.id / Riset',
-            'kanal'                 => $data['kanal'] ?? '',
-            'sub_kanal'             => $data['sub_kanal'] ?? '',
-            'shorturl'              => 'https://investor.id/' . ($data['kanal'] ? url_title($data['kanal'], '-', true) : 'market') . '/' . $id . '/' . ($oldArticle['slug'] ?: url_title($data['title'], '-', true)),
+            'news_source'   => $data['source'] ?? ($data['sumber_berita'] ?? 'Investor.id / Riset'),
+            'shorturl'      => $shortUrl,
+            'premium'       => $isPremiumStr,
+            'upper_deck'    => $data['upper_deck'] ?? '',
+            'keyword_label' => !empty($tags) ? implode(',', is_array($tags) ? $tags : [$tags]) : '',
+            'keyword_slug'  => !empty($tags) ? implode(',', array_map(fn($t) => url_title($t, '-', true), is_array($tags) ? $tags : [$tags])) : '',
         ];
 
         foreach ($metaEntries as $k => $v) {
@@ -570,17 +554,11 @@ class ArticleModel extends Model
             ]);
         }
 
-        // Points (Sync to both articlemeta and standalone articlepoints table)
+        // Points (Sync to standalone articlepoints table)
         $this->db->table('articlepoints')->where('article_id', $id)->delete();
         foreach ($points as $idx => $pt) {
             $trimmed = trim($pt);
             if (!empty($trimmed)) {
-                $this->db->table('articlemeta')->insert([
-                    'articleID' => $id,
-                    'metakey'   => 'point',
-                    'metaval'   => $trimmed,
-                ]);
-
                 $this->db->table('articlepoints')->insert([
                     'article_id' => $id,
                     'point_text' => $trimmed,
@@ -590,9 +568,28 @@ class ArticleModel extends Model
             }
         }
 
-        // Keywords
+        // Keywords & Tags
         $kwModel = new KeywordModel();
         $kwModel->syncArticleKeywords($id, $tags);
+
+        // Backward compatibility sync ke tabel articletag
+        $this->db->table('articletag')->where('articleId', $id)->delete();
+        $tagList = is_array($tags) ? $tags : explode(',', (string)$tags);
+        foreach ($tagList as $tagName) {
+            $trimmedTag = trim($tagName);
+            if (!empty($trimmedTag)) {
+                $tagRow = $this->db->table('tag')
+                    ->where('label', $trimmedTag)
+                    ->orWhere('slug', url_title($trimmedTag, '-', true))
+                    ->get()->getRowArray();
+                if ($tagRow) {
+                    $this->db->table('articletag')->insert([
+                        'articleId' => $id,
+                        'tagID'     => $tagRow['tagID'],
+                    ]);
+                }
+            }
+        }
 
         $this->db->transComplete();
 
@@ -614,9 +611,6 @@ class ArticleModel extends Model
         $effectiveEditor = $editorId ?: (session('user_id') ?: 1);
 
         $statusAfter = 'Deleted';
-        if (!empty($reason)) {
-            $statusAfter .= ' [' . $reason . (!empty($notes) ? ' - ' . $notes : '') . ']';
-        }
 
         // 1. Audit trail in articlehistory
         $this->db->table('articlehistory')->insert([

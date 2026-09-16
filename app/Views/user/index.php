@@ -162,90 +162,61 @@
 
     <!-- Pagination Footer -->
     <?php if (isset($pagination) && $pagination['totalItems'] > 0): ?>
-        <?php
-            $queryParams = $_GET;
-            $buildUserPageUrl = function($p) use ($queryParams) {
-                $params = $queryParams;
-                $params['page'] = $p;
-                return base_url('user') . '?' . http_build_query($params);
-            };
-        ?>
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border px-4 py-3 text-xs text-muted-foreground bg-muted/20">
-            <div>
-                Menampilkan <span class="font-semibold text-foreground"><?= $pagination['from'] ?></span> - <span class="font-semibold text-foreground"><?= $pagination['to'] ?></span> dari <span class="font-semibold text-foreground"><?= number_format($pagination['totalItems']) ?></span> pengguna
-            </div>
-            <div class="flex items-center gap-1">
-                <?php if ($pagination['page'] > 1): ?>
-                    <a href="<?= $buildUserPageUrl($pagination['page'] - 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Prev</a>
-                <?php else: ?>
-                    <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Prev</span>
-                <?php endif; ?>
-
-                <?php for ($p = max(1, $pagination['page'] - 2); $p <= min($pagination['totalPages'], $pagination['page'] + 2); $p++): ?>
-                    <?php if ($p == $pagination['page']): ?>
-                        <span class="rounded-md bg-primary px-2.5 py-1 font-bold text-primary-foreground"><?= $p ?></span>
-                    <?php else: ?>
-                        <a href="<?= $buildUserPageUrl($p) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors"><?= $p ?></a>
-                    <?php endif; ?>
-                <?php endfor; ?>
-
-                <?php if ($pagination['page'] < $pagination['totalPages']): ?>
-                    <a href="<?= $buildUserPageUrl($pagination['page'] + 1) ?>" class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-foreground hover:bg-muted transition-colors">Next</a>
-                <?php else: ?>
-                    <span class="rounded-md border border-input bg-background px-2.5 py-1 font-medium text-muted-foreground opacity-50 cursor-not-allowed">Next</span>
-                <?php endif; ?>
-            </div>
-        </div>
+        <?= view('layouts/partials/pagination', ['pagination' => $pagination, 'baseUrl' => base_url('user')]) ?>
     <?php endif; ?>
 </div>
 
 <!-- Modal Add User -->
-<div id="newUserModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1.25rem;">
-    <div class="surface-card w-full max-w-lg p-5 shadow-2xl space-y-3.5 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-150">
-        <div class="flex items-center justify-between border-b border-border pb-3">
-            <h3 class="text-sm font-bold text-foreground">Register Editorial Staff</h3>
-            <button type="button" onclick="closeNewUserModal()" class="text-muted-foreground hover:text-foreground">
+<!-- Modal Add User -->
+<div id="newUserModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.7); backdrop-filter: blur(4px); z-index: 999; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="surface-card w-full max-w-xl max-h-[90vh] flex flex-col p-4 sm:p-5 shadow-2xl rounded-xl border border-border animate-in fade-in zoom-in-95 duration-150">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-border pb-2.5 shrink-0">
+            <div>
+                <h3 class="text-sm font-bold text-foreground">Register Editorial Staff</h3>
+                <p class="text-[11px] text-muted-foreground">Tambah akun jurnalis atau staf editorial baru</p>
+            </div>
+            <button type="button" onclick="closeNewUserModal()" class="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <i data-lucide="x" class="size-4"></i>
             </button>
         </div>
-        <form id="newUserForm" method="post" action="<?= base_url('user/save') ?>" class="space-y-4">
-            <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Full Name</label>
-                <input type="text" name="name" required placeholder="e.g. Raditya Pramana" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-            </div>
-            <div>
-                <div class="flex items-center justify-between mb-1">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Username</label>
-                    <span class="text-[10px] text-muted-foreground/70 font-normal italic">Opsional — Otomatis jika kosong</span>
+
+        <!-- Modal Body (Scrollable if height exceeds screen) -->
+        <form id="newUserForm" method="post" action="<?= base_url('user/save') ?>" class="flex-1 overflow-y-auto custom-sidebar-scroll py-3 space-y-3.5 pr-1">
+            <!-- Row 1: Full Name & Username -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Full Name <span class="text-destructive">*</span></label>
+                    <input type="text" name="name" required placeholder="e.g. Raditya Pramana" class="flex h-8.5 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                 </div>
-                <input type="text" name="username" placeholder="e.g. raditya_p" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-            </div>
-            <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Email Address</label>
-                <input type="email" name="email" required placeholder="raditya@investor.id" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-            </div>
-            <div>
-                <div class="flex items-center justify-between mb-1">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Inisial Alias Penulis</label>
-                    <span class="text-[10px] text-muted-foreground/70 font-normal italic">Opsional — Contoh: RDP, AGG, dupp</span>
-                </div>
-                <input type="text" name="alias" maxlength="20" placeholder="e.g. RDP" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono">
-            </div>
-            <div>
-                <div class="flex items-center justify-between mb-1">
-                    <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Password</label>
-                    <span class="text-[10px] text-muted-foreground/70 font-normal italic">Default: password123 jika kosong</span>
-                </div>
-                <div class="relative flex items-center">
-                    <input type="password" name="password" id="newUserPassword" placeholder="Masukkan password akun..." class="flex h-9 w-full rounded-md border border-input bg-background pl-3 pr-11 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                    <button type="button" onclick="togglePasswordVisibility('newUserPassword', this)" class="absolute right-2 top-1/2 -translate-y-1/2 z-10 text-muted-foreground hover:text-foreground p-1 rounded transition-colors" title="Lihat/Sembunyikan Password">
-                        <i data-lucide="eye" class="size-4"></i>
-                    </button>
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Username</label>
+                        <span class="text-[10px] text-muted-foreground/70 font-normal italic">Otomatis jika kosong</span>
+                    </div>
+                    <input type="text" name="username" placeholder="e.g. raditya_p" class="flex h-8.5 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                 </div>
             </div>
+
+            <!-- Row 2: Email Address & Inisial Alias -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Email Address <span class="text-destructive">*</span></label>
+                    <input type="email" name="email" required placeholder="raditya@investor.id" class="flex h-8.5 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Inisial Penulis</label>
+                        <span class="text-[10px] text-muted-foreground/70 font-normal italic">e.g. RDP, AGG</span>
+                    </div>
+                    <input type="text" name="alias" maxlength="20" placeholder="e.g. RDP" class="flex h-8.5 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono uppercase">
+                </div>
+            </div>
+
+            <!-- Row 3: Assigned Role -->
             <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Assigned Role</label>
-                <select name="role" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring capitalize">
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Assigned Role <span class="text-destructive">*</span></label>
+                <select name="role" class="flex h-8.5 w-full rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring capitalize">
                     <option value="administrator">Administrator</option>
                     <option value="redpel">Redpel (Redaktur Pelaksana)</option>
                     <option value="editor" selected>Editor</option>
@@ -254,9 +225,62 @@
                     <option value="support">Support</option>
                 </select>
             </div>
-            <div class="flex justify-end gap-2 pt-2 border-t border-border">
-                <button type="button" onclick="closeNewUserModal()" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
-                <button type="submit" class="rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase text-primary-foreground hover:bg-primary/90">Create User</button>
+
+            <!-- Row 4: Password & Confirm Password -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Kata Sandi (Password) <span class="text-destructive">*</span></label>
+                    <div class="relative flex items-center">
+                        <input type="password" name="password" id="newUserPassword" required minlength="8" placeholder="Password baru..." class="flex h-8.5 w-full rounded-md border border-input bg-background pl-3 pr-10 py-1 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono" oninput="validateUserPasswordRules(this.value)">
+                        <button type="button" onclick="togglePasswordVisibility('newUserPassword', this)" class="absolute right-2 top-1/2 -translate-y-1/2 z-10 text-muted-foreground hover:text-foreground p-1 rounded transition-colors" title="Lihat/Sembunyikan Password">
+                            <i data-lucide="eye" class="size-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Konfirmasi Password <span class="text-destructive">*</span></label>
+                    <div class="relative flex items-center">
+                        <input type="password" name="password_confirmation" id="newUserPasswordConfirm" required minlength="8" placeholder="Ketik ulang password..." class="flex h-8.5 w-full rounded-md border border-input bg-background pl-3 pr-10 py-1 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono" oninput="validateUserPasswordMatch()">
+                        <button type="button" onclick="togglePasswordVisibility('newUserPasswordConfirm', this)" class="absolute right-2 top-1/2 -translate-y-1/2 z-10 text-muted-foreground hover:text-foreground p-1 rounded transition-colors" title="Lihat/Sembunyikan Password">
+                            <i data-lucide="eye" class="size-3.5"></i>
+                        </button>
+                    </div>
+                    <div id="passwordMatchMessage" class="text-[10px] mt-0.5 hidden"></div>
+                </div>
+            </div>
+
+            <!-- Password Rules Checklist Box (Compact) -->
+            <div class="p-2.5 rounded-lg border border-border/70 bg-muted/25 text-[11px] space-y-1">
+                <span class="font-bold text-foreground block text-[10px] uppercase tracking-wider">Kriteria Keamanan Kata Sandi:</span>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-1 text-muted-foreground text-[10.5px]">
+                    <div id="rule-len" class="flex items-center gap-1.5 transition-colors">
+                        <span class="size-1.5 rounded-full bg-muted-foreground/50 shrink-0"></span>
+                        <span>Min. 8 karakter</span>
+                    </div>
+                    <div id="rule-upper" class="flex items-center gap-1.5 transition-colors">
+                        <span class="size-1.5 rounded-full bg-muted-foreground/50 shrink-0"></span>
+                        <span>Huruf besar (A-Z)</span>
+                    </div>
+                    <div id="rule-lower" class="flex items-center gap-1.5 transition-colors">
+                        <span class="size-1.5 rounded-full bg-muted-foreground/50 shrink-0"></span>
+                        <span>Huruf kecil (a-z)</span>
+                    </div>
+                    <div id="rule-digit" class="flex items-center gap-1.5 transition-colors">
+                        <span class="size-1.5 rounded-full bg-muted-foreground/50 shrink-0"></span>
+                        <span>Angka (0-9)</span>
+                    </div>
+                    <div id="rule-special" class="flex items-center gap-1.5 transition-colors sm:col-span-2">
+                        <span class="size-1.5 rounded-full bg-muted-foreground/50 shrink-0"></span>
+                        <span>Simbol khusus (@, #, $, !, dll)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer (Pinned Actions) -->
+            <div class="flex justify-end gap-2 pt-2.5 border-t border-border shrink-0">
+                <button type="button" onclick="closeNewUserModal()" class="rounded-md border border-input bg-background px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors">Batal</button>
+                <button type="submit" id="btnSubmitNewUser" class="rounded-md bg-primary px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs">Create User</button>
             </div>
         </form>
     </div>
@@ -510,11 +534,90 @@ function togglePasswordVisibility(inputId, btn) {
     if (window.lucide) window.lucide.createIcons();
 }
 
+function updateRuleIndicator(elementId, isValid) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const dot = el.querySelector('span:first-child');
+    if (isValid) {
+        el.className = 'flex items-center gap-1.5 text-emerald-600 font-semibold transition-colors';
+        if (dot) dot.className = 'size-1.5 rounded-full bg-emerald-500';
+    } else {
+        el.className = 'flex items-center gap-1.5 text-muted-foreground transition-colors';
+        if (dot) dot.className = 'size-1.5 rounded-full bg-muted-foreground/50';
+    }
+}
+
+function validateUserPasswordRules(pwd) {
+    const hasLen     = pwd.length >= 8;
+    const hasUpper   = /[A-Z]/.test(pwd);
+    const hasLower   = /[a-z]/.test(pwd);
+    const hasDigit   = /[0-9]/.test(pwd);
+    const hasSpecial = /[^a-zA-Z0-9]/.test(pwd);
+
+    updateRuleIndicator('rule-len', hasLen);
+    updateRuleIndicator('rule-upper', hasUpper);
+    updateRuleIndicator('rule-lower', hasLower);
+    updateRuleIndicator('rule-digit', hasDigit);
+    updateRuleIndicator('rule-special', hasSpecial);
+
+    validateUserPasswordMatch();
+}
+
+function validateUserPasswordMatch() {
+    const pwd = document.getElementById('newUserPassword') ? document.getElementById('newUserPassword').value : '';
+    const confirmInput = document.getElementById('newUserPasswordConfirm');
+    const msgEl = document.getElementById('passwordMatchMessage');
+    if (!confirmInput || !msgEl) return;
+
+    const confirmVal = confirmInput.value;
+    if (!confirmVal) {
+        msgEl.className = 'text-[11px] mt-1 hidden';
+        msgEl.textContent = '';
+        return;
+    }
+
+    msgEl.classList.remove('hidden');
+    if (pwd === confirmVal) {
+        msgEl.className = 'text-[11px] mt-1 text-emerald-600 font-medium flex items-center gap-1';
+        msgEl.innerHTML = '<i data-lucide="check" class="size-3"></i> <span>Password cocok</span>';
+    } else {
+        msgEl.className = 'text-[11px] mt-1 text-rose-600 font-medium flex items-center gap-1';
+        msgEl.innerHTML = '<i data-lucide="alert-circle" class="size-3"></i> <span>Konfirmasi password belum cocok</span>';
+    }
+    if (window.lucide) window.lucide.createIcons();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     if (window.ModalUtils) {
         window.ModalUtils.register('newUserModal', { onClose: closeNewUserModal });
         window.ModalUtils.register('deleteUserModal', { onClose: closeDeleteUserModal });
         window.ModalUtils.register('permissionModal', { onClose: closePermissionModal });
+    }
+
+    const newUserForm = document.getElementById('newUserForm');
+    if (newUserForm) {
+        newUserForm.addEventListener('submit', (e) => {
+            const pwd = document.getElementById('newUserPassword') ? document.getElementById('newUserPassword').value : '';
+            const confirmVal = document.getElementById('newUserPasswordConfirm') ? document.getElementById('newUserPasswordConfirm').value : '';
+
+            const hasLen     = pwd.length >= 8;
+            const hasUpper   = /[A-Z]/.test(pwd);
+            const hasLower   = /[a-z]/.test(pwd);
+            const hasDigit   = /[0-9]/.test(pwd);
+            const hasSpecial = /[^a-zA-Z0-9]/.test(pwd);
+
+            if (!hasLen || !hasUpper || !hasLower || !hasDigit || !hasSpecial) {
+                e.preventDefault();
+                alert('Password belum memenuhi kriteria keamanan: wajib minimal 8 karakter dengan huruf besar (A-Z), huruf kecil (a-z), angka (0-9), dan simbol khusus.');
+                return false;
+            }
+
+            if (pwd !== confirmVal) {
+                e.preventDefault();
+                alert('Konfirmasi password tidak cocok dengan password yang dimasukkan.');
+                return false;
+            }
+        });
     }
 });
 </script>

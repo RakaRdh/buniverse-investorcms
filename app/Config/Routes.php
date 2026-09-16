@@ -120,6 +120,7 @@ $routes->get('/member/delete/(:num)', 'Member::delete/$1', ['filter' => 'role:ma
 // User & Role Management (Master, Admin)
 $routes->get('/user', 'User::index', ['filter' => 'role:master,admin']);
 $routes->post('/user/save', 'User::save', ['filter' => 'role:master,admin']);
+$routes->post('/user/update/(:num)', 'User::update/$1', ['filter' => 'role:master,admin']);
 $routes->get('/user/delete/(:num)', 'User::delete/$1', ['filter' => 'role:master,admin']);
 $routes->post('/user/toggle-status/(:num)', 'User::toggleStatus/$1', ['filter' => 'role:master,admin']);
 $routes->get('/user/permissions/(:num)', 'User::getPermissions/$1', ['filter' => 'role:master,admin']);

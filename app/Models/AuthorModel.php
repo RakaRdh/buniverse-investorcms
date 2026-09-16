@@ -38,20 +38,23 @@ class AuthorModel extends Model
 
     /**
      * Find author or create new record if non-existent
+     * @param string $name Nama penulis
+     * @param bool $isInternal Jika true, format internal newsroom diberi akhiran '*)' sesuai konvensi legacy
      */
-    public function findOrCreate(string $name): int
+    public function findOrCreate(string $name, bool $isInternal = true): int
     {
         $name = trim($name);
         if (empty($name)) {
             $name = 'Redaksi Investor';
         }
 
-        // Clean name for slug, and format name with *)
+        // Clean name for slug, and format name with *) if internal
         $cleanName = trim(rtrim(trim($name), '*)'));
-        $formattedName = !empty($cleanName) ? $cleanName . '*)' : 'Redaksi Investor*)';
+        $formattedName = $isInternal ? (!empty($cleanName) ? $cleanName . '*)' : 'Redaksi Investor*)') : $cleanName;
 
         $row = $this->where('authorName', $formattedName)
             ->orWhere('authorName', $name)
+            ->orWhere('authorName', $cleanName)
             ->first();
         if ($row) {
             return (int)$row['authorID'];

@@ -92,8 +92,8 @@ class Kanal extends BaseController
         $name = trim($this->request->getPost('name') ?? '');
         if (!empty($name)) {
             $this->categoryModel->insert([
-                'categoryName' => $name,
-                'label'        => url_title($name, '-', true),
+                'categoryName' => url_title($name, '-', true),
+                'label'        => $name,
                 'parent'       => null,
                 'status'       => 1,
                 'num'          => $this->categoryModel->countAllResults() + 1,
@@ -112,8 +112,8 @@ class Kanal extends BaseController
 
         if (!empty($name) && $parentId > 0) {
             $this->categoryModel->insert([
-                'categoryName' => $name,
-                'label'        => url_title($name, '-', true),
+                'categoryName' => url_title($name, '-', true),
+                'label'        => $name,
                 'parent'       => $parentId,
                 'status'       => 1,
                 'num'          => 1,

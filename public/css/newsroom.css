@@ -473,3 +473,9 @@ body.preload *::after {
   -webkit-animation-duration: 0s !important;
 }
 
+/* Modal Open Scroll Lock: Prevent background page from scrolling */
+body.modal-open {
+  overflow: hidden !important;
+  touch-action: none;
+}
+

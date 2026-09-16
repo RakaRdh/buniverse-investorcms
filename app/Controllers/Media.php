@@ -108,11 +108,12 @@ class Media extends BaseController
 
         $mediaTitle = $this->request->getPost('title') ?? 'Media Item';
         $caption = $this->request->getPost('caption') ?? '';
+        $description = $this->request->getPost('description') ?: $caption;
 
         $this->mediaModel->insert([
             'mediaTitle'  => $mediaTitle,
             'caption'     => $caption,
-            'description' => $caption,
+            'description' => $description,
             'filename'    => $imagePath,
             'source'      => $this->request->getPost('source') ?: 'Investor.id / Riset',
             'author'      => $username,
@@ -134,11 +135,12 @@ class Media extends BaseController
     {
         $mediaTitle = $this->request->getPost('title');
         $caption = $this->request->getPost('caption');
+        $description = $this->request->getPost('description') ?: $caption;
 
         $updateData = [
             'mediaTitle'  => $mediaTitle,
             'caption'     => $caption,
-            'description' => $caption,
+            'description' => $description,
             'source'      => $this->request->getPost('source') ?: 'Investor.id / Riset',
         ];
 

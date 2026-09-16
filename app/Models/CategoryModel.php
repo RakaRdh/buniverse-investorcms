@@ -25,8 +25,8 @@ class CategoryModel extends Model
         $parents = $this->db->table('category c')
             ->select('
                 c.categoryID AS id,
-                c.categoryName AS name,
-                c.label AS slug,
+                c.label AS name,
+                c.categoryName AS slug,
                 c.status AS status_code,
                 c.num AS numeric_val,
                 COUNT(DISTINCT ncl.articleID) AS article_count,
@@ -43,8 +43,8 @@ class CategoryModel extends Model
             $p['sub_kanals'] = $this->db->table('category c')
                 ->select('
                     c.categoryID AS id,
-                    c.categoryName AS name,
-                    c.label AS slug,
+                    c.label AS name,
+                    c.categoryName AS slug,
                     c.status AS status_code,
                     COUNT(DISTINCT ncl.articleID) AS article_count,
                     SUM(COALESCE(n.viewed, 0)) AS total_views
@@ -69,10 +69,10 @@ class CategoryModel extends Model
         return $this->db->table('category sub')
             ->select('
                 sub.categoryID AS id,
-                sub.categoryName AS name,
-                sub.label AS slug,
-                parent.categoryName AS parent_name,
-                parent.label AS parent_slug,
+                sub.label AS name,
+                sub.categoryName AS slug,
+                parent.label AS parent_name,
+                parent.categoryName AS parent_slug,
                 COUNT(DISTINCT ncl.articleID) AS article_count,
                 SUM(COALESCE(n.viewed, 0)) AS total_views
             ')
