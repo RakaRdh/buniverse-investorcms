@@ -296,10 +296,13 @@
         <p class="text-xs text-muted-foreground leading-relaxed">
             Apakah Anda yakin ingin menghapus akun pengguna <strong id="deleteUserName" class="text-foreground"></strong>? Tindakan ini tidak dapat dibatalkan.
         </p>
-        <div class="flex justify-end gap-2 pt-2 border-t border-border">
-            <button type="button" onclick="closeDeleteUserModal()" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
-            <a id="confirmDeleteUserBtn" href="#" class="rounded-md bg-destructive px-4 py-2 text-xs font-bold text-destructive-foreground hover:bg-destructive/90">Hapus Akun</a>
-        </div>
+        <form id="deleteUserForm" method="post" action="">
+            <?= csrf_field() ?>
+            <div class="flex justify-end gap-2 pt-2 border-t border-border">
+                <button type="button" onclick="closeDeleteUserModal()" class="rounded-md border border-input bg-background px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">Batal</button>
+                <button type="submit" id="confirmDeleteUserBtn" class="rounded-md bg-destructive px-4 py-2 text-xs font-bold text-destructive-foreground hover:bg-destructive/90">Hapus Akun</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -452,10 +455,10 @@ function closeNewUserModal() {
 function openDeleteUserModal(userId, userName) {
     const modal = document.getElementById('deleteUserModal');
     const nameSpan = document.getElementById('deleteUserName');
-    const confirmBtn = document.getElementById('confirmDeleteUserBtn');
-    if (modal && nameSpan && confirmBtn) {
+    const deleteForm = document.getElementById('deleteUserForm');
+    if (modal && nameSpan && deleteForm) {
         nameSpan.textContent = userName;
-        confirmBtn.href = '<?= base_url('user/delete/') ?>/' + userId;
+        deleteForm.action = '<?= base_url('user/delete/') ?>/' + userId;
         modal.style.display = 'flex';
     }
 }

@@ -644,10 +644,31 @@ PROMPT;
 
     protected function saveLocalImage(string $imageUrl): ?string
     {
+        // 1. Validasi skema URL (hanya http dan https)
+        $parsed = parse_url($imageUrl);
+        if (!$parsed || empty($parsed['host']) || !in_array(strtolower($parsed['scheme'] ?? ''), ['http', 'https'])) {
+            return null;
+        }
+
+        $host = strtolower($parsed['host']);
+
+        // 2. Proteksi SSRF (SEC-07): Tolak loopback, link-local metadata cloud, dan private IP range (RFC 1918)
+        if (in_array($host, ['localhost', '127.0.0.1', '::1', '0.0.0.0', '169.254.169.254'])) {
+            return null;
+        }
+
+        $resolvedIp = gethostbyname($host);
+        if ($resolvedIp !== $host) {
+            if (filter_var($resolvedIp, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                return null;
+            }
+        }
+
         $ch = curl_init($imageUrl);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 3,
             CURLOPT_TIMEOUT        => 15,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',

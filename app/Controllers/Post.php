@@ -520,33 +520,6 @@ class Post extends BaseController
         return redirect()->to('/post')->with('success', 'Artikel berhasil dipindahkan ke status Deleted (Soft Delete).');
     }
 
-    public function bulkAction()
-    {
-        $action = $this->request->getPost('action');
-        $selectedIds = $this->request->getPost('selected_ids');
-        $userId = (int)(session('user_id') ?: 0);
-
-        if (!empty($selectedIds)) {
-            $ids = is_array($selectedIds) ? $selectedIds : explode(',', $selectedIds);
-            $ids = array_map('intval', array_filter($ids));
-
-            if ($action === 'publish') {
-                $this->articleModel->whereIn('articleID', $ids)->set(['status' => 'Publish'])->update();
-                return redirect()->to('/post')->with('success', count($ids) . ' articles marked as Publish.');
-            } elseif ($action === 'draft') {
-                $this->articleModel->whereIn('articleID', $ids)->set(['status' => 'Draft'])->update();
-                return redirect()->to('/post')->with('success', count($ids) . ' articles moved to Draft.');
-            } elseif ($action === 'delete') {
-                foreach ($ids as $delId) {
-                    $this->articleModel->deleteArticle($delId, $userId);
-                }
-                return redirect()->to('/post')->with('success', count($ids) . ' articles deleted.');
-            }
-        }
-
-        return redirect()->to('/post');
-    }
-
     public function export()
     {
         $posts = $this->articleModel->getArticlesWithRelations([], 1, 1000)['data'];

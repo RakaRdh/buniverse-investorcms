@@ -106,11 +106,15 @@ class Headline extends BaseController
             return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Artikel ini sudah aktif berada di posisi #{$existing['num']} antrean headline {$targetCategory}.");
         }
 
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         $currentHeadlines = $this->headlineModel->getActiveHeadlines($targetCategory);
         $totalActive = count($currentHeadlines);
 
         // 2. Strict Quota: Max 5 articles per category
         if ($totalActive >= 5) {
+            $db->transRollback();
             return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('error', "Batas maksimal 5 artikel headline untuk kategori '{$targetCategory}' sudah tercapai. Silakan hapus salah satu headline terlebih dahulu.");
         }
 
@@ -131,6 +135,7 @@ class Headline extends BaseController
 
             $this->headlineModel->logHistory($articleId, $targetCategory, 'ADD', $targetPosition, $currentUser, "Mengaktifkan kembali artikel ke headline posisi #{$targetPosition}");
 
+            $db->transComplete();
             return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil ditambahkan ke antrean headline {$targetCategory} di posisi #{$targetPosition}!");
         }
 
@@ -146,6 +151,7 @@ class Headline extends BaseController
 
         $this->headlineModel->logHistory($articleId, $targetCategory, 'ADD', $targetPosition, $currentUser, "Menambahkan artikel ke headline posisi #{$targetPosition}");
 
+        $db->transComplete();
         return redirect()->to('/headline?target_category=' . urlencode($targetCategory))->with('success', "Artikel berhasil ditambahkan ke antrean headline {$targetCategory} di posisi #{$targetPosition}!");
     }
 

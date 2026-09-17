@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\ArticleModel;
 use App\Models\ChartModel;
+use App\Libraries\HtmlSanitizer;
 
 class PostPreview extends BaseController
 {
@@ -89,7 +90,8 @@ class PostPreview extends BaseController
         }
         $points = array_values(array_filter($points, fn($pt) => trim($pt) !== ''));
 
-        $content = $this->request->getPost('content') ?: '<p>Konten naskah berita masih kosong.</p>';
+        $rawContent = $this->request->getPost('content') ?: '<p>Konten naskah berita masih kosong.</p>';
+        $content = HtmlSanitizer::clean($rawContent);
         $rawParsedContent = $this->parseEmbeds($content);
 
         // Page break pattern support (Multi-page article splitting)

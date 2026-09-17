@@ -204,12 +204,18 @@ class Auth extends BaseController
             'password_expired' => $user['passwordExpired'] ?? null,
         ]);
 
-        // Standar legacy: set cookie cmsinvestorid berbasis salt unik user (24 jam)
-        if (!empty($user['salt'])) {
+        // Set cookie remember-me yang ditandatangani HMAC aman (24 jam)
+        $userId = (int)($user['userID'] ?? $user['id']);
+        if (!empty($user['salt']) && $userId > 0) {
+            $expiry = time() + 86400; // 24 jam
+            $rawPayload = $userId . '|' . $expiry;
+            $signature = hash_hmac('sha256', $rawPayload, AdminModel::getPepper());
+            $token = base64_encode($rawPayload . '|' . $signature);
+
             $response = service('response');
             $response->setCookie([
                 'name'     => 'cmsinvestorid',
-                'value'    => $user['salt'],
+                'value'    => $token,
                 'expire'   => 86400, // 24 jam
                 'path'     => '/',
                 'httponly' => true,
@@ -228,30 +234,28 @@ class Auth extends BaseController
         $name = $parts[0];
         $domain = $parts[1];
         $len = strlen($name);
-        if ($len <= 2) {
-            return substr($name, 0, 1) . '***@' . $domain;
-        }
-        $visible = (int)ceil($len / 3);
-        return substr($name, 0, $visible) . str_repeat('*', $len - $visible) . '@' . $domain;
+        $visibleLen = min(2, $len);
+        $masked = substr($name, 0, $visibleLen) . str_repeat('*', max(3, $len - $visibleLen));
+        return $masked . '@' . $domain;
     }
 
     /**
-     * Helper: Mengirim email kode autentifikasi 2FA via Brevo SMTP
+     * Mengirimkan email 6-digit verification code via Brevo SMTP
      */
     protected function sendAuthCodeEmail(array $user, int $authCode): bool
     {
         try {
             $email = \Config\Services::email();
             $email->setTo($user['email']);
-            $email->setSubject('Kode Autentifikasi - CMS Investor');
+            $email->setSubject('Kode Autentifikasi CMS Investor.id - ' . $authCode);
 
-            $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">';
+            $body  = '<div style="font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">';
             $body .= '<div style="margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;">';
             $body .= '<h2 style="color: #1A365D; margin: 0; font-size: 20px; font-weight: 700;">CMS Investor.id</h2>';
-            $body .= '<p style="color: #64748B; font-size: 12px; margin: 4px 0 0 0;">Two-Factor Authentication (2FA)</p>';
+            $body .= '<p style="color: #64748B; font-size: 12px; margin: 4px 0 0 0;">Verifikasi Masuk Redaksi</p>';
             $body .= '</div>';
-            $body .= '<p style="font-size: 14px; line-height: 1.5;">Halo, <strong>' . esc($user['name'] ?: $user['username']) . '</strong>,</p>';
-            $body .= '<p style="font-size: 14px; line-height: 1.5; color: #334155;">Berikut adalah kode autentifikasi 6-digit untuk melanjutkan proses login ke CMS Investor:</p>';
+            $body .= '<p style="font-size: 14px; line-height: 1.5;">Halo <strong>' . esc($user['name']) . '</strong>,</p>';
+            $body .= '<p style="font-size: 14px; line-height: 1.5; color: #475569;">Gunakan 6-digit kode autentifikasi berikut untuk menyelesaikan proses masuk Anda ke CMS Investor.id:</p>';
             $body .= '<div style="text-align: center; margin: 24px 0;">';
             $body .= '<span style="display: inline-block; font-size: 32px; font-weight: 800; font-family: monospace; letter-spacing: 8px; padding: 14px 32px; background-color: #EBF8FF; color: #2B6CB0; border-radius: 8px; border: 1.5px dashed #2B6CB0;">' . $authCode . '</span>';
             $body .= '</div>';
@@ -264,7 +268,7 @@ class Auth extends BaseController
             $email->setMessage($body);
             $sent = $email->send();
             if (!$sent) {
-                log_message('error', 'Gagal mengirim email 2FA via Brevo: ' . $email->printDebugger(['headers', 'subject', 'body']));
+                log_message('error', 'Gagal mengirim email 2FA via Brevo: ' . $email->printDebugger(['headers', 'subject']));
             }
             return $sent;
         } catch (\Throwable $e) {
@@ -350,6 +354,14 @@ class Auth extends BaseController
             $identifier = trim((string)$this->request->getPost('username'));
             $newPassword = trim((string)$this->request->getPost('new_password'));
             $confirmPassword = trim((string)$this->request->getPost('confirm_password'));
+
+            // Rate limiting brute-force protection (SEC-10): Maksimal 5 percobaan per IP per 15 menit
+            $throttler = service('throttler');
+            $throttleKey = 'pwd_reset_' . md5($this->request->getIPAddress() . '_' . strtolower($identifier));
+            if ($throttler->check($throttleKey, 5, 900) === false) {
+                return redirect()->to('/auth/reset-password?token=' . urlencode($token) . '&user=' . urlencode($identifier))
+                    ->with('error', 'Terlalu banyak percobaan reset kata sandi yang gagal. Silakan coba kembali setelah 15 menit.');
+            }
 
             if (empty($token) || empty($identifier) || empty($newPassword)) {
                 return redirect()->to('/auth/reset-password?token=' . urlencode($token) . '&user=' . urlencode($identifier))
@@ -468,7 +480,7 @@ class Auth extends BaseController
             $email->setMessage($body);
             $sent = $email->send();
             if (!$sent) {
-                log_message('error', 'Gagal mengirim email reset via Brevo: ' . $email->printDebugger(['headers', 'subject', 'body']));
+                log_message('error', 'Gagal mengirim email reset via Brevo: ' . $email->printDebugger(['headers', 'subject']));
             }
             return $sent;
         } catch (\Throwable $e) {

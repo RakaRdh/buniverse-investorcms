@@ -96,7 +96,7 @@ class CmsControllersTest extends CIUnitTestCase
             ->execute('index');
 
         $this->assertTrue($result->isOK());
-        $this->assertStringContainsString('Headline Management', $result->response()->getBody());
+        $this->assertStringContainsString('Headline &amp; Cover Curation', $result->response()->getBody());
     }
 
     public function testMediaIndexAndNew(): void

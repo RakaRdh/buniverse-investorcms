@@ -12,11 +12,33 @@ class AuthGuard implements FilterInterface
     {
         $session = session();
         if (!$session->has('user_id')) {
-            // Cek cookie remember me cmsinvestorid sesuai standar legacy
-            $cookieSalt = $request->getCookie('cmsinvestorid');
-            if (!empty($cookieSalt)) {
+            // Cek cookie remember me cmsinvestorid (HMAC signed token dengan fallback legacy salt)
+            $cookieVal = $request->getCookie('cmsinvestorid');
+            if (!empty($cookieVal)) {
                 $adminModel = new \App\Models\AdminModel();
-                $user = $adminModel->where('active', 1)->where('salt', $cookieSalt)->first();
+                $user = null;
+
+                // 1. Coba decode HMAC signed token: base64(userId|expiry|sig)
+                $decoded = base64_decode($cookieVal, true);
+                if ($decoded && substr_count($decoded, '|') >= 2) {
+                    $parts = explode('|', $decoded);
+                    if (count($parts) === 3) {
+                        [$cUserId, $cExpiry, $cSig] = $parts;
+                        if ((int)$cExpiry >= time()) {
+                            $rawPayload = $cUserId . '|' . $cExpiry;
+                            $expectedSig = hash_hmac('sha256', $rawPayload, \App\Models\AdminModel::getPepper());
+                            if (hash_equals($expectedSig, $cSig)) {
+                                $user = $adminModel->where('active', 1)->find((int)$cUserId);
+                            }
+                        }
+                    }
+                }
+
+                // 2. Fallback legacy jika user lama masih memiliki cookie salt mentah
+                if (!$user) {
+                    $user = $adminModel->where('active', 1)->where('salt', $cookieVal)->first();
+                }
+
                 if ($user) {
                     $displayName = $user['name'] ?? '';
                     $nameParts = explode(' ', $displayName);
@@ -37,6 +59,13 @@ class AuthGuard implements FilterInterface
         }
 
         if (!$session->has('user_id')) {
+            $uri = uri_string();
+            if ($request->isAJAX() || strpos($uri, 'api/') === 0) {
+                return service('response')->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Unauthorized: Sesi login diperlukan untuk mengakses layanan ini.'
+                ])->setStatusCode(401);
+            }
             return redirect()->to('/login')->with('error', 'Silakan masuk terlebih dahulu untuk mengakses CMS.');
         }
 

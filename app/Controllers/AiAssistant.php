@@ -64,7 +64,7 @@ class AiAssistant extends BaseController
 
             return $this->response->setJSON([
                 'status' => 'error',
-                'data'   => 'Gagal menghasilkan judul: ' . $e->getMessage()
+                'data'   => (ENVIRONMENT === 'development') ? 'Gagal menghasilkan judul: ' . $e->getMessage() : 'Layanan AI sedang sibuk. Silakan coba beberapa saat lagi.'
             ])->setStatusCode(500);
         }
     }
@@ -121,7 +121,7 @@ class AiAssistant extends BaseController
 
             return $this->response->setJSON([
                 'status' => 'error',
-                'data'   => 'Gagal merangkum ringkasan: ' . $e->getMessage()
+                'data'   => (ENVIRONMENT === 'development') ? 'Gagal merangkum ringkasan: ' . $e->getMessage() : 'Layanan AI sedang sibuk. Silakan coba beberapa saat lagi.'
             ])->setStatusCode(500);
         }
     }
@@ -223,7 +223,7 @@ class AiAssistant extends BaseController
 
             return $this->response->setJSON([
                 'status' => 'error',
-                'data'   => 'Gagal mengekstrak tags: ' . $e->getMessage()
+                'data'   => (ENVIRONMENT === 'development') ? 'Gagal mengekstrak tags: ' . $e->getMessage() : 'Layanan AI sedang sibuk. Silakan coba beberapa saat lagi.'
             ])->setStatusCode(500);
         }
     }
@@ -279,7 +279,7 @@ class AiAssistant extends BaseController
 
             return $this->response->setJSON([
                 'status' => 'error',
-                'data'   => 'Gagal menghasilkan poin penting: ' . $e->getMessage()
+                'data'   => (ENVIRONMENT === 'development') ? 'Gagal menghasilkan poin penting: ' . $e->getMessage() : 'Layanan AI sedang sibuk. Silakan coba beberapa saat lagi.'
             ])->setStatusCode(500);
         }
     }
@@ -336,7 +336,7 @@ class AiAssistant extends BaseController
 
             return $this->response->setJSON([
                 'status' => 'error',
-                'data'   => 'Gagal melakukan scraping artikel: ' . $e->getMessage()
+                'data'   => (ENVIRONMENT === 'development') ? 'Gagal melakukan scraping artikel: ' . $e->getMessage() : 'Layanan scraping sedang sibuk atau URL target tidak dapat dijangkau.'
             ])->setStatusCode(500);
         }
     }

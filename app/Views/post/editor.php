@@ -161,38 +161,6 @@
                         <span>Preview Artikel</span>
                     </button>
                 </div>
-
-                <?php if ($isEdit && !empty($revisions) && is_array($revisions)): ?>
-                <!-- Riwayat Perubahan Naskah (Replika Legacy adm_articleform.tpl) -->
-                <div class="pt-3 border-t border-border space-y-2">
-                    <div class="flex items-center justify-between">
-                        <label class="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                            <i data-lucide="history" class="size-3.5 text-primary"></i>
-                            <span>Riwayat Perubahan</span>
-                        </label>
-                        <span class="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                            <?= count($revisions) ?> log
-                        </span>
-                    </div>
-                    <div class="rounded-lg border border-border bg-background p-2 max-h-52 overflow-y-auto custom-sidebar-scroll divide-y divide-border/60">
-                        <?php foreach ($revisions as $rev): ?>
-                            <div class="py-2 first:pt-1 last:pb-1 flex items-start justify-between gap-2 group">
-                                <div class="min-w-0 flex-1">
-                                    <div class="text-[11px] font-semibold text-foreground truncate">
-                                        <?= esc($rev['editor_name'] ?: ($rev['editor_username'] ?: 'Editor')) ?>
-                                    </div>
-                                    <div class="text-[10px] text-muted-foreground font-mono">
-                                        <?= date('d/m/y H:i', strtotime($rev['timestamp'])) ?>
-                                    </div>
-                                </div>
-                                <button type="button" onclick="openRevisionDiffModal(<?= (int)$rev['id'] ?>)" class="inline-flex shrink-0 items-center gap-1 rounded bg-[#2B6CB0]/10 hover:bg-[#2B6CB0] text-[#2B6CB0] hover:text-white px-2 py-1 text-[10px] font-bold transition-colors shadow-2xs" title="Lihat komparasi Sebelum vs Sesudah">
-                                    <span>Diff</span>
-                                </button>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
             </div>
         </div>
         
@@ -1238,83 +1206,6 @@
     </div>
 </div>
 
-<!-- Modal 6: In-Editor Riwayat Revisi Diff (Replika Legacy adm_articleform.tpl articlehistory) -->
-<div id="revisionDiffModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.75); backdrop-filter: blur(4px); z-index: 1010; align-items: center; justify-content: center; padding: 1.25rem;">
-    <div class="surface-card w-full max-w-4xl max-h-[90vh] flex flex-col p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150 rounded-xl border border-border">
-        <div class="flex items-center justify-between border-b border-border pb-3">
-            <div>
-                <h3 class="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                    <i data-lucide="git-compare" class="size-4 text-primary"></i>
-                    <span>Komparasi Revisi Naskah (Before vs After)</span>
-                </h3>
-                <p id="revisionDiffMeta" class="text-[11px] text-muted-foreground font-mono mt-0.5">Memuat riwayat perubahan...</p>
-            </div>
-            <button type="button" onclick="closeRevisionDiffModal()" class="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                <i data-lucide="x" class="size-4"></i>
-            </button>
-        </div>
-
-        <div id="revisionDiffBody" class="flex-1 overflow-y-auto space-y-4 pr-1">
-            <!-- Loading indicator -->
-            <div id="revisionDiffLoading" class="py-12 text-center text-muted-foreground text-xs">
-                <div class="inline-block animate-spin size-5 border-2 border-primary border-t-transparent rounded-full mb-2"></div>
-                <div>Memuat perbandingan naskah...</div>
-            </div>
-
-            <!-- Content Container -->
-            <div id="revisionDiffContent" class="hidden space-y-4">
-                <!-- Status Diff -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 rounded-lg bg-muted/40 border border-border text-xs">
-                    <div>
-                        <span class="text-muted-foreground font-medium">Status Sebelum:</span>
-                        <span id="diffStatusPrev" class="font-bold text-foreground ml-1">-</span>
-                    </div>
-                    <div>
-                        <span class="text-muted-foreground font-medium">Status Sesudah:</span>
-                        <span id="diffStatusAfter" class="font-bold text-primary ml-1">-</span>
-                    </div>
-                </div>
-
-                <!-- Side by Side Title Diff -->
-                <div>
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Perubahan Judul (Headline)</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="p-3 rounded-lg border border-rose-500/30 bg-rose-500/5 text-xs">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400 mb-1">Sebelumnya (Before)</div>
-                            <div id="diffTitlePrev" class="font-medium text-foreground leading-relaxed break-words"></div>
-                        </div>
-                        <div class="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 text-xs">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-1">Sesudahnya (After)</div>
-                            <div id="diffTitleAfter" class="font-medium text-foreground leading-relaxed break-words"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Side by Side Body Content Diff -->
-                <div>
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Perubahan Body Artikel</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="p-3 rounded-lg border border-border bg-card text-xs max-h-72 overflow-y-auto custom-sidebar-scroll">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Isi Sebelum Revisi</div>
-                            <div id="diffContentPrev" class="prose prose-xs dark:prose-invert max-w-none break-words text-[11px] leading-relaxed"></div>
-                        </div>
-                        <div class="p-3 rounded-lg border border-border bg-card text-xs max-h-72 overflow-y-auto custom-sidebar-scroll">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-primary mb-1">Isi Setelah Revisi</div>
-                            <div id="diffContentAfter" class="prose prose-xs dark:prose-invert max-w-none break-words text-[11px] leading-relaxed"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex items-center justify-end pt-3 border-t border-border">
-            <button type="button" onclick="closeRevisionDiffModal()" class="rounded-md bg-[#2B6CB0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#2B6CB0]/90 transition-colors shadow-2xs">
-                Tutup Komparasi
-            </button>
-        </div>
-    </div>
-</div>
-
 <!-- Modal Pop-up Quick SEO Scoring di Editor (Dedicated Root Modal Overlay) -->
 <div id="editorSeoModal" style="display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.8); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 1.25rem;" onclick="if(event.target === this) closeEditorSeoModal()">
     <div class="surface-card w-full max-w-md flex flex-col p-6 shadow-2xl space-y-4 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-150">
@@ -1535,10 +1426,20 @@ async function openEditorSeoModal() {
             throw new Error('Harap simpan naskah sebagai draft terlebih dahulu sebelum menjalankan scoring.');
         }
 
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="csrf-header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+        const headers = { 
+            'Content-Type': 'application/json', 
+            'X-Requested-With': 'XMLHttpRequest' 
+        };
+        if (csrfToken) {
+            headers[csrfHeader] = csrfToken;
+        }
+
         // Send scoring calculation request with real-time editor content
-        const calcRes = await fetch('<?= base_url('scoring/calculate') ?>', {
+        const calcRes = await fetch('<?= base_url('api/scoring/calculate') ?>', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            headers: headers,
             body: JSON.stringify({
                 article_id: articleId,
                 headline: title,

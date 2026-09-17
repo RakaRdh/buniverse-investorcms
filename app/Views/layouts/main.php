@@ -18,6 +18,10 @@
     <!-- Static Compiled Tailwind CSS (Optimized & Prebuilt) -->
     <link rel="stylesheet" href="/css/tailwind.min.css">
 
+    <!-- CSRF Tokens for Asynchronous Actions -->
+    <meta name="csrf-token" content="<?= csrf_hash() ?>">
+    <meta name="csrf-header" content="<?= csrf_header() ?>">
+
     <!-- Icons: Lucide (Pinned & Minified) -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
 

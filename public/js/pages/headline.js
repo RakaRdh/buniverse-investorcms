@@ -184,12 +184,19 @@ function initHeadlineOrderSave() {
         `;
 
         try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="csrf-header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            if (csrfToken) {
+                headers[csrfHeader] = csrfToken;
+            }
+
             const res = await fetch('/headline/reorder', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
+                headers: headers,
                 body: JSON.stringify({
                     category: targetCategory,
                     order: orderedIds

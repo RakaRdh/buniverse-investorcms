@@ -70,12 +70,20 @@ class AdminModel extends Model
     }
 
     /**
+     * Ambil secret pepper legacy dari environment variable (.env), fallback ke legacy constant
+     */
+    public static function getPepper(): string
+    {
+        return (string)env('AUTH_LEGACY_PEPPER', self::LEGACY_PEPPER);
+    }
+
+    /**
      * Encode password sesuai legacy:
-     * hash('SHA512', $salt . "B3!21t454t03" . $password . $salt)
+     * hash('SHA512', $salt . pepper . $password . $salt)
      */
     public static function encodePassword(string $password, string $salt): string
     {
-        return hash('sha512', $salt . self::LEGACY_PEPPER . $password . $salt);
+        return hash('sha512', $salt . self::getPepper() . $password . $salt);
     }
 
     /**

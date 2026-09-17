@@ -49,10 +49,17 @@ class Member extends BaseController
     public function save()
     {
         $id = $this->request->getPost('id');
+        $fullName = trim((string)($this->request->getPost('full_name') ?? ''));
+        $email = trim((string)($this->request->getPost('email') ?? ''));
+
+        if (empty($fullName) || empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return redirect()->to('/member')->with('error', 'Nama lengkap dan alamat email yang valid wajib diisi.');
+        }
+
         $data = [
-            'full_name' => $this->request->getPost('full_name'),
-            'email'     => $this->request->getPost('email'),
-            'company'   => $this->request->getPost('company'),
+            'full_name' => $fullName,
+            'email'     => $email,
+            'company'   => trim((string)($this->request->getPost('company') ?? '')),
             'status'    => $this->request->getPost('status') ?? 'Active',
         ];
 
@@ -65,7 +72,15 @@ class Member extends BaseController
 
     public function delete($id)
     {
-        $this->memberModel->deleteMember((int)$id);
+        $sessionUser = (int)(session()->get('user_id') ?: 1);
+        $targetId = (int)$id;
+
+        try {
+            $activityLog = new \App\Models\ActivityLogModel();
+            $activityLog->logAction($sessionUser, 'MEMBER', 'DELETE', "Deleted member ID: {$targetId}");
+        } catch (\Throwable $e) {}
+
+        $this->memberModel->deleteMember($targetId);
         return redirect()->to('/member')->with('success', 'Member berhasil dihapus dari sistem.');
     }
 }

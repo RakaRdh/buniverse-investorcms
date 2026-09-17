@@ -56,6 +56,12 @@ class Cookie extends BaseConfig
      */
     public bool $secure = false;
 
+    public function __construct()
+    {
+        parent::__construct();
+        $this->secure = (bool)(env('cookie.secure', service('request')->isSecure()));
+    }
+
     /**
      * --------------------------------------------------------------------------
      * Cookie HTTPOnly

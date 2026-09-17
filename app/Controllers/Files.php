@@ -30,9 +30,13 @@ class Files extends BaseController
 
     public function upload()
     {
-        $name = $this->request->getPost('name');
-        $url = $this->request->getPost('url') ?: '/files/download/' . time();
-        $sessionUser = session()->get('user_id') ?: 1;
+        $name = trim((string)($this->request->getPost('name') ?? ''));
+        if (empty($name)) {
+            return redirect()->to('/files')->with('error', 'Nama berkas (title) wajib diisi.');
+        }
+
+        $url = trim((string)($this->request->getPost('url') ?? '')) ?: ('/files/download/' . time());
+        $sessionUser = (int)(session()->get('user_id') ?: 1);
 
         $this->fileModel->insert([
             'title'     => $name,
@@ -40,12 +44,26 @@ class Files extends BaseController
             'userID'    => $sessionUser,
         ]);
 
+        try {
+            $activityLog = new \App\Models\ActivityLogModel();
+            $activityLog->logAction($sessionUser, 'FILE', 'UPLOAD', "Registered file: {$name}");
+        } catch (\Throwable $e) {}
+
         return redirect()->to('/files')->with('success', 'File registered successfully in database.');
     }
 
     public function delete($id)
     {
-        $this->fileModel->delete((int)$id);
+        $sessionUser = (int)(session()->get('user_id') ?: 1);
+        $targetId = (int)$id;
+        $file = $this->fileModel->find($targetId);
+        if ($file) {
+            try {
+                $activityLog = new \App\Models\ActivityLogModel();
+                $activityLog->logAction($sessionUser, 'FILE', 'DELETE', "Deleted file: " . ($file['title'] ?? ('ID #' . $targetId)));
+            } catch (\Throwable $e) {}
+            $this->fileModel->delete($targetId);
+        }
         return redirect()->to('/files')->with('success', 'File deleted.');
     }
 }

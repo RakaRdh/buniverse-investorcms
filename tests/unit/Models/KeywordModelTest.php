@@ -18,7 +18,7 @@ final class KeywordModelTest extends CIUnitTestCase
     public function testSyncArticleKeywordsAndRetrieval(): void
     {
         $testArticleId = 999888;
-        $tags = ['IHSG Rekor', 'Saham Bluechip', 'Dividen'];
+        $tags = ['IHSG Rekor Unik', 'Saham Bluechip Unik', 'Dividen Saham Unik'];
 
         // 1. Sync keywords to article
         $this->keywordModel->syncArticleKeywords($testArticleId, $tags);
@@ -29,18 +29,18 @@ final class KeywordModelTest extends CIUnitTestCase
         $this->assertCount(3, $linked);
 
         $kwTexts = array_column($linked, 'keyword');
-        $this->assertContains('IHSG Rekor', $kwTexts);
-        $this->assertContains('Saham Bluechip', $kwTexts);
-        $this->assertContains('Dividen', $kwTexts);
+        $this->assertContains('IHSG Rekor Unik', $kwTexts);
+        $this->assertContains('Saham Bluechip Unik', $kwTexts);
+        $this->assertContains('Dividen Saham Unik', $kwTexts);
 
-        // 3. Sync with reduced set (remove 'Dividen')
-        $reduced = ['IHSG Rekor', 'Saham Bluechip'];
+        // 3. Sync with reduced set (remove 'Dividen Saham Unik')
+        $reduced = ['IHSG Rekor Unik', 'Saham Bluechip Unik'];
         $this->keywordModel->syncArticleKeywords($testArticleId, $reduced);
 
         $afterReduction = $this->keywordModel->getArticleKeywords($testArticleId);
         $this->assertCount(2, $afterReduction);
         $afterKwTexts = array_column($afterReduction, 'keyword');
-        $this->assertNotContains('Dividen', $afterKwTexts);
+        $this->assertNotContains('Dividen Saham Unik', $afterKwTexts);
 
         // Cleanup test data
         $db = \Config\Database::connect();

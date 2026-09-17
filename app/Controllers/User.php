@@ -543,30 +543,5 @@ class User extends BaseController
 
         return redirect()->to('/user')->with('success', "Akun '{$user['username']}' berhasil {$statusLabel}.");
     }
-
-    /**
-     * GET /api/user/check-email?email=xxx
-     * Replika legacy: checkemail.php (Ajax check email availability)
-     * Tabel: useradministrator (R)
-     */
-    public function checkEmail()
-    {
-        $email = trim($this->request->getGet('email') ?? '');
-        $excludeId = (int)($this->request->getGet('exclude_id') ?? 0);
-
-        if (empty($email)) {
-            return $this->response->setJSON(['exists' => false]);
-        }
-
-        $builder = $this->adminModel->where('email', $email);
-        if ($excludeId > 0) {
-            $builder->where('userID !=', $excludeId);
-        }
-        $exists = $builder->countAllResults() > 0;
-
-        return $this->response->setJSON([
-            'exists' => $exists,
-            'email'  => $email
-        ]);
-    }
 }
+

@@ -79,7 +79,7 @@ class DataComparator extends Controller
             'DSN'      => '',
             'hostname' => '127.0.0.1',
             'username' => env('database.default.username', 'root'),
-            'password' => env('database.default.password', 'rakaherdika15'),
+            'password' => env('database.default.password', ''),
             'database' => 'investor',
             'DBDriver' => 'MySQLi',
             'DBPrefix' => '',
@@ -99,6 +99,10 @@ class DataComparator extends Controller
      */
     public function sample(): ResponseInterface
     {
+        if (ENVIRONMENT === 'production') {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
         $request = service('request');
         $n = 3;
         $specificTable = null;
