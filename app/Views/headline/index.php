@@ -84,6 +84,7 @@
 <!-- MOBILE ONLY TOP SECTION: Curated Headline (Hanya Muncul di Mobile) -->
 <div class="block sm:hidden surface-card p-4 mb-6 border border-primary/30 shadow-sm bg-card">
     <form method="post" action="<?= base_url('headline/save') ?>" class="space-y-3.5">
+        <?= csrf_field() ?>
         <div class="flex items-center justify-between border-b border-border pb-2.5">
             <div class="flex items-center gap-2">
                 <i data-lucide="sparkles" class="size-4 text-primary"></i>
@@ -280,6 +281,7 @@
     <!-- Right Column: Dropdown Category & Target Headline Queue (Desktop View) -->
     <div class="space-y-4 hidden sm:block headline-sticky-sidebar">
         <form method="post" action="<?= base_url('headline/save') ?>" class="surface-card p-5 space-y-4">
+            <?= csrf_field() ?>
             <div>
                 <div class="flex items-center justify-between mb-1.5">
                     <label for="targetCategorySelect" class="block text-xs font-bold text-foreground">Pilih Kategori (Category)</label>
@@ -394,6 +396,7 @@
             <p id="addArticleTitle" class="text-xs font-medium text-foreground line-clamp-2"></p>
         </div>
         <form method="post" action="<?= base_url('headline/add') ?>" id="confirmAddForm">
+            <?= csrf_field() ?>
             <input type="hidden" name="article_id" id="addArticleIdInput" value="">
             <input type="hidden" name="target_category" value="<?= esc($targetCategory) ?>">
             <div class="flex justify-end gap-2 pt-2">

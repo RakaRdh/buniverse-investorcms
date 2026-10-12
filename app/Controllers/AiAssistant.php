@@ -312,6 +312,47 @@ class AiAssistant extends BaseController
             ]);
             $data['log_id'] = $logId;
 
+            // Auto-register aset gambar scrape ke tabel media database dengan watermark
+            $mediaId = 0;
+            if (!empty($data['thumbnail_url']) && $data['thumbnail_url'] !== '/img/investor_placeholder.jpg') {
+                try {
+                    $db = \Config\Database::connect();
+                    $parsedUrl = parse_url($url);
+                    $sourceHost = $parsedUrl['host'] ?? 'Web';
+                    $currentUser = session('user_name') ?: (session('user_username') ?: 'Redaksi');
+                    $currentUserId = (int)(session('user_id') ?: 1);
+
+                    $mediaFilename = $data['thumbnail_filename'] ?? ltrim(str_replace('/uploads/media/', '', $data['thumbnail_url']), '/');
+                    $mediaTitle = 'AI Scrape - ' . $sourceHost . ' (' . date('d M H:i') . ')';
+
+                    $db->table('media')->insert([
+                        'mediaTitle'  => $mediaTitle,
+                        'caption'     => $data['thumbnail_caption'] ?? '',
+                        'description' => $data['thumbnail_description'] ?? ($data['thumbnail_caption'] ?? ''),
+                        'filename'    => $mediaFilename,
+                        'source'      => $sourceHost . ' (AI Scraped)',
+                        'author'      => $currentUser . ' (AI Scrape)',
+                        'userID'      => $currentUserId,
+                        'timestamp'   => date('Y-m-d H:i:s'),
+                    ]);
+                    $mediaId = (int)$db->insertID();
+
+                    // Catat jejak audit editorlog
+                    try {
+                        $activityLog = new \App\Models\ActivityLogModel();
+                        $activityLog->logAction($currentUserId, 'insert', 'foto', [
+                            'mediaTitle' => $mediaTitle,
+                            'caption'    => $data['thumbnail_caption'] ?? '',
+                            'source_url' => $url,
+                        ]);
+                    } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                    log_message('error', 'Auto-register media for scrape failed: ' . $e->getMessage());
+                }
+            }
+
+            $data['media_id'] = $mediaId;
+
             return $this->response->setJSON([
                 'status' => 'success',
                 'data'   => $data

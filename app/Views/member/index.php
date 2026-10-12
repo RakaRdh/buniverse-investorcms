@@ -181,6 +181,7 @@
         </div>
 
         <form method="post" action="<?= base_url('member/save') ?>" class="space-y-3.5">
+            <?= csrf_field() ?>
             <input type="hidden" name="id" id="memberIdInput">
 
             <div>

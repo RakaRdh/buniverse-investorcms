@@ -79,6 +79,7 @@
             </button>
         </div>
         <form method="post" action="<?= base_url('kanal/master/save') ?>" class="space-y-4">
+            <?= csrf_field() ?>
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Nama Kanal</label>
                 <input type="text" name="name" required placeholder="Contoh: Lifestyle, Syariah, ESG" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">

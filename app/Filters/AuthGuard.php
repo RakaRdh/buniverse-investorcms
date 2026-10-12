@@ -40,20 +40,29 @@ class AuthGuard implements FilterInterface
                 }
 
                 if ($user) {
-                    $displayName = $user['name'] ?? '';
-                    $nameParts = explode(' ', $displayName);
-                    $initials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : ''));
+                    $now = new \DateTime();
+                    $nextVerify = !empty($user['nextVerify']) ? new \DateTime($user['nextVerify']) : null;
 
-                    $session->set([
-                        'user_id'          => (int)($user['userID'] ?? $user['id']),
-                        'user_name'        => $displayName,
-                        'user_email'       => $user['email'] ?? '',
-                        'user_role'        => $user['roleName'] ?? $user['role'] ?? 'administrator',
-                        'user_username'    => $user['username'] ?? '',
-                        'user_alias'       => $user['alias'] ?? '',
-                        'user_initials'    => $initials,
-                        'password_expired' => $user['passwordExpired'] ?? null,
-                    ]);
+                    if (!$nextVerify || $nextVerify <= $now) {
+                        $response = service('response');
+                        $response->deleteCookie('cmsinvestorid', '', '/');
+                        $response->deleteCookie('cmsinvestorid2019', '', '/');
+                    } else {
+                        $displayName = $user['name'] ?? '';
+                        $nameParts = explode(' ', $displayName);
+                        $initials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : ''));
+
+                        $session->set([
+                            'user_id'          => (int)($user['userID'] ?? $user['id']),
+                            'user_name'        => $displayName,
+                            'user_email'       => $user['email'] ?? '',
+                            'user_role'        => $user['roleName'] ?? $user['role'] ?? 'administrator',
+                            'user_username'    => $user['username'] ?? '',
+                            'user_alias'       => $user['alias'] ?? '',
+                            'user_initials'    => $initials,
+                            'password_expired' => $user['passwordExpired'] ?? null,
+                        ]);
+                    }
                 }
             }
         }

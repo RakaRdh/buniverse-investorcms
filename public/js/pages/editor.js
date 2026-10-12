@@ -1048,7 +1048,7 @@ function filterMediaModalCards(query) {
     if (countEl) countEl.textContent = visibleCount;
 }
 
-function selectMediaImage(url, caption = '', description = '') {
+function selectMediaImage(url, caption = '', description = '', mediaId = '') {
     const rawCaption = (caption && caption.trim()) ? caption.trim() : '';
     const rawDesc = (description && description.trim()) ? description.trim() : rawCaption;
     const finalCaption = rawCaption || rawDesc || 'Dokumentasi Investor.id';
@@ -1094,11 +1094,13 @@ function selectMediaImage(url, caption = '', description = '') {
         markEditorDirty();
     } else {
         const input = document.getElementById('thumbnailInput');
+        const mediaIdInput = document.getElementById('mediaIdInput');
         const preview = document.getElementById('imagePreview');
         const descInput = document.getElementById('thumbnailDescriptionInput');
         const capInput = document.getElementById('thumbnailCaptionInput');
 
         if (input) input.value = url;
+        if (mediaIdInput) mediaIdInput.value = mediaId || '';
         if (preview) preview.src = url;
         if (descInput) descInput.value = finalDesc;
         if (capInput) capInput.value = finalCaption;
@@ -1661,10 +1663,14 @@ async function executeScrapeArticle() {
             if (data.thumbnail_url) {
                 const coverInput = document.getElementById('thumbnailInput');
                 const coverPreview = document.getElementById('imagePreview');
+                const mediaIdInput = document.getElementById('mediaIdInput');
 
                 if (coverInput) coverInput.value = data.thumbnail_url;
                 if (coverPreview) {
                     coverPreview.src = data.thumbnail_url;
+                }
+                if (mediaIdInput && data.media_id) {
+                    mediaIdInput.value = data.media_id;
                 }
             }
 
@@ -1994,12 +2000,19 @@ async function performAutoSave() {
     if (dot) dot.className = 'size-2 rounded-full bg-blue-500 animate-pulse';
     if (text) text.textContent = 'Menyimpan draft...';
 
+    const mediaIdInput = document.getElementById('mediaIdInput');
+    const descInput = document.getElementById('thumbnailDescriptionInput');
+    const capInput = document.getElementById('thumbnailCaptionInput');
+
     const payload = {
         id: idInput ? idInput.value : '',
         title: title,
         summary: summaryInput ? summaryInput.value : '',
         content: content,
         thumbnail: thumbInput ? thumbInput.value : '',
+        media_id: mediaIdInput ? mediaIdInput.value : '',
+        thumbnail_description: descInput ? descInput.value : '',
+        thumbnail_caption: capInput ? capInput.value : '',
         kanal: kanalSelect ? kanalSelect.value : 'Market',
         author: authorHidden ? authorHidden.value : '',
         tags: tagsInput ? tagsInput.value : ''

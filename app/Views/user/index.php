@@ -183,6 +183,7 @@
 
         <!-- Modal Body (Scrollable if height exceeds screen) -->
         <form id="newUserForm" method="post" action="<?= base_url('user/save') ?>" class="flex-1 overflow-y-auto custom-sidebar-scroll py-3 space-y-3.5 pr-1">
+            <?= csrf_field() ?>
             <!-- Row 1: Full Name & Username -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

@@ -540,12 +540,21 @@ PROMPT;
 
         // 4. Download and cache image locally if available
         $savedImage = null;
+        $savedFilename = null;
         if ($thumbnailUrl) {
             try {
-                $savedImage = $this->saveLocalImage($thumbnailUrl);
+                $saveResult = $this->saveLocalImage($thumbnailUrl);
+                if (is_array($saveResult)) {
+                    $savedImage = $saveResult['url'] ?? null;
+                    $savedFilename = $saveResult['filename'] ?? null;
+                } elseif (is_string($saveResult)) {
+                    $savedImage = $saveResult;
+                    $savedFilename = ltrim(str_replace('/uploads/media/', '', $saveResult), '/');
+                }
             } catch (\Throwable $e) {
                 log_message('error', 'Thumbnail download failed: ' . $e->getMessage());
                 $savedImage = null;
+                $savedFilename = null;
             }
         }
 
@@ -574,6 +583,7 @@ PROMPT;
             'title'                 => $title,
             'body'                  => $body,
             'thumbnail_url'         => $savedImage ?: '/img/investor_placeholder.jpg',
+            'thumbnail_filename'    => $savedFilename,
             'thumbnail_caption'     => $thumbnailCaption,
             'thumbnail_description' => $thumbnailDescription,
             'source_url'            => $url,
@@ -679,10 +689,13 @@ PROMPT;
         curl_close($ch);
 
         if ($httpCode === 200 && !empty($imgData)) {
-            $processor = new ImageProcessor();
-            $savedPath = $processor->processFromString($imgData, 'scrape');
-            if ($savedPath) {
-                return $savedPath;
+            $storage = new MediaStorageService();
+            $result = $storage->storeBinary($imgData, 'image/jpeg', 'ai_scrape');
+            if (!empty($result['success']) && !empty($result['url'])) {
+                return [
+                    'url'      => $result['url'],
+                    'filename' => $result['filename']
+                ];
             }
         }
 

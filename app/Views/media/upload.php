@@ -20,6 +20,7 @@
 </div>
 
 <form method="post" action="<?= $isEdit ? base_url('media/update/' . $media['id']) : base_url('media/save') ?>" enctype="multipart/form-data" class="surface-card p-6 max-w-3xl space-y-5">
+    <?= csrf_field() ?>
     <div>
         <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Judul Media / Tokoh / Topik</label>
         <input type="text" name="title" required value="<?= esc($media['title'] ?? '') ?>" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="e.g. ESSA Industries Indonesia (ESSA)">

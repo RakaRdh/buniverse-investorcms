@@ -11,6 +11,7 @@
 <?= $this->section('content') ?>
 
 <form id="postEditorForm" method="post" action="<?= $isEdit ? base_url('post/update/' . $article['id']) : base_url('post/save') ?>">
+    <?= csrf_field() ?>
     <input type="hidden" name="id" id="articleIdInput" value="<?= $isEdit ? (int)$article['id'] : '' ?>">
     <!-- Top Action Bar & Header Responsive -->
     <div class="mb-6">
@@ -208,6 +209,7 @@
                     <!-- Sisi Kanan: Area Upload Dropzone Lebar Penuh (Menjangkau sampai ujung kanan) -->
                     <div class="flex-1 min-w-0 flex flex-col justify-between space-y-2.5">
                         <input type="hidden" name="thumbnail" id="thumbnailInput" value="<?= esc($article['thumbnail'] ?? '/img/investor_placeholder.jpg') ?>">
+                        <input type="hidden" name="media_id" id="mediaIdInput" value="<?= esc($article['media_id'] ?? '') ?>">
 
                         <!-- Wide Dropzone Container (Identik 100% dengan Halaman Upload Media) -->
                         <div id="coverDropzone" class="relative flex-1 w-full rounded-xl border-2 border-dashed border-primary/40 hover:border-primary bg-primary/5 hover:bg-primary/10 transition-all p-6 text-center space-y-3 flex flex-col items-center justify-center cursor-pointer group min-h-[140px]">
@@ -815,7 +817,7 @@
                         <span class="text-[9px] text-muted-foreground font-mono truncate">
                             <i data-lucide="calendar" class="size-2.5 inline-block mr-0.5"></i><?= esc($m['date'] ?? '') ?>
                         </span>
-                        <button type="button" onclick="selectMediaImage('<?= esc(addslashes($m['image'])) ?>', '<?= esc(addslashes($m['caption'] ?? 'Dokumentasi Investor.id')) ?>', '<?= esc(addslashes($m['description'] ?? ($m['caption'] ?? 'Dokumentasi Investor.id'))) ?>')" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] text-white px-3 py-1.5 text-xs font-bold shadow-2xs hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
+                        <button type="button" onclick="selectMediaImage('<?= esc(addslashes($m['image'])) ?>', '<?= esc(addslashes($m['caption'] ?? 'Dokumentasi Investor.id')) ?>', '<?= esc(addslashes($m['description'] ?? ($m['caption'] ?? 'Dokumentasi Investor.id'))) ?>', '<?= esc($m['id'] ?? '') ?>')" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] text-white px-3 py-1.5 text-xs font-bold shadow-2xs hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
                             <i data-lucide="check" class="size-3"></i>
                             <span>Pilih Gambar</span>
                         </button>

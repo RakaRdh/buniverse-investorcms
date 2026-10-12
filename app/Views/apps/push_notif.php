@@ -11,6 +11,7 @@
     <!-- Left Panel: Push Notif Form -->
     <div class="surface-card p-6 space-y-4">
         <form method="post" action="<?= base_url('apps-push-notif/create') ?>" class="space-y-4">
+            <?= csrf_field() ?>
             <div>
                 <label class="block text-xs font-bold text-foreground mb-1.5">Tipe Push:</label>
                 <select name="type" class="flex h-9 w-44 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">

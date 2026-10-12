@@ -65,6 +65,7 @@ class PostControllerTest extends CIUnitTestCase
         $body = $result->response()->getBody();
         $this->assertStringContainsString('Create New Post', $body);
         $this->assertStringContainsString('postEditorForm', $body);
+        $this->assertStringContainsString('csrf_test_name', $body);
     }
 
     public function testPostEditRendersExistingArticle(): void

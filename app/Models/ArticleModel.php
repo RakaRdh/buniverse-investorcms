@@ -359,13 +359,31 @@ class ArticleModel extends Model
         $this->db->table('mediaarticle')->where('articleID', $articleId)->where('position', 1)->delete();
         $mediaId = !empty($data['media_id']) ? (int)$data['media_id'] : 0;
         $thumbUrl = $data['thumbnail'] ?? '';
-        if ($mediaId <= 0 && !empty($thumbUrl)) {
+        if ($mediaId <= 0 && !empty($thumbUrl) && $thumbUrl !== '/img/investor_placeholder.jpg') {
             $matchedMedia = $this->db->table('media')
                 ->where('filename', $thumbUrl)
                 ->orWhere('filename', basename($thumbUrl))
                 ->get()->getRowArray();
             if ($matchedMedia) {
                 $mediaId = (int)$matchedMedia['mediaID'];
+            } else {
+                // Fallback auto-register ke tabel media jika file fisik ada / berasal dari upload eksternal
+                try {
+                    $mediaDesc = $data['thumbnail_description'] ?? ($data['thumbnail_caption'] ?? $data['title'] ?? 'Dokumentasi Investor.id');
+                    $this->db->table('media')->insert([
+                        'mediaTitle'  => 'Cover - ' . ($data['title'] ?? 'Artikel #' . $articleId),
+                        'caption'     => $data['thumbnail_caption'] ?? $mediaDesc,
+                        'description' => $mediaDesc,
+                        'filename'    => $thumbUrl,
+                        'timestamp'   => date('Y-m-d H:i:s'),
+                        'source'      => $data['source'] ?? 'Investor.id',
+                        'author'      => session('username') ?: 'Redaksi Investor',
+                        'userID'      => $data['userID'] ?? 1,
+                    ]);
+                    $mediaId = (int)$this->db->insertID();
+                } catch (\Throwable $e) {
+                    log_message('error', 'Auto-register fallback media failed: ' . $e->getMessage());
+                }
             }
         }
         if ($mediaId > 0) {
@@ -373,7 +391,7 @@ class ArticleModel extends Model
                 'mediaID'   => $mediaId,
                 'articleID' => $articleId,
                 'position'  => 1,
-                'caption'   => $data['thumbnail_caption'] ?? $data['title'] ?? '',
+                'caption'   => $data['thumbnail_caption'] ?? ($data['thumbnail_description'] ?? ($data['title'] ?? '')),
             ]);
         }
 
@@ -511,13 +529,31 @@ class ArticleModel extends Model
         $this->db->table('mediaarticle')->where('articleID', $id)->where('position', 1)->delete();
         $mediaId = !empty($data['media_id']) ? (int)$data['media_id'] : 0;
         $thumbUrl = $data['thumbnail'] ?? '';
-        if ($mediaId <= 0 && !empty($thumbUrl)) {
+        if ($mediaId <= 0 && !empty($thumbUrl) && $thumbUrl !== '/img/investor_placeholder.jpg') {
             $matchedMedia = $this->db->table('media')
                 ->where('filename', $thumbUrl)
                 ->orWhere('filename', basename($thumbUrl))
                 ->get()->getRowArray();
             if ($matchedMedia) {
                 $mediaId = (int)$matchedMedia['mediaID'];
+            } else {
+                // Fallback auto-register ke tabel media jika file fisik ada / berasal dari upload eksternal
+                try {
+                    $mediaDesc = $data['thumbnail_description'] ?? ($data['thumbnail_caption'] ?? $data['title'] ?? 'Dokumentasi Investor.id');
+                    $this->db->table('media')->insert([
+                        'mediaTitle'  => 'Cover - ' . ($data['title'] ?? 'Artikel #' . $id),
+                        'caption'     => $data['thumbnail_caption'] ?? $mediaDesc,
+                        'description' => $mediaDesc,
+                        'filename'    => $thumbUrl,
+                        'timestamp'   => date('Y-m-d H:i:s'),
+                        'source'      => $data['source'] ?? 'Investor.id',
+                        'author'      => session('username') ?: 'Redaksi Investor',
+                        'userID'      => $data['userID'] ?? $editorId,
+                    ]);
+                    $mediaId = (int)$this->db->insertID();
+                } catch (\Throwable $e) {
+                    log_message('error', 'Auto-register fallback media in update failed: ' . $e->getMessage());
+                }
             }
         }
         if ($mediaId > 0) {
@@ -525,7 +561,7 @@ class ArticleModel extends Model
                 'mediaID'   => $mediaId,
                 'articleID' => $id,
                 'position'  => 1,
-                'caption'   => $data['thumbnail_caption'] ?? $data['title'] ?? '',
+                'caption'   => $data['thumbnail_caption'] ?? ($data['thumbnail_description'] ?? ($data['title'] ?? '')),
             ]);
         }
 

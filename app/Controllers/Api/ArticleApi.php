@@ -66,7 +66,8 @@ class ArticleApi extends BaseController
             ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
             ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
-            ->whereIn('LOWER(n.status)', ['publish', 'published']);
+            ->whereIn('LOWER(n.status)', ['publish', 'published'])
+            ->where('n.articleDate <=', date('Y-m-d H:i:s'));
 
         if (!empty($category) && $category !== 'all') {
             $builder->groupStart()
@@ -272,7 +273,8 @@ class ArticleApi extends BaseController
             ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
             ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->where('n.articleID !=', $article['id'])
-            ->where('LOWER(n.status)', 'published');
+            ->whereIn('LOWER(n.status)', ['publish', 'published'])
+            ->where('n.articleDate <=', date('Y-m-d H:i:s'));
 
         if ($categoryId > 0) {
             $builder->where('ncl.categoryID', $categoryId);
@@ -352,6 +354,7 @@ class ArticleApi extends BaseController
             ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
             ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->whereIn('LOWER(n.status)', ['publish', 'published'])
+            ->where('n.articleDate <=', date('Y-m-d H:i:s'))
             ->groupStart()
                 ->like('n.headline', $q)
                 ->orLike('n.summary', $q)

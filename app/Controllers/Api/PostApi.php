@@ -75,20 +75,23 @@ class PostApi extends BaseController
         $cleanContent = HtmlSanitizer::clean($content);
 
         $articleData = [
-            'title'             => !empty($cleanTitle) ? $cleanTitle : 'Draft Tanpa Judul (' . date('d M H:i') . ')',
-            'slug'              => url_title(!empty($cleanTitle) ? $cleanTitle : 'draft-' . time(), '-', true),
-            'summary'           => $cleanSummary,
-            'content'           => $cleanContent,
-            'status'            => 'Draft',
-            'publish_date'      => date('Y-m-d H:i:s'),
-            'thumbnail'         => !empty($data['thumbnail']) ? $data['thumbnail'] : '/img/investor_placeholder.jpg',
-            'upper_deck'        => $data['upper_deck'] ?? '',
-            'source'            => $data['source'] ?? 'Investor.id / Riset',
-            'kanal'             => $kanalName,
-            'sub_kanal'         => $subKanal,
-            'is_premium'        => (int)($data['is_premium'] ?? 0),
-            'headline_type'     => $data['headline_type'] ?? 'none',
-            'userID'            => $sessionUser,
+            'title'                 => !empty($cleanTitle) ? $cleanTitle : 'Draft Tanpa Judul (' . date('d M H:i') . ')',
+            'slug'                  => url_title(!empty($cleanTitle) ? $cleanTitle : 'draft-' . time(), '-', true),
+            'summary'               => $cleanSummary,
+            'content'               => $cleanContent,
+            'status'                => 'Draft',
+            'publish_date'          => date('Y-m-d H:i:s'),
+            'thumbnail'             => !empty($data['thumbnail']) ? $data['thumbnail'] : '/img/investor_placeholder.jpg',
+            'media_id'              => (int)($data['media_id'] ?? 0),
+            'thumbnail_description' => $data['thumbnail_description'] ?? ($data['thumbnail_caption'] ?? ''),
+            'thumbnail_caption'     => $data['thumbnail_caption'] ?? ($data['thumbnail_description'] ?? ''),
+            'upper_deck'            => $data['upper_deck'] ?? '',
+            'source'                => $data['source'] ?? 'Investor.id / Riset',
+            'kanal'                 => $kanalName,
+            'sub_kanal'             => $subKanal,
+            'is_premium'            => (int)($data['is_premium'] ?? 0),
+            'headline_type'         => $data['headline_type'] ?? 'none',
+            'userID'                => $sessionUser,
         ];
 
         try {
