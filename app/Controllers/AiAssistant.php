@@ -322,7 +322,8 @@ class AiAssistant extends BaseController
                     $currentUser = session('user_name') ?: (session('user_username') ?: 'Redaksi');
                     $currentUserId = (int)(session('user_id') ?: 1);
 
-                    $mediaFilename = $data['thumbnail_filename'] ?? ltrim(str_replace('/uploads/media/', '', $data['thumbnail_url']), '/');
+                    $rawFile = $data['thumbnail_filename'] ?? ltrim(str_replace('/uploads/media/', '', $data['thumbnail_url']), '/');
+                    $mediaFilename = ltrim(str_replace(['\\', '/uploads/media/'], ['/', ''], $rawFile), '/');
                     $mediaTitle = 'AI Scrape - ' . $sourceHost . ' (' . date('d M H:i') . ')';
 
                     $db->table('media')->insert([

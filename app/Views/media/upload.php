@@ -65,7 +65,7 @@
         </div>
 
         <div class="relative w-full rounded-xl border border-border bg-slate-950/60 p-2 flex items-center justify-center min-h-[160px] overflow-hidden">
-            <img id="mediaImagePreview" src="<?= esc($media['image'] ?? '/img/investor_placeholder.jpg') ?>" alt="Preview" class="max-h-[480px] w-auto max-w-full rounded-lg object-contain shadow-md" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
+            <img id="mediaImagePreview" src="<?= esc(media_url($media['image'] ?? null)) ?>" alt="Preview" class="max-h-[480px] w-auto max-w-full rounded-lg object-contain shadow-md" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
         </div>
     </div>
 

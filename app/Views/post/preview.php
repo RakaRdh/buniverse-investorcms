@@ -340,7 +340,7 @@
             border: 1px solid var(--id-theme);
             color: var(--id-theme) !important;
             border-radius: 0.375rem;
-            padding: 0.3rem 0.75rem;
+            padding: 0.25rem 0.5rem;
             font-weight: 700;
             font-size: 0.9rem;
             text-decoration: none;
@@ -542,21 +542,31 @@
                         </div>
                     </div>
 
-                    <!-- Featured Hero Image (Rasio 16:10) -->
+                    <!-- Featured Hero Image (Paritas 1:1 Frontend Prod .rounded-3.overflow-hidden.mb-2) -->
                     <?php if (!empty($article['thumbnail']) && $article['thumbnail'] !== '/img/investor_placeholder.jpg'): ?>
-                        <figure class="mb-4">
-                            <div class="hero-img-box shadow-xs">
-                                <img src="<?= esc($article['thumbnail']) ?>" alt="<?= esc($article['title']) ?>">
+                        <?php 
+                            $rawCap = trim(($article['thumbnail_caption'] ?? '') ?: ($article['thumbnail_description'] ?? ''));
+                            $rawSrc = trim($article['sumber_berita'] ?? ($article['source'] ?? ''));
+                            $displayCaption = $rawCap;
+                            if ($rawSrc && stripos($rawCap, 'sumber') === false) {
+                                $displayCaption .= ($displayCaption ? "\n" : "") . "Sumber: " . $rawSrc;
+                            }
+                        ?>
+                        <div class="mb-3">
+                            <div class="rounded-3 overflow-hidden mb-2">
+                                <img src="<?= esc($article['thumbnail']) ?>" 
+                                     alt="<?= esc($displayCaption ?: $article['title']) ?>" 
+                                     class="lazy w-100" 
+                                     style="aspect-ratio: 920/620; object-fit: cover;" 
+                                     width="920" 
+                                     height="620">
                             </div>
-                            <?php 
-                                $caption = !empty($article['thumbnail_caption']) ? $article['thumbnail_caption'] : (!empty($article['thumbnail_description']) ? $article['thumbnail_description'] : '');
-                            ?>
-                            <?php if ($caption): ?>
-                                <figcaption class="text-muted small fst-italic mt-1">
-                                    <?= esc($caption) ?>
-                                </figcaption>
+                            <?php if ($displayCaption): ?>
+                                <span class="text-muted small d-block mb-2" style="white-space: pre-line; line-height: 1.45;">
+                                    <?= esc($displayCaption) ?>
+                                </span>
                             <?php endif; ?>
-                        </figure>
+                        </div>
                     <?php endif; ?>
 
                     <!-- Highlight AI / "Singkatnya" (Poin Utama Naskah) -->
@@ -587,46 +597,47 @@
                         <?= $article['content'] ?>
                     </div>
 
-                    <!-- Multi-page Article Pagination (Page Break: .paging) -->
+                    <!-- Multi-page Article Pagination (Paritas 1:1 Frontend Prod: .mt-4.mb-4 > Halaman: > a > span.paging) -->
                     <?php if (!empty($pagination) && !empty($pagination['is_multipage'])): ?>
-                        <div class="my-4 py-3 border-top border-bottom d-flex align-items-center flex-wrap gap-2">
-                            <span class="fw-bold text-dark me-2 small text-uppercase">Halaman:</span>
+                        <div class="mt-4 mb-4">
+                            Halaman:&nbsp;
                             <?php for ($i = 1; $i <= $pagination['total_pages']; $i++): ?>
-                                <a href="?halaman=<?= $i ?>" class="paging <?= ((string)$pagination['current_page'] === (string)$i) ? 'active' : '' ?>">
-                                    <?= $i ?>
+                                <a href="?halaman=<?= $i ?>" class="text-decoration-none">
+                                    <span class="paging <?= ((string)$pagination['current_page'] === (string)$i) ? 'active' : '' ?>">
+                                        <?= $i ?>
+                                    </span>&nbsp;
                                 </a>
                             <?php endfor; ?>
-                            <a href="?halaman=all" class="paging <?= ($pagination['current_page'] === 'all') ? 'active' : '' ?>">
-                                Semua Halaman
-                            </a>
 
                             <?php if (!empty($pagination['has_next'])): ?>
-                                <a href="?halaman=<?= $pagination['next_page'] ?>" class="paging ms-auto d-inline-flex align-items-center gap-1">
-                                    <span>Selanjutnya</span>
-                                    <i data-lucide="chevron-right" class="size-3.5"></i>
+                                <a href="?halaman=<?= $pagination['next_page'] ?>" class="text-decoration-none">
+                                    <span class="paging">selanjutnya</span>
                                 </a>
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
 
-                    <!-- Editor & Sumber Berita Line -->
-                    <div class="mt-4 pt-3 border-top text-secondary small" style="font-size: 0.92rem;">
-                        <p class="mb-1">
-                            Editor: <b class="text-dark"><?= esc($article['editor'] ?? session('user_name') ?? 'Redaksi Investor.id') ?></b>
-                        </p>
-                        <p class="mb-0 text-muted" style="font-size: 0.85rem;">
-                            Sumber: <span class="text-dark fw-semibold"><?= esc($article['sumber_berita'] ?? 'Investor.id') ?></span>
-                        </p>
-                    </div>
+                    <!-- Editor Line (Identik Frontend Prod: <p>Editor: <b>...</b></p>) -->
+                    <p class="mt-4 mb-2 text-secondary">
+                        Editor: <b><?= esc($article['editor'] ?? session('user_name') ?? 'Redaksi Investor.id') ?></b>
+                    </p>
 
-                    <!-- Cloud Tags List (.tag-pill: #Tag) -->
+                    <!-- Cloud Tags List (Paritas 1:1 Frontend Prod: .mb-3 style="line-height:2.5" > a.badge.bg-theme.rounded-pill.px-3.py-2.text-white.me-2) -->
                     <?php if (!empty($article['tags'])): ?>
-                        <div class="mt-3 pt-2" style="line-height: 2.2;">
-                            <?php foreach (explode(',', $article['tags']) as $t): ?>
-                                <?php $trimmed = trim($t); if ($trimmed): ?>
-                                    <a href="javascript:void(0)" class="tag-pill">#<?= esc($trimmed) ?></a>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
+                        <div class="mb-3" style="line-height: 2.5;">
+                            <?php 
+                                $tagItems = is_array($article['tags']) ? $article['tags'] : explode(',', $article['tags']);
+                                foreach ($tagItems as $t): 
+                                    $trimmed = trim(ltrim(trim($t), '#')); 
+                                    if ($trimmed): 
+                            ?>
+                                <a class="badge bg-theme rounded-pill px-3 py-2 text-white me-2 text-decoration-none" href="javascript:void(0)">
+                                    #<?= esc($trimmed) ?>
+                                </a>
+                            <?php 
+                                    endif;
+                                endforeach; 
+                            ?>
                         </div>
                     <?php endif; ?>
 

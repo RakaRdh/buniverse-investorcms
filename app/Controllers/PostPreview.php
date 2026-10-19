@@ -150,8 +150,10 @@ class PostPreview extends BaseController
             'publish_date'  => $this->request->getPost('publish_date') ?: date('d M Y H:i'),
             'status'        => $this->request->getPost('status') ?: 'Draft',
             'is_premium'    => (int)($this->request->getPost('is_premium') ?: 0),
-            'thumbnail'     => $this->request->getPost('thumbnail') ?: '/img/investor_placeholder.jpg',
-            'summary'       => $this->request->getPost('summary') ?: 'Ringkasan artikel pengantar belum diisi.',
+            'thumbnail'             => $this->request->getPost('thumbnail') ?: '/img/investor_placeholder.jpg',
+            'thumbnail_caption'     => $this->request->getPost('thumbnail_caption') ?: '',
+            'thumbnail_description' => $this->request->getPost('thumbnail_description') ?: '',
+            'summary'               => $this->request->getPost('summary') ?: 'Ringkasan artikel pengantar belum diisi.',
             'raw_content'   => $content,
             'content'       => $displayedContent,
             'tags'          => $this->request->getPost('tags') ?: '',
@@ -353,11 +355,9 @@ class PostPreview extends BaseController
         $content = preg_replace_callback(
             '/<blockquote[^>]*>\s*(?:<p>)?\s*<strong>Baca Juga:\s*<\/strong>\s*<a href="([^"]+)"[^>]*>(.*?)<\/a>\s*(?:<\/p>)?\s*<\/blockquote>/i',
             function ($m) {
-                return '<div class="id-group mb-4 position-relative">
-                    <h2 class="h6 text-muted mb-1 fw-bold" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">Baca Juga:</h2>
-                    <b class="d-block">
-                        <a class="text-theme text-decoration-none" href="' . htmlspecialchars($m[1]) . '">' . $m[2] . '</a>
-                    </b>
+                return '<div class="id-group mb-3 position-relative">
+                    <h2 class="h6 text-muted mb-2">Baca Juga:</h2>
+                    <b><a class="text-theme stretched-link" href="' . htmlspecialchars($m[1]) . '">' . $m[2] . '</a></b>
                 </div>';
             },
             $content

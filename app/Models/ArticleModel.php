@@ -272,6 +272,7 @@ class ArticleModel extends Model
 
         if (!$article) return null;
 
+        $article['thumbnail'] = media_url($article['thumbnail'] ?? null);
         $article['is_premium'] = (int)($article['is_premium'] ?? 0);
         $article['is_breaking'] = 0;
         $article['sumber_berita'] = $article['source'];
@@ -387,12 +388,29 @@ class ArticleModel extends Model
             }
         }
         if ($mediaId > 0) {
+            $coverCaption = trim((string)($data['thumbnail_caption'] ?? ''));
+            $coverDesc = trim((string)($data['thumbnail_description'] ?? ''));
+
             $this->db->table('mediaarticle')->insert([
                 'mediaID'   => $mediaId,
                 'articleID' => $articleId,
                 'position'  => 1,
-                'caption'   => $data['thumbnail_caption'] ?? ($data['thumbnail_description'] ?? ($data['title'] ?? '')),
+                'caption'   => $coverCaption ?: $coverDesc,
             ]);
+
+            // Sinkronisasi update ke tabel media: caption -> caption, description -> description
+            $mediaUpdate = [];
+            if ($coverCaption !== '') {
+                $mediaUpdate['caption'] = $coverCaption;
+            }
+            if ($coverDesc !== '') {
+                $mediaUpdate['description'] = $coverDesc;
+            }
+            if (!empty($mediaUpdate)) {
+                $this->db->table('media')
+                    ->where('mediaID', $mediaId)
+                    ->update($mediaUpdate);
+            }
         }
 
         // Meta entries - Hanya 6 metakey valid sesuai skema legacy Investor.id
@@ -557,12 +575,29 @@ class ArticleModel extends Model
             }
         }
         if ($mediaId > 0) {
+            $coverCaption = trim((string)($data['thumbnail_caption'] ?? ''));
+            $coverDesc = trim((string)($data['thumbnail_description'] ?? ''));
+
             $this->db->table('mediaarticle')->insert([
                 'mediaID'   => $mediaId,
                 'articleID' => $id,
                 'position'  => 1,
-                'caption'   => $data['thumbnail_caption'] ?? ($data['thumbnail_description'] ?? ($data['title'] ?? '')),
+                'caption'   => $coverCaption ?: $coverDesc,
             ]);
+
+            // Sinkronisasi update ke tabel media: caption -> caption, description -> description
+            $mediaUpdate = [];
+            if ($coverCaption !== '') {
+                $mediaUpdate['caption'] = $coverCaption;
+            }
+            if ($coverDesc !== '') {
+                $mediaUpdate['description'] = $coverDesc;
+            }
+            if (!empty($mediaUpdate)) {
+                $this->db->table('media')
+                    ->where('mediaID', $mediaId)
+                    ->update($mediaUpdate);
+            }
         }
 
         // 5. Update Metadata - Hanya 6 metakey valid sesuai skema legacy Investor.id

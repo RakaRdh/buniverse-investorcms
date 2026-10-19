@@ -182,7 +182,7 @@
                     <!-- Sisi Kiri: Preview Cover 16:9 & Tombol Pilih Media -->
                     <div class="w-full lg:w-64 xl:w-72 shrink-0 flex flex-col justify-between space-y-2.5">
                         <div id="coverPreviewBox" class="relative aspect-video w-full overflow-hidden rounded-lg border-2 border-border bg-slate-900 shadow-sm group shrink-0">
-                            <img id="imagePreview" src="<?= esc($article['thumbnail'] ?? '/img/investor_placeholder.jpg') ?>" alt="Cover Preview" class="h-full w-full object-cover transition-transform duration-200" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
+                            <img id="imagePreview" src="<?= esc(media_url($article['thumbnail'] ?? null)) ?>" alt="Cover Preview" class="h-full w-full object-cover transition-transform duration-200" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
                             
                             <!-- Uploading spinner overlay -->
                             <div id="coverUploadSpinner" class="absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center text-white hidden z-20">
@@ -796,7 +796,7 @@
             <div class="media-card-item flex flex-col rounded-xl border border-border overflow-hidden bg-card hover:border-primary/70 hover:shadow-lg transition-all group" data-search="<?= strtolower(esc($m['title'] . ' ' . ($m['caption'] ?? '') . ' ' . ($m['source'] ?? ''))) ?>" style="min-height: 270px;">
                 <!-- Bagian 1 (Atas): Gambar Media -->
                 <div class="relative w-full bg-slate-900 overflow-hidden border-b border-border" style="height: 150px;">
-                    <img src="<?= esc($m['image']) ?>" alt="<?= esc($m['title']) ?>" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
+                    <img src="<?= esc(media_url($m['image'] ?? null)) ?>" alt="<?= esc($m['title']) ?>" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.onerror=null;this.src='/img/investor_placeholder.jpg';">
                     <span class="absolute bottom-2 right-2 rounded bg-black/80 backdrop-blur-xs px-2 py-0.5 text-[9px] font-mono font-medium text-white z-10 shadow-xs">
                         <?= esc($m['source'] ?? 'Investor.id') ?>
                     </span>
@@ -817,7 +817,7 @@
                         <span class="text-[9px] text-muted-foreground font-mono truncate">
                             <i data-lucide="calendar" class="size-2.5 inline-block mr-0.5"></i><?= esc($m['date'] ?? '') ?>
                         </span>
-                        <button type="button" onclick="selectMediaImage('<?= esc(addslashes($m['image'])) ?>', '<?= esc(addslashes($m['caption'] ?? 'Dokumentasi Investor.id')) ?>', '<?= esc(addslashes($m['description'] ?? ($m['caption'] ?? 'Dokumentasi Investor.id'))) ?>', '<?= esc($m['id'] ?? '') ?>')" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] text-white px-3 py-1.5 text-xs font-bold shadow-2xs hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
+                        <button type="button" onclick="selectMediaImage('<?= esc(addslashes(media_url($m['image'] ?? null))) ?>', '<?= esc(addslashes($m['caption'] ?? 'Dokumentasi Investor.id')) ?>', '<?= esc(addslashes($m['description'] ?? ($m['caption'] ?? 'Dokumentasi Investor.id'))) ?>', '<?= esc($m['id'] ?? '') ?>')" class="inline-flex items-center gap-1.5 rounded-md bg-[#2B6CB0] text-white px-3 py-1.5 text-xs font-bold shadow-2xs hover:bg-[#2B6CB0]/90 transition-colors shrink-0">
                             <i data-lucide="check" class="size-3"></i>
                             <span>Pilih Gambar</span>
                         </button>

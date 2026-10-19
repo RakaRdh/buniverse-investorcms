@@ -57,6 +57,11 @@ class MediaModel extends Model
         $offset = ($page - 1) * $perPage;
         $data = $builder->limit($perPage, $offset)->get()->getResultArray();
 
+        foreach ($data as &$row) {
+            $row['image'] = media_url($row['image'] ?? null);
+        }
+        unset($row);
+
         return [
             'data'  => $data,
             'total' => $totalItems,

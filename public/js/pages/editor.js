@@ -1659,30 +1659,26 @@ async function executeScrapeArticle() {
                 if (hiddenEl) hiddenEl.value = data.body;
             }
 
-            // 2. Set thumbnail / cover image & preview
-            if (data.thumbnail_url) {
+            // 2. Autoselect cover image via selectMediaImage (matching manual media chooser flow)
+            if (data.thumbnail_url && data.thumbnail_url !== '/img/investor_placeholder.jpg') {
+                const targetSavedTarget = mediaChooserTarget;
+                mediaChooserTarget = 'cover';
+                selectMediaImage(
+                    data.thumbnail_url,
+                    data.thumbnail_caption || '',
+                    data.thumbnail_description || data.thumbnail_caption || '',
+                    data.media_id || ''
+                );
+                mediaChooserTarget = targetSavedTarget;
+            } else if (data.thumbnail_url) {
                 const coverInput = document.getElementById('thumbnailInput');
                 const coverPreview = document.getElementById('imagePreview');
-                const mediaIdInput = document.getElementById('mediaIdInput');
-
                 if (coverInput) coverInput.value = data.thumbnail_url;
-                if (coverPreview) {
-                    coverPreview.src = data.thumbnail_url;
-                }
-                if (mediaIdInput && data.media_id) {
-                    mediaIdInput.value = data.media_id;
-                }
-            }
-
-            // 3. Set thumbnail description & caption
-            const descInput = document.getElementById('thumbnailDescriptionInput');
-            const capInput = document.getElementById('thumbnailCaptionInput');
-
-            if (descInput && data.thumbnail_description) {
-                descInput.value = data.thumbnail_description;
-            }
-            if (capInput && data.thumbnail_caption) {
-                capInput.value = data.thumbnail_caption;
+                if (coverPreview) coverPreview.src = data.thumbnail_url;
+                const descInput = document.getElementById('thumbnailDescriptionInput');
+                const capInput = document.getElementById('thumbnailCaptionInput');
+                if (descInput && data.thumbnail_description) descInput.value = data.thumbnail_description;
+                if (capInput && data.thumbnail_caption) capInput.value = data.thumbnail_caption;
             }
 
             // 4. Set article title if currently empty (limitasi 70 karakter di-comment out sementara)
@@ -1740,6 +1736,11 @@ function previewArticlePage() {
     // Collect all form data and submit to /post/preview in new tab
     const form = document.getElementById('postEditorForm');
     if (!form) return;
+
+    // Sync CKEditor 4 if active
+    if (window.CKEDITOR && CKEDITOR.instances.articleEditor) {
+        CKEDITOR.instances.articleEditor.updateElement();
+    }
 
     // Sync content
     if (quill) {

@@ -652,7 +652,7 @@ PROMPT;
         return $response;
     }
 
-    protected function saveLocalImage(string $imageUrl): ?string
+    protected function saveLocalImage(string $imageUrl): array|string|null
     {
         // 1. Validasi skema URL (hanya http dan https)
         $parsed = parse_url($imageUrl);

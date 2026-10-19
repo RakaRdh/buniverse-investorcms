@@ -61,7 +61,7 @@ class Media extends BaseController
             $item = [
                 'id'      => $item['mediaID'],
                 'title'   => $item['mediaTitle'],
-                'image'   => $item['filename'],
+                'image'   => media_url($item['filename']),
                 'caption' => $item['caption'],
                 'source'  => $item['source'],
             ];
