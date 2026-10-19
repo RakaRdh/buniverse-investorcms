@@ -217,10 +217,11 @@ class Post extends BaseController
         }
 
         $sumberBerita = $this->request->getPost('source') ?: ($this->request->getPost('sumber_berita') ?: 'Investor.id / Riset');
-        $rawAuthor = $this->request->getPost('author') ?: 'Raka Herdika';
+        $defaultAuthor = session('user_name') ?: 'Redaksi Investor';
+        $rawAuthor = $this->request->getPost('author') ?: $defaultAuthor;
         $authorNames = array_values(array_filter(array_map('trim', explode(',', $rawAuthor))));
         if (empty($authorNames)) {
-            $authorNames = ['Raka Herdika'];
+            $authorNames = [$defaultAuthor];
         }
         $authorId = [];
         foreach ($authorNames as $aName) {
@@ -230,7 +231,7 @@ class Post extends BaseController
             }
         }
         if (empty($authorId)) {
-            $authorId = [$this->authorModel->findOrCreate('Raka Herdika')];
+            $authorId = [$this->authorModel->findOrCreate($defaultAuthor)];
         }
 
         // Primary Category is ALWAYS the Master Kanal (parent IS NULL)
@@ -384,10 +385,11 @@ class Post extends BaseController
         }
 
         $sumberBerita = $this->request->getPost('source') ?: ($this->request->getPost('sumber_berita') ?: 'Investor.id / Riset');
-        $rawAuthor = $this->request->getPost('author') ?: 'Raka Herdika';
+        $defaultAuthor = session('user_name') ?: 'Redaksi Investor';
+        $rawAuthor = $this->request->getPost('author') ?: $defaultAuthor;
         $authorNames = array_values(array_filter(array_map('trim', explode(',', $rawAuthor))));
         if (empty($authorNames)) {
-            $authorNames = ['Raka Herdika'];
+            $authorNames = [$defaultAuthor];
         }
         $authorId = [];
         foreach ($authorNames as $aName) {
@@ -397,7 +399,7 @@ class Post extends BaseController
             }
         }
         if (empty($authorId)) {
-            $authorId = [$this->authorModel->findOrCreate('Raka Herdika')];
+            $authorId = [$this->authorModel->findOrCreate($defaultAuthor)];
         }
 
         // Primary Category is ALWAYS Master Kanal

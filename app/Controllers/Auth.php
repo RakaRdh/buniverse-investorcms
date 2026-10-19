@@ -259,7 +259,7 @@ class Auth extends BaseController
             $body .= '<div style="text-align: center; margin: 24px 0;">';
             $body .= '<span style="display: inline-block; font-size: 32px; font-weight: 800; font-family: monospace; letter-spacing: 8px; padding: 14px 32px; background-color: #EBF8FF; color: #2B6CB0; border-radius: 8px; border: 1.5px dashed #2B6CB0;">' . $authCode . '</span>';
             $body .= '</div>';
-            $body .= '<p style="color: #64748B; font-size: 13px; line-height: 1.5;">Kode verifikasi ini berlaku selama <strong>15 menit</strong>. Masukkan kode ini pada layar verifikasi login.</p>';
+            $body .= '<p style="color: #64748B; font-size: 13px; line-height: 1.5;">Kode verifikasi ini berlaku selama <strong>5 menit</strong>. Masukkan kode ini pada layar verifikasi login.</p>';
             $body .= '<p style="color: #64748B; font-size: 13px; line-height: 1.5;">Abaikan pesan ini jika Anda tidak merasa melakukan percobaan login, dan segera hubungi Administrator IT.</p>';
             $body .= '<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0 16px 0;">';
             $body .= '<p style="color: #94a3b8; font-size: 11px; margin: 0; text-align: center;">&copy; ' . date('Y') . ' Investor.ID Editorial Newsroom</p>';

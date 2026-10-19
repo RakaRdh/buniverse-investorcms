@@ -319,7 +319,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Editor</label>
-                    <input type="text" readonly value="<?= esc(session('user_name') ?? 'Raka Herdika') ?>" class="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm cursor-not-allowed">
+                    <input type="text" readonly value="<?= esc(session('user_name') ?? 'Redaksi Investor') ?>" class="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm cursor-not-allowed">
                 </div>
                 <div class="relative" id="authorAutosuggestContainer">
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5" for="authorSearchInput">
