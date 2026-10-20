@@ -105,7 +105,7 @@ class StatisticReport extends BaseController
             'to'         => min($offset + $perPage, $totalItems),
         ];
 
-        $totalFilteredArticles = $this->articleModel->db->table('article')
+        $totalFilteredArticles = $this->articleModel->db->table('Article')
             ->where('articleDate >=', date('Y-m-d 00:00:00', $fromTimestamp))
             ->where('articleDate <=', date('Y-m-d 23:59:59', $toTimestamp))
             ->countAllResults();
@@ -162,41 +162,59 @@ class StatisticReport extends BaseController
         $matrix = [];
         $db = $this->articleModel->db;
 
+        if (empty($users)) {
+            return [];
+        }
+
+        $userIds = array_map(fn($u) => (int)$u['id'], $users);
+
+        // Single batch aggregation query instead of N individual queries
+        $aggregatedData = [];
+        if ($isAuthor) {
+            $rawRows = $db->table('Article n')
+                ->select('nal.authorID AS uid, DATE(n.articleDate) AS pdate, COUNT(DISTINCT n.articleID) AS cnt, SUM(n.viewed) AS vsum')
+                ->join('ArticleAuthor nal', 'nal.articleID = n.articleID', 'inner')
+                ->whereIn('nal.authorID', $userIds)
+                ->where('n.articleDate >=', $fromDate . ' 00:00:00')
+                ->where('n.articleDate <=', $toDate . ' 23:59:59')
+                ->groupBy('nal.authorID, DATE(n.articleDate)')
+                ->get()->getResultArray();
+        } else {
+            $rawRows = $db->table('Article n')
+                ->select('n.userID AS uid, DATE(n.articleDate) AS pdate, COUNT(DISTINCT n.articleID) AS cnt, SUM(n.viewed) AS vsum')
+                ->whereIn('n.userID', $userIds)
+                ->where('n.articleDate >=', $fromDate . ' 00:00:00')
+                ->where('n.articleDate <=', $toDate . ' 23:59:59')
+                ->groupBy('n.userID, DATE(n.articleDate)')
+                ->get()->getResultArray();
+        }
+
+        foreach ($rawRows as $row) {
+            $uid = (int)$row['uid'];
+            $pdate = (string)$row['pdate'];
+            $aggregatedData[$uid][$pdate] = [
+                'cnt'  => (int)$row['cnt'],
+                'vsum' => (int)($row['vsum'] ?? 0),
+            ];
+        }
+
         foreach ($users as $u) {
+            $uid = (int)$u['id'];
             $dailyCounts = [];
-            foreach ($dateColumns as $col) {
-                $dailyCounts[$col['full_date']] = 0;
-            }
-
-            if ($isAuthor) {
-                // Author query matching author link by authorID or authorName
-                $res = $db->table('article n')
-                    ->select('DATE(n.articleDate) AS pdate, COUNT(DISTINCT n.articleID) AS cnt, SUM(n.viewed) AS vsum')
-                    ->join('articleauthor nal', 'nal.articleID = n.articleID', 'inner')
-                    ->where('nal.authorID', $u['id'])
-                    ->where('n.articleDate >=', $fromDate . ' 00:00:00')
-                    ->where('n.articleDate <=', $toDate . ' 23:59:59')
-                    ->groupBy('DATE(n.articleDate)')
-                    ->get()->getResultArray();
-            } else {
-                // Editor query matching userID
-                $res = $db->table('article n')
-                    ->select('DATE(n.articleDate) AS pdate, COUNT(DISTINCT n.articleID) AS cnt, SUM(n.viewed) AS vsum')
-                    ->where('n.userID', $u['id'])
-                    ->where('n.articleDate >=', $fromDate . ' 00:00:00')
-                    ->where('n.articleDate <=', $toDate . ' 23:59:59')
-                    ->groupBy('DATE(n.articleDate)')
-                    ->get()->getResultArray();
-            }
-
             $publishedCount = 0;
             $totalViews = 0;
-            foreach ($res as $r) {
-                if (isset($dailyCounts[$r['pdate']])) {
-                    $dailyCounts[$r['pdate']] = (int)$r['cnt'];
+
+            foreach ($dateColumns as $col) {
+                $dt = $col['full_date'];
+                if (isset($aggregatedData[$uid][$dt])) {
+                    $cnt = $aggregatedData[$uid][$dt]['cnt'];
+                    $vsum = $aggregatedData[$uid][$dt]['vsum'];
+                    $dailyCounts[$dt] = $cnt;
+                    $publishedCount += $cnt;
+                    $totalViews += $vsum;
+                } else {
+                    $dailyCounts[$dt] = 0;
                 }
-                $publishedCount += (int)$r['cnt'];
-                $totalViews += (int)($r['vsum'] ?? 0);
             }
 
             $matrix[] = [
@@ -248,14 +266,14 @@ class StatisticReport extends BaseController
         $endDate   = sprintf('%04d-12-31 23:59:59', $year);
 
         // Fetch articles grouped by month, day, and collect distinct editor initials
-        $records = $db->table('article a')
+        $records = $db->table('Article a')
             ->select('
                 MONTH(a.articleDate) AS mo,
                 DAY(a.articleDate) AS dy,
                 COUNT(a.articleID) AS total_articles,
                 GROUP_CONCAT(DISTINCT NULLIF(TRIM(u.alias), "") ORDER BY u.alias SEPARATOR ", ") AS initials
             ')
-            ->join('useradministrator u', 'u.userID = a.userID', 'left')
+            ->join('UserAdministrator u', 'u.userID = a.userID', 'left')
             ->where('a.articleDate >=', $startDate)
             ->where('a.articleDate <=', $endDate)
             ->whereIn('LOWER(a.status)', ['publish', 'published'])
@@ -443,7 +461,7 @@ class StatisticReport extends BaseController
     protected function getHourlyHeatmapData(string $fromDate, string $toDate): array
     {
         $db = $this->articleModel->db;
-        $records = $db->table('article')
+        $records = $db->table('Article')
             ->select('DATE(articleDate) AS pdate, HOUR(articleDate) AS phour, COUNT(*) AS total')
             ->where('articleDate >=', $fromDate . ' 00:00:00')
             ->where('articleDate <=', $toDate . ' 23:59:59')
@@ -467,13 +485,13 @@ class StatisticReport extends BaseController
     }
 
     /**
-     * Legacy parity: artikel-publish log with editor initial (u.alias AS kode)
+     * Smarty parity: artikel-publish log with editor initial (u.alias AS kode)
      */
     protected function getPublishLogData(string $fromDate, string $toDate, int $page = 1, int $perPage = 20): array
     {
         $db = $this->articleModel->db;
 
-        $builder = $db->table('article a')
+        $builder = $db->table('Article a')
             ->select('
                 a.articleID,
                 a.headline AS articleTitle,
@@ -485,9 +503,9 @@ class StatisticReport extends BaseController
                 u.name AS editor_name,
                 c.categoryName AS kanal_title
             ')
-            ->join('useradministrator u', 'u.userID = a.userID', 'left')
-            ->join('articlecategory ac', 'ac.articleID = a.articleID', 'left')
-            ->join('category c', 'c.categoryID = ac.categoryID', 'left')
+            ->join('UserAdministrator u', 'u.userID = a.userID', 'left')
+            ->join('ArticleCategory ac', 'ac.articleID = a.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ac.categoryID', 'left')
             ->where('a.articleDate >=', $fromDate . ' 00:00:00')
             ->where('a.articleDate <=', $toDate . ' 23:59:59')
             ->whereIn('LOWER(a.status)', ['publish', 'published']);
@@ -507,13 +525,13 @@ class StatisticReport extends BaseController
     }
 
     /**
-     * Legacy parity: popular articles ranking
+     * Smarty parity: popular articles ranking
      */
     protected function getPopularArticlesData(string $fromDate, string $toDate, int $limit = 50): array
     {
         $db = $this->articleModel->db;
 
-        return $db->table('article a')
+        return $db->table('Article a')
             ->select('
                 a.articleID,
                 a.headline AS articleTitle,
@@ -523,9 +541,9 @@ class StatisticReport extends BaseController
                 c.categoryName AS kanal_title,
                 u.name AS editor_name
             ')
-            ->join('useradministrator u', 'u.userID = a.userID', 'left')
-            ->join('articlecategory ac', 'ac.articleID = a.articleID', 'left')
-            ->join('category c', 'c.categoryID = ac.categoryID', 'left')
+            ->join('UserAdministrator u', 'u.userID = a.userID', 'left')
+            ->join('ArticleCategory ac', 'ac.articleID = a.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ac.categoryID', 'left')
             ->where('a.articleDate >=', $fromDate . ' 00:00:00')
             ->where('a.articleDate <=', $toDate . ' 23:59:59')
             ->whereIn('LOWER(a.status)', ['publish', 'published'])
@@ -552,7 +570,7 @@ class StatisticReport extends BaseController
         if ($tab === 'publish') {
             fputcsv($output, ['ID Artikel', 'Judul Berita', 'Kanal', 'Tanggal Terbit', 'Tanggal Dibuat', 'Inisial Editor', 'Nama Editor', 'Total Views']);
             $db = $this->articleModel->db;
-            $items = $db->table('article a')
+            $items = $db->table('Article a')
                 ->select('
                     a.articleID,
                     a.headline AS articleTitle,
@@ -563,9 +581,9 @@ class StatisticReport extends BaseController
                     u.name AS editor_name,
                     a.viewed
                 ')
-                ->join('useradministrator u', 'u.userID = a.userID', 'left')
-                ->join('articlecategory ac', 'ac.articleID = a.articleID', 'left')
-                ->join('category c', 'c.categoryID = ac.categoryID', 'left')
+                ->join('UserAdministrator u', 'u.userID = a.userID', 'left')
+                ->join('ArticleCategory ac', 'ac.articleID = a.articleID', 'left')
+                ->join('Category c', 'c.categoryID = ac.categoryID', 'left')
                 ->where('a.articleDate >=', $fromDate . ' 00:00:00')
                 ->where('a.articleDate <=', $toDate . ' 23:59:59')
                 ->whereIn('LOWER(a.status)', ['publish', 'published'])

@@ -19,11 +19,11 @@ class Trending extends BaseController
     {
         $db = \Config\Database::connect();
         
-        $trending = $db->table('tbltrending')
+        $trending = $db->table('Trending')
             ->orderBy('num', 'ASC')
             ->get()->getResultArray();
             
-        $excludes = $db->table('tbltrendingexclude')
+        $excludes = $db->table('TrendingExclude')
             ->orderBy('id', 'DESC')
             ->get()->getResultArray();
 

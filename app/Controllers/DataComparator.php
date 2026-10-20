@@ -47,10 +47,10 @@ class DataComparator extends Controller
         'tblmemberpost'         => 'memberpost',
         'tblpushnotif'          => 'pushnotif',
         'tblpushregistered'     => 'pushregistered',
-        'tblpushtodevices'      => 'pushtodevice',
+        'tblpushtodevices'      => 'pushtodevices',
         'tblpushtodevicescron'  => 'pushtodevicescron',
         'tblsaham'              => 'saham',
-        'tblsaham_emiten'       => 'sahamemiten',
+        'tblsaham_emiten'       => 'saham_emiten',
         'tblsaham_index'        => 'saham_index',
         'tblsaham_sectoral'     => 'saham_sectoral',
         'tblsaham_summary'      => 'saham_summary',
@@ -63,7 +63,12 @@ class DataComparator extends Controller
         'tbltrending'           => 'trending',
         'tbltrendingexclude'    => 'trendingexclude',
         'tbluseradministrator'  => 'useradministrator',
-        'user2fauth'            => 'user2fauth',
+        'tblarticlepoints'      => 'articlepoints',
+        'tblarticleheadlinehistory' => 'articleheadlinehistory',
+        'tblseo_scores'         => 'seo_scores',
+        'tblseoscoring'         => 'seoscoring',
+        'tblai_generated_logs'  => 'ai_generated_logs',
+        'tblaigenerate'         => 'aigenerate',
     ];
 
     /**

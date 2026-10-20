@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class GoogleDocsModel extends Model
 {
-    protected $table = 'googledocs';
+    protected $table = 'GoogleDocs';
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'title',
@@ -22,7 +22,7 @@ class GoogleDocsModel extends Model
      */
     public function getDocsList(): array
     {
-        return $this->db->table('googledocs g')
+        return $this->db->table('GoogleDocs g')
             ->select('
                 g.id,
                 g.title,
@@ -31,7 +31,7 @@ class GoogleDocsModel extends Model
                 g.timestamp,
                 p.name AS author
             ')
-            ->join('useradministrator p', 'p.userID = g.userID', 'left')
+            ->join('UserAdministrator p', 'p.userID = g.userID', 'left')
             ->orderBy('g.id', 'DESC')
             ->get()->getResultArray();
     }

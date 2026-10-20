@@ -18,7 +18,7 @@ class PublishScheduled extends BaseCommand
 
         CLI::write("Memeriksa artikel terjadwal per waktu: {$now}...", 'yellow');
 
-        $articles = $db->table('article')
+        $articles = $db->table('Article')
             ->where('status', 'Hold')
             ->where('articleDate <=', $now)
             ->get()
@@ -32,7 +32,7 @@ class PublishScheduled extends BaseCommand
 
         $updated = 0;
         foreach ($articles as $art) {
-            $db->table('article')
+            $db->table('Article')
                 ->where('articleID', $art['articleID'])
                 ->update(['status' => 'Publish']);
             $updated++;

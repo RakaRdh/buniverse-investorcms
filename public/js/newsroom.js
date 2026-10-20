@@ -23,7 +23,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. Sidebar Scroll Position Preservation
     initSidebarScrollPreservation();
+
+    // 5. Global Safe POST Handler for Delete Actions (CSRF Prevention)
+    initSafeDeleteHandler();
 });
+
+function initSafeDeleteHandler() {
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[href*="/delete/"], a[href*="/remove/"], a#confirmRemoveLink');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        if (!href || href === '#' || href.startsWith('javascript:')) return;
+
+        e.preventDefault();
+
+        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const tokenNameMeta = document.querySelector('meta[name="csrf-token-name"]');
+        const csrfToken = tokenMeta ? tokenMeta.getAttribute('content') : '';
+        const csrfName = tokenNameMeta ? tokenNameMeta.getAttribute('content') : 'csrf_test_name';
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = href;
+        form.style.display = 'none';
+
+        if (csrfToken) {
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = csrfName;
+            tokenInput.value = csrfToken;
+            form.appendChild(tokenInput);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    });
+}
 
 function initSidebarScrollPreservation() {
     const sidebarNav = document.getElementById('sidebarMainNavigation') || document.querySelector('nav[aria-label="Main navigation"]');

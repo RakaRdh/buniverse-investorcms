@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class AdminModel extends Model
 {
-    protected $table = 'useradministrator';
+    protected $table = 'UserAdministrator';
     protected $primaryKey = 'userID';
     protected $allowedFields = [
         'name',
@@ -74,7 +74,7 @@ class AdminModel extends Model
      */
     public static function getPepper(): string
     {
-        return (string)env('AUTH_LEGACY_PEPPER', self::LEGACY_PEPPER);
+        return function_exists('env') ? (string)env('AUTH_LEGACY_PEPPER', self::LEGACY_PEPPER) : self::LEGACY_PEPPER;
     }
 
     /**
@@ -254,7 +254,7 @@ class AdminModel extends Model
      */
     public function countAdminsWithActivity(array $filters = []): int
     {
-        $builder = $this->db->table('useradministrator p');
+        $builder = $this->db->table('UserAdministrator p');
 
         if (!empty($filters['q'])) {
             $q = trim($filters['q']);
@@ -282,7 +282,7 @@ class AdminModel extends Model
      */
     public function getAdminsWithActivity(array $filters = [], int $limit = 0, int $offset = 0): array
     {
-        $builder = $this->db->table('useradministrator p')
+        $builder = $this->db->table('UserAdministrator p')
             ->select('
                 p.userID AS id,
                 p.name AS name,
@@ -294,7 +294,7 @@ class AdminModel extends Model
                 COUNT(DISTINCT el.id) AS activity_count,
                 MAX(el.timestamp) AS last_activity_time
             ')
-            ->join('editorlog el', 'el.editorId = p.userID', 'left');
+            ->join('EditorLog el', 'el.editorId = p.userID', 'left');
 
         if (!empty($filters['q'])) {
             $q = trim($filters['q']);

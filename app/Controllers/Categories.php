@@ -22,18 +22,19 @@ class Categories extends BaseController
     public function save()
     {
         $name = trim($this->request->getPost('name') ?? '');
-        if (!empty($name)) {
-            $this->categoryModel->insert([
-                'charlie_name_a' => $name,
-                'field_label_a'  => url_title($name, '-', true),
-                'status_code'    => 1,
-                'numeric_val'    => 1,
-            ]);
-            $newId = $this->categoryModel->insertID();
-            $this->categoryModel->syncBackup($newId);
+        if (empty($name)) {
+            return redirect()->to('/kanal/master')->withInput()->with('error', 'Nama kategori tidak boleh kosong.');
         }
 
-        return redirect()->to('/kanal/master')->with('success', 'Category created successfully!');
+        $this->categoryModel->insert([
+            'categoryName' => url_title($name, '-', true),
+            'label'        => $name,
+            'parent'       => ($this->request->getPost('parent') > 0) ? (int)$this->request->getPost('parent') : null,
+            'status'       => 1,
+            'num'          => 1,
+        ]);
+
+        return redirect()->to('/kanal/master')->with('success', 'Kategori baru berhasil ditambahkan.');
     }
 
     public function delete($id)

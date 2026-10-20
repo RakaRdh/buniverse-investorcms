@@ -85,15 +85,18 @@ class Auth extends BaseController
             return redirect()->to('/login')->withInput()->with('error', 'Kredensial tidak valid. Silakan periksa username atau kata sandi Anda.');
         }
 
-        // Demo users for quick selection in development login screen
-        $demoUsers = $this->adminModel->select('
-                userID AS id,
-                name,
-                username,
-                email,
-                roleName AS role
-            ')
-            ->findAll();
+        // Demo users for quick selection in development login screen only
+        $demoUsers = [];
+        if (ENVIRONMENT === 'development') {
+            $demoUsers = $this->adminModel->select('
+                    userID AS id,
+                    name,
+                    username,
+                    email,
+                    roleName AS role
+                ')
+                ->findAll();
+        }
 
         return view('auth/login', ['demoUsers' => $demoUsers]);
     }

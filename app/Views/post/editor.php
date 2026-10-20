@@ -38,7 +38,7 @@
                 </div>
 
                 <!-- Save Draft Button -->
-                <button type="submit" name="status" value="Draft" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors shadow-xs">
+                <button type="button" onclick="submitAsDraft()" class="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors shadow-xs">
                     <i data-lucide="file-down" class="size-4 text-muted-foreground"></i>
                     <span>Simpan Draft</span>
                 </button>
@@ -107,6 +107,14 @@
                 </div>
 
                 <!-- Scheduled Date & Time Controls (Slider + Manual Editable Inputs) -->
+                <?php
+                    $rawArtDate = !empty($article['publish_date']) && strtotime($article['publish_date']) ? $article['publish_date'] : date('Y-m-d H:i:s');
+                    $initDateFormatted = date('d M Y', strtotime($rawArtDate));
+                    $initHour = (int)date('G', strtotime($rawArtDate));
+                    $initMinute = (int)date('i', strtotime($rawArtDate));
+                    $initDisplayDate = date('d M Y H:i', strtotime($rawArtDate));
+                    $initSqlDate = date('Y-m-d H:i:s', strtotime($rawArtDate));
+                ?>
                 <div id="scheduledSettingBox" class="p-3.5 rounded-lg border border-primary/30 bg-primary/5 space-y-3.5" style="display: none;">
                     <div>
                         <div class="flex items-center justify-between mb-1">
@@ -119,7 +127,7 @@
                                 <span>Publish Now</span>
                             </button>
                         </div>
-                        <input type="text" id="scheduledDateInput" class="flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-sm font-medium" placeholder="Pilih tanggal...">
+                        <input type="text" id="scheduledDateInput" value="<?= esc($initDateFormatted) ?>" class="flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-sm font-medium" placeholder="Pilih tanggal...">
                     </div>
 
                     <!-- Time: Jam (Slider + Number input) -->
@@ -127,11 +135,11 @@
                         <div class="flex items-center justify-between text-xs font-medium">
                             <span class="text-muted-foreground">Jam Tayang (00–23):</span>
                             <div class="flex items-center gap-1">
-                                <input type="number" id="hourInputNumber" min="0" max="23" value="9" onchange="onHourInputChange(this.value)" class="h-6 w-12 rounded border border-input bg-background px-1 text-center font-bold text-primary font-mono text-xs">
+                                <input type="number" id="hourInputNumber" min="0" max="23" value="<?= esc($initHour) ?>" onchange="onHourInputChange(this.value)" class="h-6 w-12 rounded border border-input bg-background px-1 text-center font-bold text-primary font-mono text-xs">
                                 <span class="text-muted-foreground text-[10px]">WIB</span>
                             </div>
                         </div>
-                        <input type="range" id="hourSlider" min="0" max="23" value="9" oninput="onHourSliderChange(this.value)" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
+                        <input type="range" id="hourSlider" min="0" max="23" value="<?= esc($initHour) ?>" oninput="onHourSliderChange(this.value)" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
                     </div>
 
                     <!-- Time: Menit (Slider + Number input) -->
@@ -139,21 +147,21 @@
                         <div class="flex items-center justify-between text-xs font-medium">
                             <span class="text-muted-foreground">Menit Tayang (00–59):</span>
                             <div class="flex items-center gap-1">
-                                <input type="number" id="minuteInputNumber" min="0" max="59" value="0" onchange="onMinuteInputChange(this.value)" class="h-6 w-12 rounded border border-input bg-background px-1 text-center font-bold text-primary font-mono text-xs">
+                                <input type="number" id="minuteInputNumber" min="0" max="59" value="<?= esc($initMinute) ?>" onchange="onMinuteInputChange(this.value)" class="h-6 w-12 rounded border border-input bg-background px-1 text-center font-bold text-primary font-mono text-xs">
                                 <span class="text-muted-foreground text-[10px]">m</span>
                             </div>
                         </div>
-                        <input type="range" id="minuteSlider" min="0" max="59" value="0" oninput="onMinuteSliderChange(this.value)" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
+                        <input type="range" id="minuteSlider" min="0" max="59" value="<?= esc($initMinute) ?>" oninput="onMinuteSliderChange(this.value)" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer">
                     </div>
 
                     <div class="p-2 rounded bg-background border border-border text-[11px] flex items-center justify-between">
                         <span class="text-muted-foreground">Waktu Publikasi:</span>
-                        <span id="publishDateDisplay" class="font-bold text-foreground font-mono">01 Sep 2026 09:00</span>
+                        <span id="publishDateDisplay" class="font-bold text-foreground font-mono"><?= esc($initDisplayDate) ?></span>
                     </div>
                 </div>
 
                 <!-- Hidden Input holding full Publish Date formatted (standard MySQL Y-m-d H:i:s) -->
-                <input type="hidden" name="publish_date" id="publishDateHiddenInput" value="<?= esc(!empty($article['publish_date']) && strtotime($article['publish_date']) ? date('Y-m-d H:i:s', strtotime($article['publish_date'])) : date('Y-m-d H:i:s')) ?>">
+                <input type="hidden" name="publish_date" id="publishDateHiddenInput" value="<?= esc($initSqlDate) ?>">
 
                 <!-- Preview Article Button in Right Sidebar -->
                 <div class="pt-3 border-t border-border space-y-2">
@@ -277,11 +285,11 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                 <div class="sm:col-span-2">
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Upper Deck (Opsional)</label>
-                    <input type="text" name="upper_deck" value="<?= esc($article['upper_deck'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Contoh: LAPORAN KHUSUS / EKSKLUSIF / KINERJA EMITEN">
+                    <input type="text" name="upper_deck" id="upperDeckInput" value="<?= esc($article['upper_deck'] ?? '') ?>" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" placeholder="Contoh: LAPORAN KHUSUS / EKSKLUSIF / KINERJA EMITEN">
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-foreground mb-1.5">Artikel Premium</label>
-                    <select name="is_premium" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                    <select name="is_premium" id="isPremiumSelect" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                         <option value="0" <?= empty($article['is_premium']) ? 'selected' : '' ?>>Tidak (Gratis)</option>
                         <option value="1" <?= !empty($article['is_premium']) ? 'selected' : '' ?>>Ya (Member Only)</option>
                     </select>
@@ -479,17 +487,30 @@
                         ];
 
                         $matchedSource = false;
+                        $normCurrent = strtolower(trim((string)$currentSource));
+
+                        // Mapping alias umum (misal hasil scraping antaranews)
+                        if (in_array($normCurrent, ['antara', 'antaranews', 'antaranews.com', 'antara news'])) {
+                            $normCurrent = 'antara';
+                        } elseif (in_array($normCurrent, ['reuters', 'reuters.com'])) {
+                            $normCurrent = 'reuters';
+                        } elseif (in_array($normCurrent, ['bloomberg', 'bloomberg.com'])) {
+                            $normCurrent = 'bloomberg';
+                        } elseif (in_array($normCurrent, ['investor.id', 'investor id', 'investorid'])) {
+                            $normCurrent = 'investor.id';
+                        }
+
                         foreach ($internalSources as $s) {
-                            if (strcasecmp($currentSource, $s) === 0) {
+                            if (strtolower(trim($s)) === $normCurrent) {
                                 $matchedSource = $s;
                                 break;
                             }
                         }
                         if (!$matchedSource) {
                             foreach ($externalSources as $val => $label) {
-                                $target = is_string($val) ? $val : $label;
-                                if (strcasecmp($currentSource, $target) === 0 || strcasecmp($currentSource, $label) === 0) {
-                                    $matchedSource = $target;
+                                $optVal = is_string($val) ? $val : $label;
+                                if (strtolower(trim($optVal)) === $normCurrent || strtolower(trim($label)) === $normCurrent) {
+                                    $matchedSource = $optVal;
                                     break;
                                 }
                             }
@@ -517,14 +538,17 @@
                         <div class="relative">
                             <input type="text" 
                                    id="customSourceInput" 
-                                   name="source" 
-                                   value="<?= esc($currentSource) ?>" 
+                                   value="<?= esc($isCustom ? $currentSource : '') ?>" 
+                                   oninput="handleCustomSourceInput(this.value)"
                                    placeholder="Ketik nama sumber berita lain..." 
                                    class="flex h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                             <i data-lucide="edit-3" class="size-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                         </div>
                         <p class="text-[10px] text-muted-foreground mt-1">Isi sumber berita manual jika tidak tertera pada daftar di atas.</p>
                     </div>
+
+                    <!-- Single canonical source input submitted to server -->
+                    <input type="hidden" name="source" id="finalSourceInput" value="<?= esc($currentSource) ?>">
                 </div>
             </div>
 

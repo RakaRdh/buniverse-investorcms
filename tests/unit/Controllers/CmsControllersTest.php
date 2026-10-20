@@ -243,7 +243,7 @@ class CmsControllersTest extends CIUnitTestCase
 
         // 2. Valid article id renders preview
         $db = \Config\Database::connect();
-        $sample = $db->table('article')->where('status', 'Published')->get()->getRowArray();
+        $sample = $db->table('Article')->where('status', 'Published')->get()->getRowArray();
         if ($sample) {
             $validResult = $this->withURI('http://localhost:8080/post/preview/' . $sample['articleID'])
                 ->controller(PostPreview::class)

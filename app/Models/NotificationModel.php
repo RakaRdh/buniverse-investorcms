@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class NotificationModel extends Model
 {
-    protected $table = 'pushnotif';
+    protected $table = 'PushNotif';
     protected $primaryKey = 'idPush';
     protected $allowedFields = [
         'postBy',
@@ -33,7 +33,7 @@ class NotificationModel extends Model
      */
     public function getNotifHistory(): array
     {
-        return $this->db->table('pushnotif nm')
+        return $this->db->table('PushNotif nm')
             ->select('
                 nm.idPush AS id,
                 nm.pushTitle AS content,
@@ -42,7 +42,7 @@ class NotificationModel extends Model
                 p.name AS author_name,
                 nm.status AS status
             ')
-            ->join('useradministrator p', 'p.userID = nm.postBy', 'left')
+            ->join('UserAdministrator p', 'p.userID = nm.postBy', 'left')
             ->orderBy('nm.pushDate', 'DESC')
             ->get()->getResultArray();
     }

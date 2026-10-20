@@ -6,7 +6,7 @@ use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 
 /**
- * Port dari legacy cron/pushnotif.php
+ * Port dari smarty cron/pushnotif.php
  * Catatan: Semua panggilan eksternal FCM di-stub murni demi keamanan lingkungan lokal.
  */
 class ProcessPushNotif extends BaseCommand
@@ -20,7 +20,7 @@ class ProcessPushNotif extends BaseCommand
         CLI::write('[CRON] Memeriksa antrean push notification di database lokal...', 'yellow');
 
         $db = \Config\Database::connect();
-        $pending = $db->table('pushnotif')
+        $pending = $db->table('PushNotif')
             ->where('status', 'ready')
             ->get()->getResultArray();
 
@@ -28,12 +28,12 @@ class ProcessPushNotif extends BaseCommand
         CLI::write("[CRON] Ditemukan {$count} notifikasi berstatus ready.", 'white');
 
         /**
-         * @deprecated LEGACY EXTERNAL API
-         * Legacy memanggil Firebase Cloud Messaging (FCM) legacy HTTP server key.
+         * @deprecated SMARTY EXTERNAL API
+         * Smarty memanggil Firebase Cloud Messaging (FCM) HTTP server key.
          * Di environment lokal CI4, pemanggilan eksternal di-bypass demi zero production risk.
          */
         foreach ($pending as $item) {
-            $db->table('pushnotif')
+            $db->table('PushNotif')
                 ->where('id', $item['id'])
                 ->update([
                     'status'         => 'sent',

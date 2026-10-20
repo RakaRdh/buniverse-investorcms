@@ -73,6 +73,11 @@ class Post extends BaseController
         // RBAC: Author & Contributor only see their own articles
         if (in_array(strtolower($userRole), ['author', 'contributor'])) {
             $filters['user_id'] = $userId;
+        } elseif (strcasecmp((string)$statusFilter, 'Draft') === 0) {
+            // Ketika memfilter Draft, tampilkan draft milik user login saat ini (kecuali jika admin memilih editor lain)
+            if (empty($editorFilter) || $editorFilter === 'all') {
+                $filters['user_id'] = $userId;
+            }
         }
 
         $page = max(1, (int)($this->request->getGet('page') ?? 1));
@@ -241,18 +246,22 @@ class Post extends BaseController
         }
         $categoryId = $category ? (int)$category['categoryID'] : 1;
 
-        // Sub-Kanal Category Resolution (if present)
-        $subKanalId = 0;
+        // Sub-Kanal Category Resolution (mendukung multiple sub-kanals)
+        $subKanalIds = [];
         if (!empty($subKanal)) {
-            $firstSubName = trim(explode(',', $subKanal)[0]);
-            $subCategory = $this->categoryModel->where('categoryName', $firstSubName)->where('parent', $categoryId)->first();
-            if (!$subCategory) {
-                $subCategory = $this->categoryModel->where('categoryName', $firstSubName)->first();
-            }
-            if ($subCategory) {
-                $subKanalId = (int)$subCategory['categoryID'];
+            $subNames = array_map('trim', explode(',', $subKanal));
+            foreach ($subNames as $sName) {
+                if ($sName === '') continue;
+                $subCategory = $this->categoryModel->where('categoryName', $sName)->where('parent', $categoryId)->first();
+                if (!$subCategory) {
+                    $subCategory = $this->categoryModel->where('categoryName', $sName)->first();
+                }
+                if ($subCategory) {
+                    $subKanalIds[] = (int)$subCategory['categoryID'];
+                }
             }
         }
+        $subKanalId = !empty($subKanalIds) ? $subKanalIds[0] : 0;
 
         $pointsInput = $this->request->getPost('points');
         if (is_array($pointsInput)) {
@@ -316,6 +325,7 @@ class Post extends BaseController
             'kanal'             => $kanalName,
             'sub_kanal'         => $subKanal,
             'sub_kanal_id'      => $subKanalId,
+            'sub_kanal_ids'     => $subKanalIds,
             'is_premium'        => (int)($this->request->getPost('is_premium') ?? 0),
             'headline_type'     => $this->request->getPost('headline_type') ?? 'none',
             'userID'            => $sessionUser,
@@ -409,18 +419,22 @@ class Post extends BaseController
         }
         $categoryId = $category ? (int)$category['categoryID'] : 1;
 
-        // Sub-Kanal Category Resolution (if present)
-        $subKanalId = 0;
+        // Sub-Kanal Category Resolution (mendukung multiple sub-kanals)
+        $subKanalIds = [];
         if (!empty($subKanal)) {
-            $firstSubName = trim(explode(',', $subKanal)[0]);
-            $subCategory = $this->categoryModel->where('categoryName', $firstSubName)->where('parent', $categoryId)->first();
-            if (!$subCategory) {
-                $subCategory = $this->categoryModel->where('categoryName', $firstSubName)->first();
-            }
-            if ($subCategory) {
-                $subKanalId = (int)$subCategory['categoryID'];
+            $subNames = array_map('trim', explode(',', $subKanal));
+            foreach ($subNames as $sName) {
+                if ($sName === '') continue;
+                $subCategory = $this->categoryModel->where('categoryName', $sName)->where('parent', $categoryId)->first();
+                if (!$subCategory) {
+                    $subCategory = $this->categoryModel->where('categoryName', $sName)->first();
+                }
+                if ($subCategory) {
+                    $subKanalIds[] = (int)$subCategory['categoryID'];
+                }
             }
         }
+        $subKanalId = !empty($subKanalIds) ? $subKanalIds[0] : 0;
 
         $pointsInput = $this->request->getPost('points');
         if (is_array($pointsInput)) {
@@ -485,6 +499,7 @@ class Post extends BaseController
             'kanal'             => $kanalName,
             'sub_kanal'         => $subKanal,
             'sub_kanal_id'      => $subKanalId,
+            'sub_kanal_ids'     => $subKanalIds,
             'is_premium'        => (int)($this->request->getPost('is_premium') ?? 0),
             'headline_type'     => $this->request->getPost('headline_type') ?? 'none',
         ];
@@ -668,39 +683,29 @@ class Post extends BaseController
             }
         }
 
-        // 2. Query Yahoo Finance API for live IDX stock search if needed
+        // 2. Query local saham_topvalue table for stock search (Zero Outbound Network Calls)
         if (count($results) < 8 && strlen($q) >= 2) {
             try {
-                $ctx = stream_context_create([
-                    'http' => [
-                        'timeout' => 2,
-                        'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0',
-                    ]
-                ]);
-                $apiUrl = 'https://query1.finance.yahoo.com/v1/finance/search?q=' . urlencode($q) . '&quotesCount=12';
-                $json = @file_get_contents($apiUrl, false, $ctx);
-                if ($json) {
-                    $resp = json_decode($json, true);
-                    if (!empty($resp['quotes'])) {
-                        foreach ($resp['quotes'] as $quote) {
-                            $sym = $quote['symbol'] ?? '';
-                            $exchange = $quote['exchange'] ?? '';
-                            if (str_ends_with($sym, '.JK') || $exchange === 'JKT') {
-                                $cleanTicker = str_replace('.JK', '', $sym);
-                                if (!isset($seen[$cleanTicker])) {
-                                    $seen[$cleanTicker] = true;
-                                    $results[] = [
-                                        'ticker' => $cleanTicker,
-                                        'name'   => $quote['longname'] ?? $quote['shortname'] ?? ($cleanTicker . ' Tbk'),
-                                        'sector' => $quote['sector'] ?? $quote['industry'] ?? 'Indonesia Stock Exchange (IDX)',
-                                    ];
-                                }
-                            }
-                        }
+                $db = \Config\Database::connect();
+                $stockRows = $db->table('Saham_topvalue')
+                    ->select('StockCode AS ticker, StockCode AS name')
+                    ->like('StockCode', strtoupper($q), 'after')
+                    ->limit(8)
+                    ->get()->getResultArray();
+
+                foreach ($stockRows as $row) {
+                    $sym = $row['ticker'] ?? '';
+                    if (!empty($sym) && !isset($seen[$sym])) {
+                        $seen[$sym] = true;
+                        $results[] = [
+                            'ticker' => $sym,
+                            'name'   => $sym . ' Tbk',
+                            'sector' => 'Indonesia Stock Exchange (IDX)',
+                        ];
                     }
                 }
             } catch (\Throwable $e) {
-                // Graceful fallback
+                // Table might not exist or empty in certain test environments
             }
         }
 

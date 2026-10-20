@@ -38,7 +38,7 @@ class ArticleApi extends BaseController
         $sort = $this->request->getGet('sort') ?: 'latest';
 
         $db = \Config\Database::connect();
-        $builder = $db->table('article n')
+        $builder = $db->table('Article n')
             ->select('
                 n.articleID AS id,
                 n.headline AS title,
@@ -58,14 +58,14 @@ class ArticleApi extends BaseController
                     ELSE "0"
                 END AS is_premium
             ')
-            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
-            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
-            ->join('authors a', 'a.authorID = nal.authorID', 'left')
-            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
-            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
-            ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
+            ->join('ArticleCategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('ArticleAuthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('Authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('MediaArticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('Media m', 'm.mediaID = ma_thumb.mediaID', 'left')
+            ->join('ArticleMeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
+            ->join('ArticleMeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
             ->whereIn('LOWER(n.status)', ['publish', 'published'])
             ->where('n.articleDate <=', date('Y-m-d H:i:s'));
 
@@ -78,11 +78,11 @@ class ArticleApi extends BaseController
         }
 
         if (!empty($tag)) {
-            $builder->join('articletag ntl', 'ntl.articleId = n.articleID', 'inner')
-                    ->join('tag t', 't.tagID = ntl.tagID', 'inner')
+            $builder->join('ArticleKeyword akw', 'akw.articleID = n.articleID', 'inner')
+                    ->join('Keyword k', 'k.id = akw.keywordID', 'inner')
                     ->groupStart()
-                    ->where('t.slug', $tag)
-                    ->orWhere('t.label', $tag)
+                    ->where('k.slug', $tag)
+                    ->orWhere('k.keyword', $tag)
                     ->groupEnd();
         }
 
@@ -96,8 +96,9 @@ class ArticleApi extends BaseController
 
         $builder->groupBy('n.articleID');
 
+        // Total count matching Smarty CMS pagination logic
         $countBuilder = clone $builder;
-        $total = count($countBuilder->get()->getResultArray());
+        $total = $countBuilder->countAllResults(false);
 
         if ($sort === 'popular') {
             $builder->orderBy('n.viewed', 'DESC')->orderBy('n.articleDate', 'DESC');
@@ -143,7 +144,7 @@ class ArticleApi extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $builder = $db->table('article n')
+        $builder = $db->table('Article n')
             ->select('
                 n.articleID AS id,
                 n.headline AS title,
@@ -166,15 +167,15 @@ class ArticleApi extends BaseController
                 END AS is_premium,
                 COALESCE(ANY_VALUE(nm_source.metaval), "Investor.id / Riset") AS source
             ')
-            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
-            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
-            ->join('authors a', 'a.authorID = nal.authorID', 'left')
-            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
-            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
-            ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
-            ->join('articlemeta nm_source', 'nm_source.articleID = n.articleID AND nm_source.metakey = "news_source"', 'left')
+            ->join('ArticleCategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('ArticleAuthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('Authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('MediaArticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('Media m', 'm.mediaID = ma_thumb.mediaID', 'left')
+            ->join('ArticleMeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
+            ->join('ArticleMeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
+            ->join('ArticleMeta nm_source', 'nm_source.articleID = n.articleID AND nm_source.metakey = "news_source"', 'left')
             ->groupBy('n.articleID');
 
         if (is_numeric($identifier)) {
@@ -193,7 +194,7 @@ class ArticleApi extends BaseController
         }
 
         // Increment views count
-        $db->table('article')
+        $db->table('Article')
             ->where('articleID', $article['id'])
             ->increment('viewed', 1);
 
@@ -206,17 +207,17 @@ class ArticleApi extends BaseController
         $article['featured_image'] = $article['featured_image'] ?: '/img/investor_placeholder.jpg';
 
         // Fetch Points (Singkatnya)
-        $pointsList = $db->table('articlepoints')
+        $pointsList = $db->table('ArticlePoints')
             ->where('article_id', $article['id'])
             ->orderBy('sort_order', 'ASC')
             ->get()->getResultArray();
         $article['points'] = !empty($pointsList) ? array_column($pointsList, 'point_text') : [];
 
-        // Fetch Tags
-        $tags = $db->table('articletag ntl')
-            ->select('t.tagID AS id, t.label AS name, t.slug AS slug')
-            ->join('tag t', 't.tagID = ntl.tagID')
-            ->where('ntl.articleId', $article['id'])
+        // Fetch Tags / Keywords
+        $tags = $db->table('ArticleKeyword akw')
+            ->select('k.id AS id, k.keyword AS name, k.slug AS slug')
+            ->join('Keyword k', 'k.id = akw.keywordID')
+            ->where('akw.articleID', $article['id'])
             ->get()->getResultArray();
         $article['tags'] = $tags;
 
@@ -241,9 +242,9 @@ class ArticleApi extends BaseController
     {
         $db = \Config\Database::connect();
         
-        $article = $db->table('article n')
+        $article = $db->table('Article n')
             ->select('n.articleID AS id, ANY_VALUE(ncl.categoryID) AS category_id')
-            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('ArticleCategory ncl', 'ncl.articleID = n.articleID', 'left')
             ->where(is_numeric($identifier) ? 'n.articleID' : 'n.slug', $identifier)
             ->groupBy('n.articleID')
             ->get()->getRowArray();
@@ -256,7 +257,7 @@ class ArticleApi extends BaseController
         }
 
         $categoryId = (int)($article['category_id'] ?? 0);
-        $builder = $db->table('article n')
+        $builder = $db->table('Article n')
             ->select('
                 n.articleID AS id,
                 n.headline AS title,
@@ -268,10 +269,10 @@ class ArticleApi extends BaseController
                 ANY_VALUE(c.label) AS category_name,
                 ANY_VALUE(c.categoryName) AS category_slug
             ')
-            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
-            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
-            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
+            ->join('ArticleCategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('MediaArticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('Media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->where('n.articleID !=', $article['id'])
             ->whereIn('LOWER(n.status)', ['publish', 'published'])
             ->where('n.articleDate <=', date('Y-m-d H:i:s'));
@@ -337,7 +338,7 @@ class ArticleApi extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $articles = $db->table('article n')
+        $articles = $db->table('Article n')
             ->select('
                 n.articleID AS id,
                 n.headline AS title,
@@ -349,10 +350,10 @@ class ArticleApi extends BaseController
                 ANY_VALUE(c.categoryName) AS category_slug,
                 COALESCE(NULLIF(ANY_VALUE(m.filename), ""), "/img/investor_placeholder.jpg") AS featured_image
             ')
-            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
-            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
-            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
+            ->join('ArticleCategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('MediaArticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('Media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->whereIn('LOWER(n.status)', ['publish', 'published'])
             ->where('n.articleDate <=', date('Y-m-d H:i:s'))
             ->groupStart()

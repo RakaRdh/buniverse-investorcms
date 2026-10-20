@@ -326,7 +326,7 @@ class AiAssistant extends BaseController
                     $mediaFilename = ltrim(str_replace(['\\', '/uploads/media/'], ['/', ''], $rawFile), '/');
                     $mediaTitle = 'AI Scrape - ' . $sourceHost . ' (' . date('d M H:i') . ')';
 
-                    $db->table('media')->insert([
+                    $db->table('Media')->insert([
                         'mediaTitle'  => $mediaTitle,
                         'caption'     => $data['thumbnail_caption'] ?? '',
                         'description' => $data['thumbnail_description'] ?? ($data['thumbnail_caption'] ?? ''),
@@ -436,7 +436,7 @@ class AiAssistant extends BaseController
                 'created_at'              => date('Y-m-d H:i:s'),
             ];
 
-            $builder = $db->table('ai_generated_logs');
+            $builder = $db->table('AiGeneratedLogs');
             $builder->insert($record);
             return $db->insertID();
         } catch (\Throwable $e) {

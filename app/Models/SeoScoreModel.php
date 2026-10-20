@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class SeoScoreModel extends Model
 {
-    protected $table            = 'seo_scores';
+    protected $table            = 'SeoScores';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
@@ -59,7 +59,7 @@ class SeoScoreModel extends Model
      */
     public function getLogsWithRelations(array $filters = [], int $page = 1, int $perPage = 25): array
     {
-        $builder = $this->db->table('seo_scores s')
+        $builder = $this->db->table('SeoScores s')
             ->select('
                 s.id,
                 s.article_id,
@@ -79,9 +79,9 @@ class SeoScoreModel extends Model
                 uu.name AS used_by_name,
                 uu.username AS used_by_username
             ')
-            ->join('article a', 'a.articleID = s.article_id', 'left')
-            ->join('useradministrator u', 'u.userID = s.scored_by', 'left')
-            ->join('useradministrator uu', 'uu.userID = s.used_by', 'left')
+            ->join('Article a', 'a.articleID = s.article_id', 'left')
+            ->join('UserAdministrator u', 'u.userID = s.scored_by', 'left')
+            ->join('UserAdministrator uu', 'uu.userID = s.used_by', 'left')
             ->orderBy('s.id', 'DESC');
 
         if (!empty($filters['q'])) {

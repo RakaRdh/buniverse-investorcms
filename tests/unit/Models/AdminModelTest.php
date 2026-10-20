@@ -91,16 +91,16 @@ final class AdminModelTest extends CIUnitTestCase
 
     public function testAutoUpgradeFromMd5ToSha512(): void
     {
-        $testUsername = 'test_legacy_user_' . time();
-        $plainPass = 'legacySecret123';
+        $testUsername = 'test_smarty_user_' . time();
+        $plainPass = 'smartySecret123';
         $md5Hash = md5($plainPass);
 
-        // Insert legacy user with MD5 hash
+        // Insert user with MD5 hash
         $userId = $this->model->insert([
             'username' => $testUsername,
-            'name'     => 'Legacy User',
-            'alias'    => 'LGU',
-            'slug'     => 'legacy-user',
+            'name'     => 'Smarty User',
+            'alias'    => 'SMR',
+            'slug'     => 'smarty-user',
             'email'    => $testUsername . '@investor.id',
             'password' => $md5Hash,
             'salt'     => '',
@@ -122,5 +122,29 @@ final class AdminModelTest extends CIUnitTestCase
 
         // Cleanup
         $this->model->delete($userId);
+    }
+
+    public function testExactSmartyParity(): void
+    {
+        // Sample usernames with mixed case to verify lowercase normalization
+        $cases = [
+            'Radyan'     => 'MySecretPass123!',
+            'SUPPORT'    => 'Investor#2026',
+            'jauhari_id' => 'Pass@word123',
+        ];
+
+        foreach ($cases as $username => $password) {
+            // Smarty Administrator.class.php formula
+            $smartySalt = hash('SHA512', '[' . strtolower($username) . '>|<' . $password . ']', false);
+            $smartyPass = hash('SHA512', $smartySalt . 'B3!21t454t03' . $password . $smartySalt, false);
+
+            // CI4 AdminModel
+            $ci4Salt = AdminModel::generateSalt($username, $password);
+            $ci4Pass = AdminModel::encodePassword($password, $ci4Salt);
+
+            $this->assertSame($smartySalt, $ci4Salt, "Salt mismatch for $username");
+            $this->assertSame($smartyPass, $ci4Pass, "Password hash mismatch for $username");
+            $this->assertTrue(AdminModel::verifyPassword($password, $ci4Salt, $smartyPass, $username));
+        }
     }
 }

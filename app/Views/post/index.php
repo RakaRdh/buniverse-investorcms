@@ -239,13 +239,16 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
             <?php foreach ($posts as $post): ?>
             <?php 
                 $status = strtolower($post['status']);
-                $badgeClass = match($status) {
-                    'publish', 'published' => 'bg-success/12 text-success border-success/25',
-                    'draft' => 'bg-muted text-muted-foreground border-border',
-                    'hold' => 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
-                    'deleted' => 'bg-destructive/15 text-destructive border-destructive/30',
+                $isFutureScheduled = (in_array($status, ['publish', 'published']) && !empty($post['publish_date']) && strtotime($post['publish_date']) > time());
+                $badgeClass = match(true) {
+                    $isFutureScheduled => 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-500/30',
+                    in_array($status, ['publish', 'published']) => 'bg-success/12 text-success border-success/25',
+                    $status === 'draft' => 'bg-muted text-muted-foreground border-border',
+                    $status === 'hold' => 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
+                    $status === 'deleted' => 'bg-destructive/15 text-destructive border-destructive/30',
                     default => 'bg-muted text-muted-foreground border-border'
                 };
+                $displayStatus = $isFutureScheduled ? 'Scheduled' : $post['status'];
             ?>
             <div class="p-3.5 space-y-2.5">
                 <div class="space-y-1">
@@ -267,7 +270,7 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                         <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
                             <span class="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.2 text-[10px] font-medium capitalize <?= $badgeClass ?>">
                                 <span class="size-1 rounded-full bg-current"></span>
-                                <?= esc($post['status']) ?>
+                                <?= esc($displayStatus) ?>
                             </span>
                             <?php if (!empty($post['is_premium'])): ?>
                                 <span class="inline-flex items-center gap-0.5 rounded-sm bg-amber-500/15 px-1 py-0.2 text-[8px] font-bold text-amber-700 uppercase">
@@ -381,17 +384,20 @@ $canViewDeleted = in_array(strtolower($userRole ?? session('user_role') ?? ''), 
                         <td class="py-3 px-1 text-center">
                             <?php 
                                 $status = strtolower($post['status']);
-                                $badgeClass = match($status) {
-                                    'publish', 'published' => 'bg-success/12 text-success border-success/25',
-                                    'draft' => 'bg-muted text-muted-foreground border-border',
-                                    'hold' => 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
-                                    'deleted' => 'bg-destructive/15 text-destructive border-destructive/30',
+                                $isFutureScheduled = (in_array($status, ['publish', 'published']) && !empty($post['publish_date']) && strtotime($post['publish_date']) > time());
+                                $badgeClass = match(true) {
+                                    $isFutureScheduled => 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-500/30',
+                                    in_array($status, ['publish', 'published']) => 'bg-success/12 text-success border-success/25',
+                                    $status === 'draft' => 'bg-muted text-muted-foreground border-border',
+                                    $status === 'hold' => 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
+                                    $status === 'deleted' => 'bg-destructive/15 text-destructive border-destructive/30',
                                     default => 'bg-muted text-muted-foreground border-border'
                                 };
+                                $displayStatus = $isFutureScheduled ? 'Scheduled' : $post['status'];
                             ?>
                             <span class="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium capitalize <?= $badgeClass ?>">
                                 <span class="size-1 rounded-full bg-current"></span>
-                                <?= esc($post['status']) ?>
+                                <?= esc($displayStatus) ?>
                             </span>
                         </td>
                         <td class="py-3 px-2 text-right font-semibold text-foreground"><?= number_format($post['views']) ?></td>

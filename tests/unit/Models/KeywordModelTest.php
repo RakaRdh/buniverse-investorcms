@@ -44,7 +44,7 @@ final class KeywordModelTest extends CIUnitTestCase
 
         // Cleanup test data
         $db = \Config\Database::connect();
-        $db->table('articlekeyword')->where('articleID', $testArticleId)->delete();
+        $db->table('ArticleKeyword')->where('articleID', $testArticleId)->delete();
     }
 
     public function testKeywordAutocompleteSearch(): void
@@ -52,7 +52,7 @@ final class KeywordModelTest extends CIUnitTestCase
         // Insert a distinct keyword if not exists
         $testKw = 'UnikBursa' . time();
         $db = \Config\Database::connect();
-        $db->table('keyword')->insert([
+        $db->table('Keyword')->insert([
             'keyword' => $testKw,
             'slug'    => url_title($testKw, '-', true)
         ]);
@@ -62,6 +62,6 @@ final class KeywordModelTest extends CIUnitTestCase
         $this->assertSame($testKw, $results[0]['keyword']);
 
         // Cleanup
-        $db->table('keyword')->where('keyword', $testKw)->delete();
+        $db->table('Keyword')->where('keyword', $testKw)->delete();
     }
 }

@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class FeatureContentModel extends Model
 {
-    protected $table = 'featurecontent';
+    protected $table = 'FeatureContent';
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'type',

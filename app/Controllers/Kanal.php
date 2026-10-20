@@ -99,7 +99,6 @@ class Kanal extends BaseController
                 'num'          => $this->categoryModel->countAllResults() + 1,
             ]);
             $newId = $this->categoryModel->insertID();
-            $this->categoryModel->syncBackup($newId);
         }
 
         return redirect()->to('/kanal/master')->with('success', 'Master Kanal berhasil ditambahkan ke database!');
@@ -119,7 +118,6 @@ class Kanal extends BaseController
                 'num'          => 1,
             ]);
             $newId = $this->categoryModel->insertID();
-            $this->categoryModel->syncBackup($newId);
         }
 
         return redirect()->to('/kanal/sub')->with('success', 'Sub Kanal berhasil ditambahkan ke database!');

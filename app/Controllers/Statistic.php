@@ -53,9 +53,9 @@ class Statistic extends BaseController
         $recentArticles = $this->articleModel->getArticlesWithRelations([], 1, 20)['data'];
 
         // Compute Category Distribution for Chart via SQL JOIN
-        $catDistribution = $this->categoryModel->db->table('category c')
+        $catDistribution = $this->categoryModel->db->table('Category c')
             ->select('c.categoryName AS name, COUNT(DISTINCT ncl.articleID) AS count')
-            ->join('articlecategory ncl', 'ncl.categoryID = c.categoryID')
+            ->join('ArticleCategory ncl', 'ncl.categoryID = c.categoryID')
             ->where('c.parent IS NULL')
             ->groupBy('c.categoryID')
             ->orderBy('count', 'DESC')
@@ -78,7 +78,7 @@ class Statistic extends BaseController
         $premiumSubscribersStr = number_format(($activeMembers * 4200) + 1200);
 
         // Premium articles count from articlemeta
-        $premiumArticlesCount = (int)$this->articleModel->db->table('articlemeta')
+        $premiumArticlesCount = (int)$this->articleModel->db->table('ArticleMeta')
             ->groupStart()
                 ->where('metakey', 'premium')->whereIn('metaval', ['true', '1'])
                 ->orGroupStart()
@@ -94,7 +94,7 @@ class Statistic extends BaseController
         $totalPageviews = $metrics['rawViews'] + 1400000;
         $publishedCount = $metrics['published'];
         if ($preset === 'custom') {
-            $customViews = (int)($this->articleModel->db->table('article')
+            $customViews = (int)($this->articleModel->db->table('Article')
                 ->selectSum('viewed', 'v')
                 ->where('DATE(articleDate) >=', $fromDate)
                 ->where('DATE(articleDate) <=', $toDate)
@@ -103,7 +103,7 @@ class Statistic extends BaseController
                 $totalPageviews = $customViews;
             }
 
-            $customPub = (int)$this->articleModel->db->table('article')
+            $customPub = (int)$this->articleModel->db->table('Article')
                 ->where('DATE(articleDate) >=', $fromDate)
                 ->where('DATE(articleDate) <=', $toDate)
                 ->whereIn('LOWER(status)', ['publish', 'published'])

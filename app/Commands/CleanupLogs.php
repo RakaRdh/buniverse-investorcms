@@ -6,8 +6,8 @@ use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 
 /**
- * Port dari legacy cron/deletelog.php
- * Membersihkan log audit trail lama dari tabel editorlog
+ * Port dari smarty cron/deletelog.php
+ * Membersihkan log audit trail lama dari tabel EditorLog
  */
 class CleanupLogs extends BaseCommand
 {
@@ -22,7 +22,7 @@ class CleanupLogs extends BaseCommand
         $db = \Config\Database::connect();
         $cutoffDate = date('Y-m-d H:i:s', strtotime('-90 days'));
 
-        $deleted = $db->table('editorlog')
+        $deleted = $db->table('EditorLog')
             ->where('timestamp <', $cutoffDate)
             ->delete();
 

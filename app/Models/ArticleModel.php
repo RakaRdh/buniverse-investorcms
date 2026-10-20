@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class ArticleModel extends Model
 {
-    protected $table = 'article';
+    protected $table = 'Article';
     protected $primaryKey = 'articleID';
     protected $allowedFields = [
         'userID',
@@ -23,6 +23,12 @@ class ArticleModel extends Model
         'editlock'
     ];
     protected $useTimestamps = false;
+
+    protected function initialize()
+    {
+        parent::initialize();
+        helper('media');
+    }
 
     /**
      * Find a single record by primary key, excluding soft-deleted articles by default
@@ -42,7 +48,7 @@ class ArticleModel extends Model
     public function autoPublishDueArticles(): int
     {
         $now = date('Y-m-d H:i:s');
-        $builder = $this->db->table('article');
+        $builder = $this->db->table('Article');
         $builder->where('status', 'Hold')
                 ->where('articleDate <=', $now);
         $count = $builder->countAllResults(false);
@@ -58,7 +64,7 @@ class ArticleModel extends Model
     public function getArticlesWithRelations(array $filters = [], int $page = 1, int $perPage = 25): array
     {
         $this->autoPublishDueArticles();
-        $builder = $this->db->table('article n')
+        $builder = $this->db->table('Article n')
             ->select('
                 n.articleID AS id,
                 n.userID AS author_user_id,
@@ -92,17 +98,17 @@ class ArticleModel extends Model
                 lock_u.name AS locked_by_name,
                 lock_u.username AS locked_by_username
             ')
-            ->join('useradministrator p', 'p.userID = n.userID', 'left')
-            ->join('useradministrator lock_u', 'lock_u.userID = n.editlock', 'left')
-            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
-            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('category c_parent', 'c_parent.categoryID = c.parent', 'left')
-            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
-            ->join('authors a', 'a.authorID = nal.authorID', 'left')
-            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
-            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
-            ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
+            ->join('UserAdministrator p', 'p.userID = n.userID', 'left')
+            ->join('UserAdministrator lock_u', 'lock_u.userID = n.editlock', 'left')
+            ->join('ArticleCategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('Category c_parent', 'c_parent.categoryID = c.parent', 'left')
+            ->join('ArticleAuthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('Authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('MediaArticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('Media m', 'm.mediaID = ma_thumb.mediaID', 'left')
+            ->join('ArticleMeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
+            ->join('ArticleMeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
             ->groupBy('n.articleID');
 
         // Apply filters
@@ -191,7 +197,7 @@ class ArticleModel extends Model
      */
     public function getLightweightArticles(int $limit = 50): array
     {
-        $builder = $this->db->table('article n')
+        $builder = $this->db->table('Article n')
             ->select('
                 n.articleID AS id,
                 n.headline AS title,
@@ -202,10 +208,10 @@ class ArticleModel extends Model
                 COALESCE(ANY_VALUE(c.categoryName), "Market") AS kanal,
                 COALESCE(NULLIF(ANY_VALUE(m.filename), ""), "/img/investor_placeholder.jpg") AS thumbnail
             ')
-            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
-            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
-            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
+            ->join('ArticleCategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('MediaArticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('Media m', 'm.mediaID = ma_thumb.mediaID', 'left')
             ->where('n.status', 'Publish')
             ->groupBy('n.articleID')
             ->orderBy('n.createdAt', 'DESC')
@@ -220,7 +226,7 @@ class ArticleModel extends Model
      */
     public function getArticleDetail(int $id): ?array
     {
-        $article = $this->db->table('article n')
+        $article = $this->db->table('Article n')
             ->select('
                 n.articleID AS id,
                 n.userID AS author_user_id,
@@ -254,17 +260,17 @@ class ArticleModel extends Model
                 ANY_VALUE(c.label) AS sub_kanal,
                 COALESCE(ANY_VALUE(c_parent.label), ANY_VALUE(c.label), "Market") AS kanal
             ')
-            ->join('useradministrator p', 'p.userID = n.userID', 'left')
-            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
-            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('category c_parent', 'c_parent.categoryID = c.parent', 'left')
-            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
-            ->join('authors a', 'a.authorID = nal.authorID', 'left')
-            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
-            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
-            ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
-            ->join('articlemeta nm_source', 'nm_source.articleID = n.articleID AND nm_source.metakey = "news_source"', 'left')
+            ->join('UserAdministrator p', 'p.userID = n.userID', 'left')
+            ->join('ArticleCategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('Category c_parent', 'c_parent.categoryID = c.parent', 'left')
+            ->join('ArticleAuthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('Authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('MediaArticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('Media m', 'm.mediaID = ma_thumb.mediaID', 'left')
+            ->join('ArticleMeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left')
+            ->join('ArticleMeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
+            ->join('ArticleMeta nm_source', 'nm_source.articleID = n.articleID AND nm_source.metakey = "news_source"', 'left')
             ->where('n.articleID', $id)
             ->where('n.status !=', 'Deleted')
             ->groupBy('n.articleID')
@@ -276,19 +282,38 @@ class ArticleModel extends Model
         $article['is_premium'] = (int)($article['is_premium'] ?? 0);
         $article['is_breaking'] = 0;
         $article['sumber_berita'] = $article['source'];
-        $article['kanal'] = !empty($article['kanal']) ? $article['kanal'] : ($article['category'] ?? 'Market');
+        // Resolve Master Kanal & Multi Sub-Kanals accurately
+        $linkedCategories = $this->db->table('ArticleCategory ac')
+            ->select('c.categoryID, c.categoryName, c.label, c.parent')
+            ->join('Category c', 'c.categoryID = ac.categoryID')
+            ->where('ac.articleID', $id)
+            ->get()->getResultArray();
+
+        $masterKanal = null;
+        $subKanals = [];
+        foreach ($linkedCategories as $lc) {
+            if (empty($lc['parent']) || (int)$lc['parent'] === 0) {
+                if (!$masterKanal) {
+                    $masterKanal = $lc['label'] ?: $lc['categoryName'];
+                }
+            } else {
+                $subKanals[] = $lc['label'] ?: $lc['categoryName'];
+            }
+        }
+        $article['kanal'] = $masterKanal ?: ($article['kanal'] ?? 'Market');
+        $article['sub_kanal'] = !empty($subKanals) ? implode(', ', $subKanals) : '';
 
         // Get points (from standalone articlepoints table)
-        $nanoPoints = $this->db->table('articlepoints')
+        $nanoPoints = $this->db->table('ArticlePoints')
             ->where('article_id', $id)
             ->orderBy('sort_order', 'ASC')
             ->get()->getResultArray();
         $article['points'] = !empty($nanoPoints) ? array_column($nanoPoints, 'point_text') : [];
 
         // Get keywords (replaces tags)
-        $keywords = $this->db->table('articlekeyword akw')
+        $keywords = $this->db->table('ArticleKeyword akw')
             ->select('k.keyword')
-            ->join('keyword k', 'k.id = akw.keywordID')
+            ->join('Keyword k', 'k.id = akw.keywordID')
             ->where('akw.articleID', $id)
             ->get()->getResultArray();
         $article['tags'] = implode(', ', array_column($keywords, 'keyword'));
@@ -330,38 +355,47 @@ class ArticleModel extends Model
         $articleId = (int)$this->insertID();
 
         // Link Kategori (Master Kanal & Sub-Kanal jika ada)
-        $this->db->table('articlecategory')->insert([
+        $this->db->table('ArticleCategory')->insert([
             'articleID'  => $articleId,
             'categoryID' => $categoryId,
         ]);
 
-        // Link Sub-Kanal ke articlecategory jika sub_kanal valid dan berbeda
-        if (!empty($data['sub_kanal_id']) && (int)$data['sub_kanal_id'] > 0 && (int)$data['sub_kanal_id'] !== $categoryId) {
-            $this->db->table('articlecategory')->insert([
-                'articleID'  => $articleId,
-                'categoryID' => (int)$data['sub_kanal_id'],
-            ]);
+        // Link Sub-Kanal ke ArticleCategory (mendukung multiple sub-kanals)
+        $subKanalIdsToInsert = [];
+        if (!empty($data['sub_kanal_ids']) && is_array($data['sub_kanal_ids'])) {
+            $subKanalIdsToInsert = $data['sub_kanal_ids'];
+        } elseif (!empty($data['sub_kanal_id'])) {
+            $subKanalIdsToInsert = [(int)$data['sub_kanal_id']];
+        }
+        foreach ($subKanalIdsToInsert as $skId) {
+            $skId = (int)$skId;
+            if ($skId > 0 && $skId !== $categoryId) {
+                $this->db->table('ArticleCategory')->insert([
+                    'articleID'  => $articleId,
+                    'categoryID' => $skId,
+                ]);
+            }
         }
 
         // Link Penulis (mendukung multiple authors / co-authors)
-        $this->db->table('articleauthor')->where('articleID', $articleId)->delete();
+        $this->db->table('ArticleAuthor')->where('articleID', $articleId)->delete();
         $authorIds = is_array($authorId) ? $authorId : [$authorId];
         $authorIds = array_values(array_unique(array_filter(array_map('intval', $authorIds))));
         foreach ($authorIds as $aId) {
             if ($aId > 0) {
-                $this->db->table('articleauthor')->insert([
+                $this->db->table('ArticleAuthor')->insert([
                     'articleID' => $articleId,
                     'authorID'  => $aId,
                 ]);
             }
         }
 
-        // Link Media Thumbnail (Sinkronisasi ke tabel mediaarticle dengan position = 1)
-        $this->db->table('mediaarticle')->where('articleID', $articleId)->where('position', 1)->delete();
+        // Link Media Thumbnail (Sinkronisasi ke tabel MediaArticle dengan position = 1)
+        $this->db->table('MediaArticle')->where('articleID', $articleId)->where('position', 1)->delete();
         $mediaId = !empty($data['media_id']) ? (int)$data['media_id'] : 0;
         $thumbUrl = $data['thumbnail'] ?? '';
         if ($mediaId <= 0 && !empty($thumbUrl) && $thumbUrl !== '/img/investor_placeholder.jpg') {
-            $matchedMedia = $this->db->table('media')
+            $matchedMedia = $this->db->table('Media')
                 ->where('filename', $thumbUrl)
                 ->orWhere('filename', basename($thumbUrl))
                 ->get()->getRowArray();
@@ -371,7 +405,7 @@ class ArticleModel extends Model
                 // Fallback auto-register ke tabel media jika file fisik ada / berasal dari upload eksternal
                 try {
                     $mediaDesc = $data['thumbnail_description'] ?? ($data['thumbnail_caption'] ?? $data['title'] ?? 'Dokumentasi Investor.id');
-                    $this->db->table('media')->insert([
+                    $this->db->table('Media')->insert([
                         'mediaTitle'  => 'Cover - ' . ($data['title'] ?? 'Artikel #' . $articleId),
                         'caption'     => $data['thumbnail_caption'] ?? $mediaDesc,
                         'description' => $mediaDesc,
@@ -391,7 +425,7 @@ class ArticleModel extends Model
             $coverCaption = trim((string)($data['thumbnail_caption'] ?? ''));
             $coverDesc = trim((string)($data['thumbnail_description'] ?? ''));
 
-            $this->db->table('mediaarticle')->insert([
+            $this->db->table('MediaArticle')->insert([
                 'mediaID'   => $mediaId,
                 'articleID' => $articleId,
                 'position'  => 1,
@@ -407,7 +441,7 @@ class ArticleModel extends Model
                 $mediaUpdate['description'] = $coverDesc;
             }
             if (!empty($mediaUpdate)) {
-                $this->db->table('media')
+                $this->db->table('Media')
                     ->where('mediaID', $mediaId)
                     ->update($mediaUpdate);
             }
@@ -427,7 +461,7 @@ class ArticleModel extends Model
         ];
 
         foreach ($metaEntries as $k => $v) {
-            $this->db->table('articlemeta')->insert([
+            $this->db->table('ArticleMeta')->insert([
                 'articleID' => $articleId,
                 'metakey'   => $k,
                 'metaval'   => $v,
@@ -438,7 +472,7 @@ class ArticleModel extends Model
         foreach ($points as $idx => $pt) {
             $trimmed = trim($pt);
             if (!empty($trimmed)) {
-                $this->db->table('articlepoints')->insert([
+                $this->db->table('ArticlePoints')->insert([
                     'article_id' => $articleId,
                     'point_text' => $trimmed,
                     'sort_order' => $idx + 1,
@@ -453,17 +487,17 @@ class ArticleModel extends Model
             $kwModel->syncArticleKeywords($articleId, $tags);
 
             // Backward compatibility sync ke tabel articletag
-            $this->db->table('articletag')->where('articleId', $articleId)->delete();
+            $this->db->table('ArticleTag')->where('articleId', $articleId)->delete();
             $tagList = is_array($tags) ? $tags : explode(',', (string)$tags);
             foreach ($tagList as $tagName) {
                 $trimmedTag = trim($tagName);
                 if (!empty($trimmedTag)) {
-                    $tagRow = $this->db->table('tag')
+                    $tagRow = $this->db->table('Tag')
                         ->where('label', $trimmedTag)
                         ->orWhere('slug', url_title($trimmedTag, '-', true))
                         ->get()->getRowArray();
                     if ($tagRow) {
-                        $this->db->table('articletag')->insert([
+                        $this->db->table('ArticleTag')->insert([
                             'articleId' => $articleId,
                             'tagID'     => $tagRow['tagID'],
                         ]);
@@ -487,8 +521,8 @@ class ArticleModel extends Model
 
         $this->db->transStart();
 
-        // 1. Log revision history in articlehistory
-        $this->db->table('articlehistory')->insert([
+        // 1. Log revision history in ArticleHistory
+        $this->db->table('ArticleHistory')->insert([
             'timestamp'    => date('Y-m-d H:i:s'),
             'articleID'    => $id,
             'editorID'     => $editorId,
@@ -518,37 +552,46 @@ class ArticleModel extends Model
         ]);
 
         // 3. Update Category Link (Master Kanal & Sub-Kanal jika ada)
-        $this->db->table('articlecategory')->where('articleID', $id)->delete();
-        $this->db->table('articlecategory')->insert([
+        $this->db->table('ArticleCategory')->where('articleID', $id)->delete();
+        $this->db->table('ArticleCategory')->insert([
             'articleID'  => $id,
             'categoryID' => $categoryId,
         ]);
-        if (!empty($data['sub_kanal_id']) && (int)$data['sub_kanal_id'] > 0 && (int)$data['sub_kanal_id'] !== $categoryId) {
-            $this->db->table('articlecategory')->insert([
-                'articleID'  => $id,
-                'categoryID' => (int)$data['sub_kanal_id'],
-            ]);
+        $subKanalIdsToInsert = [];
+        if (!empty($data['sub_kanal_ids']) && is_array($data['sub_kanal_ids'])) {
+            $subKanalIdsToInsert = $data['sub_kanal_ids'];
+        } elseif (!empty($data['sub_kanal_id'])) {
+            $subKanalIdsToInsert = [(int)$data['sub_kanal_id']];
+        }
+        foreach ($subKanalIdsToInsert as $skId) {
+            $skId = (int)$skId;
+            if ($skId > 0 && $skId !== $categoryId) {
+                $this->db->table('ArticleCategory')->insert([
+                    'articleID'  => $id,
+                    'categoryID' => $skId,
+                ]);
+            }
         }
 
         // 4. Update Author Links (mendukung multiple authors / co-authors)
-        $this->db->table('articleauthor')->where('articleID', $id)->delete();
+        $this->db->table('ArticleAuthor')->where('articleID', $id)->delete();
         $authorIds = is_array($authorId) ? $authorId : [$authorId];
         $authorIds = array_values(array_unique(array_filter(array_map('intval', $authorIds))));
         foreach ($authorIds as $aId) {
             if ($aId > 0) {
-                $this->db->table('articleauthor')->insert([
+                $this->db->table('ArticleAuthor')->insert([
                     'articleID' => $id,
                     'authorID'  => $aId,
                 ]);
             }
         }
 
-        // 4b. Sync Media Thumbnail (Sinkronisasi ke tabel mediaarticle dengan position = 1)
-        $this->db->table('mediaarticle')->where('articleID', $id)->where('position', 1)->delete();
+        // 4b. Sync Media Thumbnail (Sinkronisasi ke tabel MediaArticle dengan position = 1)
+        $this->db->table('MediaArticle')->where('articleID', $id)->where('position', 1)->delete();
         $mediaId = !empty($data['media_id']) ? (int)$data['media_id'] : 0;
         $thumbUrl = $data['thumbnail'] ?? '';
         if ($mediaId <= 0 && !empty($thumbUrl) && $thumbUrl !== '/img/investor_placeholder.jpg') {
-            $matchedMedia = $this->db->table('media')
+            $matchedMedia = $this->db->table('Media')
                 ->where('filename', $thumbUrl)
                 ->orWhere('filename', basename($thumbUrl))
                 ->get()->getRowArray();
@@ -558,7 +601,7 @@ class ArticleModel extends Model
                 // Fallback auto-register ke tabel media jika file fisik ada / berasal dari upload eksternal
                 try {
                     $mediaDesc = $data['thumbnail_description'] ?? ($data['thumbnail_caption'] ?? $data['title'] ?? 'Dokumentasi Investor.id');
-                    $this->db->table('media')->insert([
+                    $this->db->table('Media')->insert([
                         'mediaTitle'  => 'Cover - ' . ($data['title'] ?? 'Artikel #' . $id),
                         'caption'     => $data['thumbnail_caption'] ?? $mediaDesc,
                         'description' => $mediaDesc,
@@ -578,7 +621,7 @@ class ArticleModel extends Model
             $coverCaption = trim((string)($data['thumbnail_caption'] ?? ''));
             $coverDesc = trim((string)($data['thumbnail_description'] ?? ''));
 
-            $this->db->table('mediaarticle')->insert([
+            $this->db->table('MediaArticle')->insert([
                 'mediaID'   => $mediaId,
                 'articleID' => $id,
                 'position'  => 1,
@@ -594,14 +637,14 @@ class ArticleModel extends Model
                 $mediaUpdate['description'] = $coverDesc;
             }
             if (!empty($mediaUpdate)) {
-                $this->db->table('media')
+                $this->db->table('Media')
                     ->where('mediaID', $mediaId)
                     ->update($mediaUpdate);
             }
         }
 
         // 5. Update Metadata - Hanya 6 metakey valid sesuai skema legacy Investor.id
-        $this->db->table('articlemeta')
+        $this->db->table('ArticleMeta')
             ->where('articleID', $id)
             ->delete();
 
@@ -618,7 +661,7 @@ class ArticleModel extends Model
         ];
 
         foreach ($metaEntries as $k => $v) {
-            $this->db->table('articlemeta')->insert([
+            $this->db->table('ArticleMeta')->insert([
                 'articleID' => $id,
                 'metakey'   => $k,
                 'metaval'   => $v,
@@ -626,11 +669,11 @@ class ArticleModel extends Model
         }
 
         // Points (Sync to standalone articlepoints table)
-        $this->db->table('articlepoints')->where('article_id', $id)->delete();
+        $this->db->table('ArticlePoints')->where('article_id', $id)->delete();
         foreach ($points as $idx => $pt) {
             $trimmed = trim($pt);
             if (!empty($trimmed)) {
-                $this->db->table('articlepoints')->insert([
+                $this->db->table('ArticlePoints')->insert([
                     'article_id' => $id,
                     'point_text' => $trimmed,
                     'sort_order' => $idx + 1,
@@ -644,17 +687,17 @@ class ArticleModel extends Model
         $kwModel->syncArticleKeywords($id, $tags);
 
         // Backward compatibility sync ke tabel articletag
-        $this->db->table('articletag')->where('articleId', $id)->delete();
+        $this->db->table('ArticleTag')->where('articleId', $id)->delete();
         $tagList = is_array($tags) ? $tags : explode(',', (string)$tags);
         foreach ($tagList as $tagName) {
             $trimmedTag = trim($tagName);
             if (!empty($trimmedTag)) {
-                $tagRow = $this->db->table('tag')
+                $tagRow = $this->db->table('Tag')
                     ->where('label', $trimmedTag)
                     ->orWhere('slug', url_title($trimmedTag, '-', true))
                     ->get()->getRowArray();
                 if ($tagRow) {
-                    $this->db->table('articletag')->insert([
+                    $this->db->table('ArticleTag')->insert([
                         'articleId' => $id,
                         'tagID'     => $tagRow['tagID'],
                     ]);
@@ -670,11 +713,11 @@ class ArticleModel extends Model
     /**
      * Soft delete article by setting status to Deleted
      * Mencatat penghapusan pada audit trail articlehistory dan merilis editlock
-     * Tabel: article (W), articlehistory (W)
+     * Tabel: Article (W), ArticleHistory (W)
      */
     public function deleteArticle(int $id, ?int $editorId = null, string $reason = '', string $notes = ''): bool
     {
-        $oldArticle = $this->db->table('article')->where('articleID', $id)->get()->getRowArray();
+        $oldArticle = $this->db->table('Article')->where('articleID', $id)->get()->getRowArray();
         if (!$oldArticle) return false;
 
         $this->db->transStart();
@@ -683,8 +726,8 @@ class ArticleModel extends Model
 
         $statusAfter = 'Deleted';
 
-        // 1. Audit trail in articlehistory
-        $this->db->table('articlehistory')->insert([
+        // 1. Audit trail in ArticleHistory
+        $this->db->table('ArticleHistory')->insert([
             'timestamp'    => date('Y-m-d H:i:s'),
             'articleID'    => $id,
             'editorID'     => $effectiveEditor,
@@ -697,7 +740,7 @@ class ArticleModel extends Model
         ]);
 
         // 2. Soft delete & release editlock
-        $this->db->table('article')
+        $this->db->table('Article')
             ->where('articleID', $id)
             ->update([
                 'status'   => 'Deleted',
@@ -729,13 +772,13 @@ class ArticleModel extends Model
     public function hardDeleteArticle(int $id): bool
     {
         $this->db->transStart();
-        $this->db->table('articlecategory')->where('articleID', $id)->delete();
-        $this->db->table('articleauthor')->where('articleID', $id)->delete();
-        $this->db->table('articlekeyword')->where('articleID', $id)->delete();
-        $this->db->table('articletag')->where('articleId', $id)->delete();
-        $this->db->table('articlemeta')->where('articleID', $id)->delete();
-        $this->db->table('articleheadline')->where('articleID', $id)->delete();
-        $this->db->table('articlepoints')->where('article_id', $id)->delete();
+        $this->db->table('ArticleCategory')->where('articleID', $id)->delete();
+        $this->db->table('ArticleAuthor')->where('articleID', $id)->delete();
+        $this->db->table('ArticleKeyword')->where('articleID', $id)->delete();
+        $this->db->table('ArticleTag')->where('articleId', $id)->delete();
+        $this->db->table('ArticleMeta')->where('articleID', $id)->delete();
+        $this->db->table('ArticleHeadline')->where('articleID', $id)->delete();
+        $this->db->table('ArticlePoints')->where('article_id', $id)->delete();
         $this->delete($id);
         $this->db->transComplete();
 
@@ -750,7 +793,7 @@ class ArticleModel extends Model
         $todayStr = date('Y-m-d');
         $yesterdayStr = date('Y-m-d', strtotime('-1 day'));
 
-        $builder = $this->db->table('article')
+        $builder = $this->db->table('Article')
             ->select('
                 COUNT(*) AS total,
                 SUM(CASE WHEN LOWER(status) IN ("publish", "published") THEN 1 ELSE 0 END) AS published,
@@ -767,13 +810,13 @@ class ArticleModel extends Model
         $res = $builder->get()->getRowArray();
 
         // Articles published today vs yesterday (by user if $userId provided)
-        $todayQuery = $this->db->table('article')->where('DATE(articleDate)', $todayStr);
+        $todayQuery = $this->db->table('Article')->where('DATE(articleDate)', $todayStr);
         if ($userId !== null && $userId > 0) {
             $todayQuery->where('userID', $userId);
         }
         $todayCount = (int)$todayQuery->countAllResults();
 
-        $yesterdayQuery = $this->db->table('article')->where('DATE(articleDate)', $yesterdayStr);
+        $yesterdayQuery = $this->db->table('Article')->where('DATE(articleDate)', $yesterdayStr);
         if ($userId !== null && $userId > 0) {
             $yesterdayQuery->where('userID', $userId);
         }
@@ -792,12 +835,12 @@ class ArticleModel extends Model
         $onTimePct = min(99, max(85, round(($publishedCnt / $totalWorkflow) * 100))) . '%';
 
         // Views growth rate (comparing last 7 days vs previous 7 days) - ALWAYS GLOBAL
-        $past7Views = (int)($this->db->table('article')
+        $past7Views = (int)($this->db->table('Article')
             ->selectSum('viewed', 'v')
             ->where('articleDate >=', date('Y-m-d 00:00:00', strtotime('-6 days')))
             ->get()->getRow()->v ?? 0);
 
-        $prev7Views = (int)($this->db->table('article')
+        $prev7Views = (int)($this->db->table('Article')
             ->selectSum('viewed', 'v')
             ->where('articleDate >=', date('Y-m-d 00:00:00', strtotime('-13 days')))
             ->where('articleDate <', date('Y-m-d 00:00:00', strtotime('-6 days')))
@@ -811,7 +854,7 @@ class ArticleModel extends Model
         }
 
         // Total global views (always global per user request)
-        $globalViews = (int)($this->db->table('article')->selectSum('viewed', 'v')->get()->getRow()->v ?? 0);
+        $globalViews = (int)($this->db->table('Article')->selectSum('viewed', 'v')->get()->getRow()->v ?? 0);
 
         return [
             'todayArticles'   => (int)($res['total'] ?? 0),
@@ -832,7 +875,7 @@ class ArticleModel extends Model
      */
     public function getUserActiveDrafts(int $userId, int $limit = 5): array
     {
-        return $this->db->table('article n')
+        return $this->db->table('Article n')
             ->select('
                 n.articleID AS id,
                 n.headline AS title,
@@ -841,8 +884,8 @@ class ArticleModel extends Model
                 n.articleDate AS publish_date,
                 COALESCE(ANY_VALUE(c.categoryName), "Market") AS category
             ')
-            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
-            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('ArticleCategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ncl.categoryID', 'left')
             ->where('n.userID', $userId)
             ->where('LOWER(n.status)', 'draft')
             ->where('n.status !=', 'Deleted')
@@ -857,7 +900,7 @@ class ArticleModel extends Model
      */
     public function getTopArticles(int $limit = 5): array
     {
-        $rows = $this->db->table('article n')
+        $rows = $this->db->table('Article n')
             ->select('
                 n.articleID AS id,
                 n.headline AS title,
@@ -869,12 +912,12 @@ class ArticleModel extends Model
                 COALESCE(ANY_VALUE(nm_prem.metaval), "0") AS is_premium,
                 COALESCE(ANY_VALUE(nm_thumb.metaval), "/img/investor_placeholder.jpg") AS thumbnail
             ')
-            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
-            ->join('authors a', 'a.authorID = nal.authorID', 'left')
-            ->join('articlecategory ncl', 'ncl.articleID = n.articleID', 'left')
-            ->join('category c', 'c.categoryID = ncl.categoryID', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
-            ->join('articlemeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
+            ->join('ArticleAuthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('Authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('ArticleCategory ncl', 'ncl.articleID = n.articleID', 'left')
+            ->join('Category c', 'c.categoryID = ncl.categoryID', 'left')
+            ->join('ArticleMeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "is_premium"', 'left')
+            ->join('ArticleMeta nm_thumb', 'nm_thumb.articleID = n.articleID AND nm_thumb.metakey = "thumbnail"', 'left')
             ->groupBy('n.articleID')
             ->orderBy('n.viewed', 'DESC')
             ->limit($limit)
@@ -894,7 +937,7 @@ class ArticleModel extends Model
      */
     public function getPendingArticles(int $limit = 10): array
     {
-        return $this->db->table('article n')
+        return $this->db->table('Article n')
             ->select('
                 n.articleID AS id,
                 n.headline AS title,
@@ -903,8 +946,8 @@ class ArticleModel extends Model
                 n.createdAt AS create_date,
                 GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author
             ')
-            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
-            ->join('authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('ArticleAuthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('Authors a', 'a.authorID = nal.authorID', 'left')
             ->whereIn('LOWER(n.status)', ['hold', 'draft', 'review'])
             ->groupBy('n.articleID')
             ->orderBy('n.createdAt', 'DESC')
@@ -924,7 +967,7 @@ class ArticleModel extends Model
         $todayPublished = array_fill(0, count($todayHours), 0);
         $todayDrafts = array_fill(0, count($todayHours), 0);
 
-        $todayQuery = $this->db->table('article')
+        $todayQuery = $this->db->table('Article')
             ->select('HOUR(articleDate) as h, LOWER(status) as st, COUNT(*) as cnt')
             ->where('DATE(articleDate)', $todayStr);
         if ($userId !== null && $userId > 0) {
@@ -958,7 +1001,7 @@ class ArticleModel extends Model
         }
 
         $since7d = date('Y-m-d 00:00:00', strtotime('-6 days'));
-        $query7d = $this->db->table('article')
+        $query7d = $this->db->table('Article')
             ->select('DATE(articleDate) as d, LOWER(status) as st, COUNT(*) as cnt')
             ->where('articleDate >=', $since7d);
         if ($userId !== null && $userId > 0) {
@@ -992,7 +1035,7 @@ class ArticleModel extends Model
         $days30Drafts = [];
 
         foreach ($weeks as $w) {
-            $pubQ = $this->db->table('article')
+            $pubQ = $this->db->table('Article')
                 ->where('DATE(articleDate) >=', $w['from'])
                 ->where('DATE(articleDate) <=', $w['to'])
                 ->whereIn('LOWER(status)', ['publish', 'published']);
@@ -1001,7 +1044,7 @@ class ArticleModel extends Model
             }
             $wPub = $pubQ->countAllResults();
 
-            $draftQ = $this->db->table('article')
+            $draftQ = $this->db->table('Article')
                 ->where('DATE(articleDate) >=', $w['from'])
                 ->where('DATE(articleDate) <=', $w['to'])
                 ->whereIn('LOWER(status)', ['draft', 'review', 'hold']);
@@ -1051,7 +1094,7 @@ class ArticleModel extends Model
         $directViews = array_fill(0, count($todayHours), 0);
         $searchViews = array_fill(0, count($todayHours), 0);
 
-        $todayRows = $this->db->table('article')
+        $todayRows = $this->db->table('Article')
             ->select('HOUR(articleDate) as h, SUM(COALESCE(viewed, 0)) as total_v')
             ->where('DATE(articleDate)', $todayStr)
             ->groupBy('HOUR(articleDate)')
@@ -1076,7 +1119,7 @@ class ArticleModel extends Model
             $days7Search[$d] = 0;
         }
 
-        $rows7d = $this->db->table('article')
+        $rows7d = $this->db->table('Article')
             ->select('DATE(articleDate) as d, SUM(COALESCE(viewed, 0)) as total_v')
             ->where('articleDate >=', date('Y-m-d 00:00:00', strtotime('-6 days')))
             ->groupBy('DATE(articleDate)')
@@ -1097,7 +1140,7 @@ class ArticleModel extends Model
         $mSearch = array_fill(0, 12, 0);
 
         $currYear = date('Y');
-        $mRows = $this->db->table('article')
+        $mRows = $this->db->table('Article')
             ->select('MONTH(articleDate) as m, SUM(COALESCE(viewed, 0)) as total_v')
             ->where('YEAR(articleDate)', $currYear)
             ->groupBy('MONTH(articleDate)')
@@ -1160,7 +1203,7 @@ class ArticleModel extends Model
                 $curr = strtotime("+{$step} days", $curr);
             }
 
-            $cRows = $this->db->table('article')
+            $cRows = $this->db->table('Article')
                 ->select('DATE(articleDate) as d, SUM(COALESCE(viewed, 0)) as total_v')
                 ->where('DATE(articleDate) >=', date('Y-m-d', $fromTime))
                 ->where('DATE(articleDate) <=', date('Y-m-d', $toTime))
@@ -1198,12 +1241,12 @@ class ArticleModel extends Model
 
     /**
      * Get all master article statuses from DB lookup table
-     * Replika legacy: Article::articleStatus()
-     * Tabel: articlestatus (R)
+     * Replika smarty: Article::articleStatus()
+     * Tabel: ArticleStatus (R)
      */
     public function getArticleStatuses(?string $userRole = null): array
     {
-        $statuses = $this->db->table('articlestatus')->orderBy('id', 'ASC')->get()->getResultArray();
+        $statuses = $this->db->table('ArticleStatus')->orderBy('id', 'ASC')->get()->getResultArray();
 
         // RBAC: Non-admin & non-redpel cannot see 'Deleted' status
         if (!in_array(strtolower($userRole ?? ''), ['administrator', 'redpel', 'admin'])) {
@@ -1217,14 +1260,14 @@ class ArticleModel extends Model
 
     /**
      * Acquire Edit Lock — Set editlock = userID
-     * Replika legacy: Article::PostLock()
-     * Tabel: article (R/W), useradministrator (R)
+     * Replika smarty: Article::PostLock()
+     * Tabel: Article (R/W), UserAdministrator (R)
      */
     public function acquireLock(int $articleId, int $userId): array
     {
-        $row = $this->db->table('article n')
+        $row = $this->db->table('Article n')
             ->select('n.editlock, u.name as locked_by_name, u.username as locked_by_username')
-            ->join('useradministrator u', 'u.userID = n.editlock', 'left')
+            ->join('UserAdministrator u', 'u.userID = n.editlock', 'left')
             ->where('n.articleID', $articleId)
             ->get()->getRowArray();
 
@@ -1236,7 +1279,7 @@ class ArticleModel extends Model
 
         // Article is not locked OR already locked by current user
         if ($currentLock === null || $currentLock === $userId) {
-            $this->db->table('article')
+            $this->db->table('Article')
                 ->where('articleID', $articleId)
                 ->update(['editlock' => $userId]);
 
@@ -1258,12 +1301,12 @@ class ArticleModel extends Model
 
     /**
      * Release Edit Lock — Set editlock = NULL
-     * Replika legacy: Article::ReleaseLock()
-     * Tabel: article (W)
+     * Replika smarty: Article::ReleaseLock()
+     * Tabel: Article (W)
      */
     public function releaseLock(int $articleId, ?int $userId = null): bool
     {
-        $builder = $this->db->table('article')->where('articleID', $articleId);
+        $builder = $this->db->table('Article')->where('articleID', $articleId);
         if ($userId !== null) {
             $builder->where('editlock', $userId);
         }
@@ -1272,23 +1315,23 @@ class ArticleModel extends Model
 
     /**
      * Force unlock article (Privileged action for administrator and redpel)
-     * Tabel: article (W)
+     * Tabel: Article (W)
      */
     public function forceUnlock(int $articleId): bool
     {
-        return $this->db->table('article')
+        return $this->db->table('Article')
             ->where('articleID', $articleId)
             ->update(['editlock' => null]);
     }
 
     /**
      * Get Paginated Revision History
-     * Replika legacy: Article::Revision()
-     * Tabel: articlehistory (R), article (R), useradministrator (R)
+     * Replika smarty: Article::Revision()
+     * Tabel: ArticleHistory (R), Article (R), UserAdministrator (R)
      */
     public function getRevisionHistory(int $page = 1, int $perPage = 25, array $filters = []): array
     {
-        $builder = $this->db->table('articlehistory h')
+        $builder = $this->db->table('ArticleHistory h')
             ->select('
                 h.id,
                 h.timestamp,
@@ -1303,8 +1346,8 @@ class ArticleModel extends Model
                 h.status_prev,
                 h.status_after
             ')
-            ->join('article a', 'a.articleID = h.articleID', 'left')
-            ->join('useradministrator u', 'u.userID = h.editorID', 'left');
+            ->join('Article a', 'a.articleID = h.articleID', 'left')
+            ->join('UserAdministrator u', 'u.userID = h.editorID', 'left');
 
         if (!empty($filters['article_id'])) {
             $builder->where('h.articleID', (int)$filters['article_id']);
@@ -1349,11 +1392,11 @@ class ArticleModel extends Model
 
     /**
      * Get Single Revision Detail with Full Content Diff
-     * Tabel: articlehistory (R), article (R), useradministrator (R)
+     * Tabel: ArticleHistory (R), Article (R), UserAdministrator (R)
      */
     public function getRevisionDetail(int $historyId): ?array
     {
-        return $this->db->table('articlehistory h')
+        return $this->db->table('ArticleHistory h')
             ->select('
                 h.*,
                 a.headline as current_title,
@@ -1361,8 +1404,8 @@ class ArticleModel extends Model
                 u.name as editor_name,
                 u.username as editor_username
             ')
-            ->join('article a', 'a.articleID = h.articleID', 'left')
-            ->join('useradministrator u', 'u.userID = h.editorID', 'left')
+            ->join('Article a', 'a.articleID = h.articleID', 'left')
+            ->join('UserAdministrator u', 'u.userID = h.editorID', 'left')
             ->where('h.id', $historyId)
             ->get()->getRowArray();
     }

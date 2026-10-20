@@ -78,6 +78,10 @@ class DbCompare extends BaseCommand
         CLI::write("  Mismatch      : " . $mismatch, 'red');
 
         if ($jsonPath) {
+            $dir = dirname($jsonPath);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0777, true);
+            }
             file_put_contents($jsonPath, json_encode([
                 'status'               => 'success',
                 'timestamp'            => date('Y-m-d H:i:s'),

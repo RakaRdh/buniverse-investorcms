@@ -93,12 +93,12 @@ class Media extends BaseController
                 return redirect()->back()->withInput()->with('error', 'Format file tidak didukung. Harap gunakan format JPG, PNG, atau WebP.');
             }
 
-            $imageProcessor = new ImageProcessor();
-            $processedUrl = $imageProcessor->processUploadedFile($file, 'media');
-            if ($processedUrl) {
-                $imagePath = $processedUrl;
+            $mediaStorage = new \App\Libraries\MediaStorageService();
+            $stored = $mediaStorage->storeUploadedFile($file, 'media');
+            if ($stored['success'] && !empty($stored['filename'])) {
+                $imagePath = $stored['filename']; // Format identik Smarty: YYYY/MM/timestamp_media_hash.jpg
             } else {
-                return redirect()->back()->withInput()->with('error', 'Gagal memproses file gambar. Pastikan file gambar valid.');
+                return redirect()->back()->withInput()->with('error', $stored['error'] ?? 'Gagal memproses file gambar. Pastikan file gambar valid.');
             }
         }
 
@@ -144,16 +144,23 @@ class Media extends BaseController
             'source'      => $this->request->getPost('source') ?: 'Investor.id / Riset',
         ];
 
-        // Check for local file upload first
+        // Check for local file upload first (MIME validated & processed securely)
         $file = $this->request->getFile('media_file');
         if ($file && $file->isValid() && !$file->hasMoved()) {
-            $uploadDir = FCPATH . 'uploads/media';
-            if (!is_dir($uploadDir)) {
-                @mkdir($uploadDir, 0777, true);
+            $validationRules = [
+                'media_file' => 'uploaded[media_file]|is_image[media_file]|mime_in[media_file,image/jpg,image/jpeg,image/png,image/gif,image/webp]|max_size[media_file,10240]'
+            ];
+            if (!$this->validate($validationRules)) {
+                return redirect()->back()->withInput()->with('error', 'File tidak valid: ' . implode(', ', $this->validator->getErrors()));
             }
-            $newName = $file->getRandomName();
-            $file->move($uploadDir, $newName);
-            $updateData['filename'] = '/uploads/media/' . $newName;
+
+            $mediaStorage = new \App\Libraries\MediaStorageService();
+            $stored = $mediaStorage->storeUploadedFile($file, 'media');
+            if ($stored['success'] && !empty($stored['filename'])) {
+                $updateData['filename'] = $stored['filename']; // Format identik Smarty: YYYY/MM/timestamp_media_hash.jpg
+            } else {
+                return redirect()->back()->withInput()->with('error', $stored['error'] ?? 'Gagal memproses file gambar. Pastikan file gambar valid.');
+            }
         } elseif ($this->request->getPost('image')) {
             $updateData['filename'] = $this->request->getPost('image');
         }
@@ -184,9 +191,9 @@ class Media extends BaseController
 
         // 2. Cek apakah filename foto ini dipakai sebagai thumbnail artikel
         if (!empty($media['filename'])) {
-            $thumbArticles = $this->mediaModel->db->table('articlemeta am')
+            $thumbArticles = $this->mediaModel->db->table('ArticleMeta am')
                 ->select('a.articleID as id, a.headline as title, a.status')
-                ->join('article a', 'a.articleID = am.articleID')
+                ->join('Article a', 'a.articleID = am.articleID')
                 ->where('am.metakey', 'thumbnail')
                 ->where('am.metaval', $media['filename'])
                 ->get()->getResultArray();

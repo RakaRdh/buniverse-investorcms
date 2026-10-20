@@ -157,7 +157,7 @@ class Headline extends BaseController
 
     public function remove($id)
     {
-        $targetCategory = $this->request->getGet('target_category') ?: 'home';
+        $targetCategory = $this->request->getPost('target_category') ?: ($this->request->getGet('target_category') ?: 'home');
 
         $currentUser = session('user_username') ?: (session('username') ?: (session('user_name') ?: 'admin'));
 
@@ -178,6 +178,16 @@ class Headline extends BaseController
                 'timestamp' => date('Y-m-d H:i:s'),
             ])
             ->update();
+        
+        // Geser posisi headline aktif di atasnya agar urutan 1..N tetap padat dan tidak ada duplikasi posisi
+        if ($prevPos !== null && (int)$prevPos > 0) {
+            $this->headlineModel->db->table('ArticleHeadline')
+                ->where('category', $targetCategory)
+                ->where('status', 1)
+                ->where('num >', (int)$prevPos)
+                ->set('num', 'num - 1', false)
+                ->update();
+        }
 
         $this->headlineModel->logHistory((int)$id, $targetCategory, 'REMOVE', $prevPos, $currentUser, "Menghapus artikel dari antrean headline (sebelumnya posisi #{$prevPos})");
 

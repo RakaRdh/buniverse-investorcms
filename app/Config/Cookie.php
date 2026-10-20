@@ -59,7 +59,8 @@ class Cookie extends BaseConfig
     public function __construct()
     {
         parent::__construct();
-        $this->secure = (bool)(env('cookie.secure', service('request')->isSecure()));
+        $isSecure = is_cli() ? false : (method_exists(service('request'), 'isSecure') ? service('request')->isSecure() : false);
+        $this->secure = (bool)(env('cookie.secure', $isSecure));
     }
 
     /**

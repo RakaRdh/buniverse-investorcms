@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class KeywordModel extends Model
 {
-    protected $table = 'keyword';
+    protected $table = 'Keyword';
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'keyword',
@@ -20,7 +20,7 @@ class KeywordModel extends Model
      */
     public function syncArticleKeywords(int $articleId, array $keywords): void
     {
-        $this->db->table('articlekeyword')
+        $this->db->table('ArticleKeyword')
             ->where('articleID', $articleId)
             ->delete();
 
@@ -45,7 +45,7 @@ class KeywordModel extends Model
             }
 
             if (!in_array($kwId, $insertedIds)) {
-                $this->db->table('articlekeyword')->insert([
+                $this->db->table('ArticleKeyword')->insert([
                     'articleID'  => $articleId,
                     'keywordID'  => (int)$kwId,
                 ]);
@@ -59,9 +59,9 @@ class KeywordModel extends Model
      */
     public function getArticleKeywords(int $articleId): array
     {
-        return $this->db->table('articlekeyword akw')
+        return $this->db->table('ArticleKeyword akw')
             ->select('k.id AS keywordID, k.keyword, k.slug')
-            ->join('keyword k', 'k.id = akw.keywordID')
+            ->join('Keyword k', 'k.id = akw.keywordID')
             ->where('akw.articleID', $articleId)
             ->get()->getResultArray();
     }
@@ -72,27 +72,44 @@ class KeywordModel extends Model
      */
     public function getKeywordsWithCount(array $filters = [], int $page = 1, int $perPage = 25): array
     {
-        $builder = $this->db->table('keyword k')
-            ->select('k.id, k.keyword, k.slug, COUNT(akw.articleID) AS article_count')
-            ->join('articlekeyword akw', 'akw.keywordID = k.id', 'left')
-            ->groupBy('k.id');
+        $builder = $this->db->table('Keyword')
+            ->select('id, keyword, slug');
 
         if (!empty($filters['q'])) {
-            $builder->like('k.keyword', $filters['q'])
-                    ->orLike('k.slug', $filters['q']);
+            $builder->groupStart()
+                ->like('keyword', $filters['q'])
+                ->orLike('slug', $filters['q'])
+                ->groupEnd();
         }
 
-        $countBuilder = clone $builder;
-        $total = count($countBuilder->get()->getResultArray());
-
-        $builder->orderBy('article_count', 'DESC')
-                ->orderBy('k.keyword', 'ASC');
+        $totalBuilder = clone $builder;
+        $total = $totalBuilder->countAllResults();
 
         $offset = ($page - 1) * $perPage;
-        $data = $builder->limit($perPage, $offset)->get()->getResultArray();
+        $builder->orderBy('id', 'DESC');
+        $keywords = $builder->limit($perPage, $offset)->get()->getResultArray();
+
+        if (!empty($keywords)) {
+            $keywordIds = array_column($keywords, 'id');
+            $counts = $this->db->table('ArticleKeyword')
+                ->select('keywordID, COUNT(articleID) AS article_count')
+                ->whereIn('keywordID', $keywordIds)
+                ->groupBy('keywordID')
+                ->get()->getResultArray();
+
+            $countMap = [];
+            foreach ($counts as $c) {
+                $countMap[$c['keywordID']] = (int)$c['article_count'];
+            }
+
+            foreach ($keywords as &$kw) {
+                $kw['article_count'] = $countMap[$kw['id']] ?? 0;
+            }
+            unset($kw);
+        }
 
         return [
-            'data'  => $data,
+            'data'  => $keywords,
             'total' => $total,
         ];
     }
@@ -104,7 +121,7 @@ class KeywordModel extends Model
     public function deleteKeyword(int $keywordId): bool
     {
         $this->db->transStart();
-        $this->db->table('articlekeyword')->where('keywordID', $keywordId)->delete();
+        $this->db->table('ArticleKeyword')->where('keywordID', $keywordId)->delete();
         $this->where('id', $keywordId)->delete();
         $this->db->transComplete();
 
@@ -144,7 +161,7 @@ class KeywordModel extends Model
 
         // 1. Query keywords matching significant content tokens
         if (!empty($uniqueWords)) {
-            $builder = $this->db->table('keyword')->select('keyword')->groupStart();
+            $builder = $this->db->table('Keyword')->select('keyword')->groupStart();
             $first = true;
             foreach (array_keys($uniqueWords) as $token) {
                 if ($first) {
@@ -167,9 +184,9 @@ class KeywordModel extends Model
         // 2. Also retrieve top frequently used / popular keywords if candidate list is small
         if (count($candidates) < $limit) {
             $remaining = $limit - count($candidates);
-            $popular = $this->db->table('keyword k')
+            $popular = $this->db->table('Keyword k')
                 ->select('k.keyword, COUNT(ak.articleID) as cnt')
-                ->join('articlekeyword ak', 'ak.keywordID = k.id', 'left')
+                ->join('ArticleKeyword ak', 'ak.keywordID = k.id', 'left')
                 ->groupBy('k.id')
                 ->orderBy('cnt', 'DESC')
                 ->orderBy('k.id', 'DESC')

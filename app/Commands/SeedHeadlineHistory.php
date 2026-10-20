@@ -15,18 +15,18 @@ class SeedHeadlineHistory extends BaseCommand
     public function run(array $params)
     {
         $db = Database::connect();
-        $count = $db->table('articleheadlinehistory')->countAllResults();
+        $count = $db->table('ArticleHeadlineHistory')->countAllResults();
         if ($count > 0) {
-            CLI::write("articleheadlinehistory already has {$count} records. Skipping.", 'yellow');
+            CLI::write("ArticleHeadlineHistory already has {$count} records. Skipping.", 'yellow');
             return;
         }
 
-        $headlines = $db->table('articleheadline')->get()->getResultArray();
+        $headlines = $db->table('ArticleHeadline')->get()->getResultArray();
         CLI::write("Found " . count($headlines) . " existing headlines.", 'cyan');
 
         $inserted = 0;
         foreach ($headlines as $h) {
-            $db->table('articleheadlinehistory')->insert([
+            $db->table('ArticleHeadlineHistory')->insert([
                 'articleID' => $h['articleID'],
                 'category'  => $h['category'],
                 'action'    => ((int)$h['status'] === 1) ? 'ADD' : 'REMOVE',

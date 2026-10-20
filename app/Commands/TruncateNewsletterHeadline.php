@@ -37,8 +37,8 @@ class TruncateNewsletterHeadline extends BaseCommand
             return;
         }
 
-        // Soft truncate: update status = 0 untuk arsip paritas legacy
-        $db->table('articleheadline')
+        // Soft truncate: update status = 0 untuk arsip paritas smarty
+        $db->table('ArticleHeadline')
             ->where('category', 'newsletter')
             ->where('status', 1)
             ->update([
@@ -47,10 +47,10 @@ class TruncateNewsletterHeadline extends BaseCommand
                 'timestamp' => $now,
             ]);
 
-        // Catat ke audit log articleheadlinehistory jika tabel tersedia
-        if ($db->tableExists('articleheadlinehistory')) {
+        // Catat ke audit log ArticleHeadlineHistory jika tabel tersedia
+        if ($db->tableExists('ArticleHeadlineHistory')) {
             foreach ($activeNewsletters as $item) {
-                $db->table('articleheadlinehistory')->insert([
+                $db->table('ArticleHeadlineHistory')->insert([
                     'articleID'  => $item['articleID'],
                     'category'   => 'newsletter',
                     'action'     => 'TRUNCATE',

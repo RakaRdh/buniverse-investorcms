@@ -21,7 +21,7 @@ class Apps extends BaseController
     {
         // Fetch version records from live `apps` table
         $db = \Config\Database::connect();
-        $dbVersions = $db->table('apps')->get()->getResultArray();
+        $dbVersions = $db->table('Apps')->get()->getResultArray();
 
         $versions = [];
         foreach ($dbVersions as $row) {
@@ -58,13 +58,13 @@ class Apps extends BaseController
 
         $db = \Config\Database::connect();
         if ($id > 0) {
-            $db->table('apps')->where('id', $id)->update([
+            $db->table('Apps')->where('id', $id)->update([
                 'key'   => $key,
                 'value' => $version
             ]);
             $msg = 'Versi mobile app berhasil diperbarui di database.';
         } else {
-            $db->table('apps')->insert([
+            $db->table('Apps')->insert([
                 'key'   => $key,
                 'value' => $version
             ]);
@@ -77,7 +77,7 @@ class Apps extends BaseController
     public function deleteVersion(int $id)
     {
         $db = \Config\Database::connect();
-        $db->table('apps')->where('id', $id)->delete();
+        $db->table('Apps')->where('id', $id)->delete();
         return redirect()->to('/apps-version')->with('success', 'Data konfigurasi versi berhasil dihapus dari database.');
     }
 

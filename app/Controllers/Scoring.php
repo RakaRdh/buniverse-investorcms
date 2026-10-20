@@ -100,15 +100,15 @@ class Scoring extends BaseController
 
         // Fetch metadata & thumbnail
         $db = \Config\Database::connect();
-        $metaRows = $db->table('articlemeta')->where('articleID', $id)->get()->getResultArray();
+        $metaRows = $db->table('ArticleMeta')->where('articleID', $id)->get()->getResultArray();
         $meta = [];
         foreach ($metaRows as $row) {
             $meta[$row['metakey']] = $row['metaval'];
         }
 
-        $mediaRow = $db->table('mediaarticle ma')
+        $mediaRow = $db->table('MediaArticle ma')
             ->select('m.filename')
-            ->join('media m', 'm.mediaID = ma.mediaID')
+            ->join('Media m', 'm.mediaID = ma.mediaID')
             ->where('ma.articleID', $id)
             ->where('ma.position', 1)
             ->get()->getRowArray();
@@ -187,7 +187,7 @@ class Scoring extends BaseController
 
         // Metadata
         $db = \Config\Database::connect();
-        $metaRows = $db->table('articlemeta')->where('articleID', $articleId)->get()->getResultArray();
+        $metaRows = $db->table('ArticleMeta')->where('articleID', $articleId)->get()->getResultArray();
         $meta = [];
         foreach ($metaRows as $row) {
             $meta[$row['metakey']] = $row['metaval'];
@@ -300,10 +300,10 @@ class Scoring extends BaseController
         $article = $this->articleModel->find((int)$score['article_id']);
         $db = \Config\Database::connect();
         $scoredByUser = !empty($score['scored_by']) 
-            ? $db->table('useradministrator')->where('userID', $score['scored_by'])->get()->getRowArray() 
+            ? $db->table('UserAdministrator')->where('userID', $score['scored_by'])->get()->getRowArray() 
             : null;
         $usedByUser = !empty($score['used_by']) 
-            ? $db->table('useradministrator')->where('userID', $score['used_by'])->get()->getRowArray() 
+            ? $db->table('UserAdministrator')->where('userID', $score['used_by'])->get()->getRowArray() 
             : null;
 
         $score['details'] = !empty($score['details']) ? json_decode($score['details'], true) : [];
@@ -342,10 +342,10 @@ class Scoring extends BaseController
 
         $db = \Config\Database::connect();
         $scoredByUser = !empty($score['scored_by']) 
-            ? $db->table('useradministrator')->where('userID', $score['scored_by'])->get()->getRowArray() 
+            ? $db->table('UserAdministrator')->where('userID', $score['scored_by'])->get()->getRowArray() 
             : null;
         $usedByUser = !empty($score['used_by']) 
-            ? $db->table('useradministrator')->where('userID', $score['used_by'])->get()->getRowArray() 
+            ? $db->table('UserAdministrator')->where('userID', $score['used_by'])->get()->getRowArray() 
             : null;
 
         $score['details'] = !empty($score['details']) ? json_decode($score['details'], true) : [];

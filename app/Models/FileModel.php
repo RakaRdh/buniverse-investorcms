@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class FileModel extends Model
 {
-    protected $table = 'files';
+    protected $table = 'Files';
     protected $primaryKey = 'fileID';
     protected $allowedFields = [
         'title',
@@ -21,7 +21,7 @@ class FileModel extends Model
      */
     public function getFilesWithUploader(?string $keyword = null, int $page = 1, int $perPage = 25): array
     {
-        $builder = $this->db->table('files f')
+        $builder = $this->db->table('Files f')
             ->select('
                 f.fileID AS id,
                 f.title AS name,
@@ -29,7 +29,7 @@ class FileModel extends Model
                 f.timestamp AS date,
                 p.username AS upload_by
             ')
-            ->join('useradministrator p', 'p.userID = f.userID', 'left')
+            ->join('UserAdministrator p', 'p.userID = f.userID', 'left')
             ->orderBy('f.timestamp', 'DESC');
 
         if (!empty($keyword)) {

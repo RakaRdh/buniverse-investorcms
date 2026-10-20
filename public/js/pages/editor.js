@@ -273,10 +273,61 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('change', () => {
             markEditorDirty();
         });
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
             if (isFormSubmitting) {
                 e.preventDefault();
                 return false;
+            }
+
+            // Tangkap submitter status jika ada
+            if (e.submitter && e.submitter.getAttribute('name') === 'status') {
+                const subStatus = e.submitter.getAttribute('value');
+                const stSelect = document.getElementById('workflowStatusSelect');
+                if (stSelect && subStatus) {
+                    stSelect.value = subStatus;
+                }
+            }
+
+            // Sync tags badge dan flush pending input
+            const pendingTagEl = document.getElementById('artTagInput');
+            if (pendingTagEl && pendingTagEl.value.trim()) {
+                const pendingTagVal = pendingTagEl.value.trim().replace(/^#/, '');
+                if (pendingTagVal && typeof chosenTags !== 'undefined' && !chosenTags.includes(pendingTagVal)) {
+                    chosenTags.push(pendingTagVal);
+                    pendingTagEl.value = '';
+                }
+            }
+            if (typeof syncTagsToInput === 'function') {
+                syncTagsToInput();
+            }
+
+            // Sync canonical source input
+            const srcSelect = document.getElementById('sourceSelect');
+            const customSrcInput = document.getElementById('customSourceInput');
+            const finalSrcInput = document.getElementById('finalSourceInput');
+            if (finalSrcInput) {
+                if (srcSelect && (srcSelect.value === 'OTHERS' || srcSelect.value === 'Lainnya')) {
+                    finalSrcInput.value = (customSrcInput && customSrcInput.value.trim()) ? customSrcInput.value.trim() : 'Investor.id / Riset';
+                } else if (srcSelect && srcSelect.value) {
+                    finalSrcInput.value = srcSelect.value;
+                }
+            }
+
+            // Jika autosave sedang in-flight dan artikel belum punya ID, tunggu hingga ID kembali untuk mencegah duplicate row
+            const artIdInput = document.getElementById('articleIdInput');
+            if (window.__IS_AUTOSAVING__ && artIdInput && !artIdInput.value) {
+                e.preventDefault();
+                let waitCount = 0;
+                while (window.__IS_AUTOSAVING__ && waitCount < 10) {
+                    await new Promise(r => setTimeout(r, 100));
+                    waitCount++;
+                }
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit(e.submitter || undefined);
+                } else {
+                    form.submit();
+                }
+                return;
             }
             
             // Sync CKEditor data directly
@@ -337,6 +388,12 @@ document.addEventListener('DOMContentLoaded', () => {
     initAutoSave();
     initTagAutocomplete();
     initAuthorBadges();
+
+    // Inisialisasi awal sumber berita
+    const sourceSelectInit = document.getElementById('sourceSelect');
+    if (sourceSelectInit && sourceSelectInit.value) {
+        handleSourceChange(sourceSelectInit.value);
+    }
 });
 
 function initCharCounters() {
@@ -1387,20 +1444,46 @@ function insertSelectedArticleLink(title, url, summary) {
 function handleSourceChange(val) {
     const customWrapper = document.getElementById('customSourceWrapper');
     const customInput = document.getElementById('customSourceInput');
+    const finalInput = document.getElementById('finalSourceInput');
     const badge = document.getElementById('customSourceBadge');
-
-    if (!customInput) return;
 
     if (val === 'OTHERS' || val === 'Lainnya') {
         if (customWrapper) customWrapper.classList.remove('hidden');
         if (badge) badge.classList.remove('hidden');
-        customInput.focus();
+        if (customInput) {
+            customInput.focus();
+            if (finalInput) finalInput.value = customInput.value.trim() || 'Investor.id / Riset';
+        }
     } else {
         if (customWrapper) customWrapper.classList.add('hidden');
         if (badge) badge.classList.add('hidden');
-        customInput.value = val;
+        if (customInput) customInput.value = val;
+        if (finalInput) finalInput.value = val;
     }
     markEditorDirty();
+}
+
+function handleCustomSourceInput(val) {
+    const finalInput = document.getElementById('finalSourceInput');
+    if (finalInput) {
+        finalInput.value = val.trim() || 'Investor.id / Riset';
+    }
+    markEditorDirty();
+}
+
+function submitAsDraft() {
+    const statusSelect = document.getElementById('workflowStatusSelect');
+    if (statusSelect) {
+        statusSelect.value = 'Draft';
+    }
+    const form = document.getElementById('postEditorForm');
+    if (form) {
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form.submit();
+        }
+    }
 }
 
 function addPointRow(val = '') {
@@ -2005,6 +2088,56 @@ async function performAutoSave() {
     const descInput = document.getElementById('thumbnailDescriptionInput');
     const capInput = document.getElementById('thumbnailCaptionInput');
 
+    // Pastikan pending tag diinput sebelum autosave
+    const pendingTagInput = document.getElementById('artTagInput');
+    if (pendingTagInput && pendingTagInput.value.trim()) {
+        const pendingVal = pendingTagInput.value.trim().replace(/^#/, '');
+        if (pendingVal && typeof chosenTags !== 'undefined' && !chosenTags.includes(pendingVal)) {
+            chosenTags.push(pendingVal);
+            pendingTagInput.value = '';
+        }
+    }
+    // Pastikan tags badge tersinkronisasi ke hidden input
+    if (typeof syncTagsToInput === 'function') {
+        syncTagsToInput();
+    }
+
+    // Resolusi sumber berita aktif (prioritaskan finalSourceInput)
+    let currentSourceVal = 'Investor Daily';
+    const finalSourceInput = document.getElementById('finalSourceInput');
+    const sourceSelect = document.getElementById('sourceSelect');
+    const customSourceInput = document.getElementById('customSourceInput');
+    if (finalSourceInput && finalSourceInput.value.trim()) {
+        currentSourceVal = finalSourceInput.value.trim();
+    } else if (sourceSelect) {
+        if (sourceSelect.value === 'OTHERS' || sourceSelect.value === 'Lainnya') {
+            currentSourceVal = customSourceInput && customSourceInput.value.trim() ? customSourceInput.value.trim() : 'Investor.id / Riset';
+        } else {
+            currentSourceVal = sourceSelect.value;
+        }
+    } else if (customSourceInput && customSourceInput.value.trim()) {
+        currentSourceVal = customSourceInput.value.trim();
+    }
+
+    // Kumpulkan seluruh poin utama naskah (points)
+    const pointsList = [];
+    document.querySelectorAll('#pointsListContainer .point-input').forEach(ptInput => {
+        const val = ptInput.value.trim();
+        if (val) pointsList.push(val);
+    });
+
+    // Kumpulkan sub_kanal aktif
+    const subKanalList = [];
+    document.querySelectorAll('input[name="sub_kanal[]"]:checked').forEach(cb => {
+        if (cb.value) subKanalList.push(cb.value);
+    });
+
+    // Kumpulkan upper_deck, is_premium, dan publish_date terjadwal
+    const upperDeckInput = document.getElementById('upperDeckInput');
+    const isPremiumSelect = document.getElementById('isPremiumSelect');
+    const publishDateInput = document.getElementById('publishDateHiddenInput');
+    const publishDateVal = publishDateInput ? publishDateInput.value.trim() : '';
+
     const payload = {
         id: idInput ? idInput.value : '',
         title: title,
@@ -2014,12 +2147,19 @@ async function performAutoSave() {
         media_id: mediaIdInput ? mediaIdInput.value : '',
         thumbnail_description: descInput ? descInput.value : '',
         thumbnail_caption: capInput ? capInput.value : '',
+        upper_deck: upperDeckInput ? upperDeckInput.value.trim() : '',
+        is_premium: isPremiumSelect ? parseInt(isPremiumSelect.value, 10) : 0,
+        publish_date: publishDateVal,
         kanal: kanalSelect ? kanalSelect.value : 'Market',
+        sub_kanal: subKanalList,
+        source: currentSourceVal,
         author: authorHidden ? authorHidden.value : '',
-        tags: tagsInput ? tagsInput.value : ''
+        tags: tagsInput ? tagsInput.value : '',
+        points: pointsList
     };
 
     try {
+        window.__IS_AUTOSAVING__ = true;
         const response = await fetch('/api/autosave', {
             method: 'POST',
             headers: {
@@ -2050,6 +2190,8 @@ async function performAutoSave() {
         console.error('AutoSave error:', err);
         if (dot) dot.className = 'size-2 rounded-full bg-red-500';
         if (text) text.textContent = 'Auto-save offline';
+    } finally {
+        window.__IS_AUTOSAVING__ = false;
     }
 }
 

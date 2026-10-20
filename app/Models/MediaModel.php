@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class MediaModel extends Model
 {
-    protected $table = 'media';
+    protected $table = 'Media';
     protected $primaryKey = 'mediaID';
     protected $allowedFields = [
         'caption',
@@ -25,7 +25,7 @@ class MediaModel extends Model
      */
     public function getMediaWithRelations(int $page = 1, int $perPage = 6, ?string $keyword = null): array
     {
-        $builder = $this->db->table('media m')
+        $builder = $this->db->table('Media m')
             ->select('
                 m.mediaID AS id,
                 m.mediaTitle AS title,
@@ -38,8 +38,8 @@ class MediaModel extends Model
                 p.name AS user_name,
                 COUNT(DISTINCT mnl.articleID) AS usage_count
             ', false)
-            ->join('useradministrator p', 'p.userID = m.userID', 'left')
-            ->join('mediaarticle mnl', 'mnl.mediaID = m.mediaID', 'left')
+            ->join('UserAdministrator p', 'p.userID = m.userID', 'left')
+            ->join('MediaArticle mnl', 'mnl.mediaID = m.mediaID', 'left')
             ->groupBy('m.mediaID')
             ->orderBy('m.timestamp', 'DESC');
 
@@ -75,7 +75,7 @@ class MediaModel extends Model
      */
     public function getArticlesUsingMedia(int $mediaId): array
     {
-        return $this->db->table('mediaarticle ma')
+        return $this->db->table('MediaArticle ma')
             ->select('
                 a.articleID AS id,
                 a.headline AS title,
@@ -83,7 +83,7 @@ class MediaModel extends Model
                 a.status AS status,
                 a.articleDate AS publish_date
             ')
-            ->join('article a', 'a.articleID = ma.articleID')
+            ->join('Article a', 'a.articleID = ma.articleID')
             ->where('ma.mediaID', $mediaId)
             ->orderBy('a.articleDate', 'DESC')
             ->get()->getResultArray();

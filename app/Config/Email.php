@@ -134,7 +134,8 @@ class Email extends BaseConfig
             $this->SMTPPort   = (int)(env('SMTP_PORT') ?: 465);
             $this->SMTPUser   = (string)env('SMTP_USER');
             $this->SMTPPass   = (string)env('SMTP_PASS');
-            $this->SMTPCrypto = (string)(env('SMTP_CRYPTO') ?: 'ssl');
+            $crypto = env('SMTP_CRYPTO');
+            $this->SMTPCrypto = ($crypto !== null && $crypto !== false) ? (string)$crypto : '';
             $this->fromEmail  = (string)(env('SMTP_FROM') ?: 'no-reply@investor.id');
             $this->fromName   = (string)(env('SMTP_FROM_NAME') ?: 'Investor.ID CMS');
             $this->mailType   = 'html';

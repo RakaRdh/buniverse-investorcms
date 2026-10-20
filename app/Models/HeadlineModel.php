@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class HeadlineModel extends Model
 {
-    protected $table = 'articleheadline';
+    protected $table = 'ArticleHeadline';
     protected $primaryKey = 'id';
     protected $allowedFields = [
         'category',
@@ -23,7 +23,7 @@ class HeadlineModel extends Model
      */
     public function getActiveHeadlines(?string $label = null): array
     {
-        $builder = $this->db->table('articleheadline h')
+        $builder = $this->db->table('ArticleHeadline h')
             ->select('
                 n.articleID AS id,
                 n.headline AS title,
@@ -49,14 +49,14 @@ class HeadlineModel extends Model
                 GROUP_CONCAT(DISTINCT a.authorName SEPARATOR ", ") AS author,
                 ANY_VALUE(p.username) AS post_by
             ')
-            ->join('article n', 'n.articleID = h.articleID')
-            ->join('useradministrator p', 'p.userID = n.userID', 'left')
-            ->join('articleauthor nal', 'nal.articleID = n.articleID', 'left')
-            ->join('authors a', 'a.authorID = nal.authorID', 'left')
-            ->join('mediaarticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
-            ->join('media m', 'm.mediaID = ma_thumb.mediaID', 'left')
-            ->join('articlemeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
-            ->join('articlemeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left');
+            ->join('Article n', 'n.articleID = h.articleID')
+            ->join('UserAdministrator p', 'p.userID = n.userID', 'left')
+            ->join('ArticleAuthor nal', 'nal.articleID = n.articleID', 'left')
+            ->join('Authors a', 'a.authorID = nal.authorID', 'left')
+            ->join('MediaArticle ma_thumb', 'ma_thumb.articleID = n.articleID AND ma_thumb.position = 1', 'left')
+            ->join('Media m', 'm.mediaID = ma_thumb.mediaID', 'left')
+            ->join('ArticleMeta nm_deck', 'nm_deck.articleID = n.articleID AND nm_deck.metakey = "upper_deck"', 'left')
+            ->join('ArticleMeta nm_prem', 'nm_prem.articleID = n.articleID AND nm_prem.metakey = "premium"', 'left');
 
         $builder->where('h.status', 1);
 
@@ -87,7 +87,7 @@ class HeadlineModel extends Model
                 $updateData['set_by'] = $setBy;
                 $updateData['timestamp'] = date('Y-m-d H:i:s');
             }
-            $this->db->table('articleheadline')
+            $this->db->table('ArticleHeadline')
                 ->where('articleID', (int)$articleId)
                 ->where('category', $category)
                 ->where('status', 1)
@@ -103,7 +103,7 @@ class HeadlineModel extends Model
      */
     public function logHistory(int $articleId, string $category, string $action, ?int $position = null, ?string $user = null, ?string $notes = null): bool
     {
-        return $this->db->table('articleheadlinehistory')->insert([
+        return $this->db->table('ArticleHeadlineHistory')->insert([
             'articleID' => $articleId,
             'category'  => $category,
             'action'    => strtoupper($action),
@@ -119,7 +119,7 @@ class HeadlineModel extends Model
      */
     public function getHistory(array $filters = [], int $page = 1, int $perPage = 20): array
     {
-        $builder = $this->db->table('articleheadlinehistory hh')
+        $builder = $this->db->table('ArticleHeadlineHistory hh')
             ->select('
                 hh.id AS history_id,
                 hh.articleID,
@@ -134,8 +134,8 @@ class HeadlineModel extends Model
                 u.name AS actor_name,
                 u.alias AS actor_alias
             ')
-            ->join('article n', 'n.articleID = hh.articleID', 'left')
-            ->join('useradministrator u', 'u.username = hh.user', 'left');
+            ->join('Article n', 'n.articleID = hh.articleID', 'left')
+            ->join('UserAdministrator u', 'u.username = hh.user', 'left');
 
         if (!empty($filters['category']) && strtolower($filters['category']) !== 'all') {
             $builder->where('LOWER(hh.category)', strtolower($filters['category']));

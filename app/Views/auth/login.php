@@ -147,7 +147,8 @@
                         </button>
                     </form>
 
-                    <!-- Demo Account Quick Fill (Administrator Only) -->
+                    <?php if (ENVIRONMENT === 'development' && !empty($demoUsers)): ?>
+                    <!-- Demo Account Quick Fill (Development Mode Only) -->
                     <div class="mt-6 pt-5 border-t border-[#F1F5F9] space-y-2.5">
                         <div class="flex items-center justify-between">
                             <p class="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
@@ -166,6 +167,7 @@
                             </button>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <?php /*
                     <!-- Other Roles Demo (Temporarily Commented Out) -->

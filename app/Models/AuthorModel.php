@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class AuthorModel extends Model
 {
-    protected $table = 'authors';
+    protected $table = 'Authors';
     protected $primaryKey = 'authorID';
     protected $allowedFields = [
         'authorName',
@@ -21,7 +21,7 @@ class AuthorModel extends Model
      */
     public function getAuthorsWithCount(): array
     {
-        return $this->db->table('authors a')
+        return $this->db->table('Authors a')
             ->select('
                 a.authorID AS id,
                 a.authorName AS name,
@@ -30,7 +30,7 @@ class AuthorModel extends Model
                 a.valid AS status,
                 COUNT(DISTINCT nal.articleID) AS article_count
             ')
-            ->join('articleauthor nal', 'nal.authorID = a.authorID', 'left')
+            ->join('ArticleAuthor nal', 'nal.authorID = a.authorID', 'left')
             ->groupBy('a.authorID')
             ->orderBy('article_count', 'DESC')
             ->get()->getResultArray();
@@ -71,8 +71,8 @@ class AuthorModel extends Model
         $newId = (int)$this->insertID();
 
         // Keep authors_current in sync if table exists
-        if ($this->db->tableExists('authors_current')) {
-            $this->db->table('authors_current')->insert([
+        if ($this->db->tableExists('AuthorsCurrent')) {
+            $this->db->table('AuthorsCurrent')->insert([
                 'authorID'   => $newId,
                 'authorName' => $formattedName,
                 'slug'       => null,

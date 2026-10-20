@@ -1,69 +1,92 @@
-# CodeIgniter 4 Application Starter
+# Investor.ID Revamp CMS
 
-## What is CodeIgniter?
+Sistem Manajemen Konten (CMS) modern untuk portal berita pasar modal dan finansial **Investor.ID** (B-Universe), dibangun menggunakan arsitektur CodeIgniter 4 (PHP 8.2+), standar PSR-4, Model-View-Controller (MVC), dan paritas database penuh dengan sistem Smarty CMS.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+---
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+## Fitur Utama
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+- **Editorial & Newsroom Management**: Manajemen artikel lengkap (Draft, Publish, Hold, Deleted), multi sub-kanal, assignment jurnalis/editor/fotografer, tag kata kunci, sub-headline/poin berita, dan pratinjau artikel.
+- **Edit Lock Mechanism**: Mencegah tabrakan edit antar-redaktur dengan sistem kuncian real-time dan hak force unlock bagi role Administrator / Redpel.
+- **Headline Management & Reordering**: Pengaturan urutan slot headline untuk kanal Beranda, Tropical, Trending, dan Newsletter.
+- **Media Asset Management**: Manajemen gambar, integrasi thumbnail artikel position-based, dan deteksi artikel terikat.
+- **Autosave & Asinkron**: Penyimpanan draft otomatis di latar belakang saat artikel sedang diketik.
+- **AI Editorial Assistant**: Asistensi pembuatan judul alternatif, ringkasan, dan audit tata bahasa menggunakan Google Gemini API.
+- **SEO Scorer**: Evaluasi kepadatan kata kunci, panjang judul, dan kesiapan SEO artikel jurnalistik sebelum tayang.
+- **Audit Trail & Revision History**: Pencatatan riwayat revisi artikel per redaktur beserta pelacakan status perubahan.
+- **CLI Scheduler & Background Cron**: Otomasi penerbitan artikel terjadwal, truncate berkala headline newsletter, dan pembersihan log audit lama.
+- **API Services**: Reader APIs, Market Indices & Stock Movers APIs, serta Auth APIs untuk integrasi aplikasi mobile / web portal.
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+---
 
-## Installation & updates
+## Persyaratan Sistem
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+- **PHP**: Versi 8.2 atau lebih tinggi
+- **Ekstensi PHP Wajib**: `intl`, `mbstring`, `mysqli`, `curl`, `json`
+- **Database**: MySQL 8.0+ / MariaDB 10.4+
+- **Composer**: Versi 2.x
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+---
 
-## Setup
+## Instalasi & Menjalankan Lokal
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+1. **Clone repositori**:
+   ```bash
+   git clone https://github.com/RakaRdh/buniverse-investorcms.git
+   cd buniverse-investorcms
+   ```
 
-## Important Change with index.php
+2. **Install dependensi Composer**:
+   ```bash
+   composer install
+   ```
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+3. **Konfigurasi Environment**:
+   Salin file `.env` atau sesuaikan dari `env`:
+   ```bash
+   cp env .env
+   ```
+   Pastikan parameter database disesuaikan dengan konfigurasi lokal Anda:
+   ```ini
+   CI_ENVIRONMENT = development
+   database.default.hostname = 127.0.0.1
+   database.default.database = investor
+   database.default.username = root
+   database.default.password = [password_anda]
+   database.default.DBDriver = MySQLi
+   database.default.DBPrefix = tbl
+   ```
+   *(PENTING: Nilai `database.default.DBPrefix` WAJIB disetel ke `tbl` agar sesuai dengan konvensi penamaan tabel Smarty).*
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+4. **Jalankan Migrasi Database**:
+   ```bash
+   php spark migrate
+   ```
 
-**Please** read the user guide for a better explanation of how CI4 works!
+5. **Jalankan Development Server**:
+   ```bash
+   php spark serve
+   ```
+   Akses CMS di browser melalui `http://localhost:8080`.
 
-## Repository Management
+---
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+## Pengujian Otomatis (Automated Testing)
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+Seluruh logika bisnis, sanitasi HTML, paritas hashing password Smarty, dan controller CMS diuji menggunakan PHPUnit:
 
-## Server Requirements
+```bash
+# Menjalankan seluruh unit test (111 tests, 428 assertions):
+vendor/bin/phpunit
 
-PHP version 8.2 or higher is required, with the following extensions installed:
+# Menjalankan test spesifik model:
+vendor/bin/phpunit tests/unit/Models/ArticleModelTest.php
+```
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+---
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
+## Dokumentasi Teknis Lengkap
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+Dokumentasi teknis mendalam mengenai komparasi query Smarty vs Revamp, payload API lengkap, panduan pra-produksi, dan catatan integrasi styling preview artikel tersedia pada:
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+👉 **[docs/Revamp Investor CMS Documentation.md](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/docs/Revamp%20Investor%20CMS%20Documentation.md)**

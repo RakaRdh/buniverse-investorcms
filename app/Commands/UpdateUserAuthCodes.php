@@ -15,12 +15,12 @@ class UpdateUserAuthCodes extends BaseCommand
     public function run(array $params)
     {
         $db = Database::connect();
-        $users = $db->table('useradministrator')->get()->getResultArray();
+        $users = $db->table('UserAdministrator')->get()->getResultArray();
         $updated = 0;
 
         foreach ($users as $u) {
             if (empty($u['authCode'])) {
-                $db->table('useradministrator')->where('userID', $u['userID'])->update([
+                $db->table('UserAdministrator')->where('userID', $u['userID'])->update([
                     'authCode'    => (string)random_int(100000, 999999),
                     'authExpired' => date('Y-m-d H:i:s', strtotime('+30 days')),
                 ]);

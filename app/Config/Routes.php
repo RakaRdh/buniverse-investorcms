@@ -31,7 +31,7 @@ $routes->get('/post/new', 'Post::new');
 $routes->post('/post/save', 'Post::save');
 $routes->get('/post/edit/(:num)', 'Post::edit/$1');
 $routes->post('/post/update/(:num)', 'Post::update/$1');
-$routes->match(['GET', 'POST'], '/post/delete/(:num)', 'Post::delete/$1');
+$routes->post('/post/delete/(:num)', 'Post::delete/$1');
 $routes->get('/post/export', 'Post::export');
 $routes->get('/post/history', 'Post::history');
 $routes->get('/post/history/(:num)', 'Post::historyDetail/$1');
@@ -42,13 +42,13 @@ $routes->post('/post/preview', 'PostPreview::fromForm');
 // Keyword Management (Master Topics & SEO)
 $routes->get('/keyword', 'Keyword::index');
 $routes->post('/keyword/save', 'Keyword::save');
-$routes->match(['GET', 'POST'], '/keyword/delete/(:num)', 'Keyword::delete/$1');
+$routes->post('/keyword/delete/(:num)', 'Keyword::delete/$1');
 
 // Headline Management (Master, Admin, Editor)
 $routes->get('/headline', 'Headline::index', ['filter' => 'role:master,admin,editor']);
 $routes->get('/headline/history', 'Headline::history', ['filter' => 'role:master,admin,editor']);
 $routes->post('/headline/add', 'Headline::add', ['filter' => 'role:master,admin,editor']);
-$routes->match(['GET', 'POST'], '/headline/remove/(:num)', 'Headline::remove/$1', ['filter' => 'role:master,admin,editor']);
+$routes->post('/headline/remove/(:num)', 'Headline::remove/$1', ['filter' => 'role:master,admin,editor']);
 $routes->post('/headline/save', 'Headline::save', ['filter' => 'role:master,admin,editor']);
 $routes->post('/headline/reorder', 'Headline::reorder', ['filter' => 'role:master,admin,editor']);
 
@@ -58,23 +58,23 @@ $routes->get('/media/new', 'Media::new');
 $routes->post('/media/save', 'Media::save');
 $routes->get('/media/edit/(:num)', 'Media::edit/$1');
 $routes->post('/media/update/(:num)', 'Media::update/$1');
-$routes->match(['GET', 'POST'], '/media/delete/(:num)', 'Media::delete/$1');
+$routes->post('/media/delete/(:num)', 'Media::delete/$1');
 
 // Files Management
 $routes->get('/files', 'Files::index');
 $routes->post('/files/upload', 'Files::upload');
-$routes->match(['GET', 'POST'], '/files/delete/(:num)', 'Files::delete/$1');
+$routes->post('/files/delete/(:num)', 'Files::delete/$1');
 
 // Financial Embed Chart (Template & Custom Data)
 $routes->get('/embed-chart', 'EmbedChart::index', ['filter' => 'role:master,admin,editor']);
 $routes->get('/embed-chart/template', 'EmbedChart::template', ['filter' => 'role:master,admin,editor']);
 $routes->get('/embed-chart/custom', 'EmbedChart::custom', ['filter' => 'role:master,admin,editor']);
-$routes->get('/embed-chart/custom/create', 'EmbedChart::createCustom', ['filter' => 'role:master,admin,editor']);
+$routes->get('/embed-chart/create', 'EmbedChart::createCustom', ['filter' => 'role:master,admin,editor']);
 $routes->post('/embed-chart/custom/save', 'EmbedChart::saveCustom', ['filter' => 'role:master,admin,editor']);
 $routes->get('/embed-chart/custom/edit/(:num)', 'EmbedChart::editCustom/$1', ['filter' => 'role:master,admin,editor']);
 $routes->post('/embed-chart/custom/update/(:num)', 'EmbedChart::updateCustom/$1', ['filter' => 'role:master,admin,editor']);
 $routes->post('/embed-chart/save', 'EmbedChart::save', ['filter' => 'role:master,admin,editor']);
-$routes->match(['GET', 'POST'], '/embed-chart/delete/(:num)', 'EmbedChart::delete/$1', ['filter' => 'role:master,admin,editor']);
+$routes->post('/embed-chart/delete/(:num)', 'EmbedChart::delete/$1', ['filter' => 'role:master,admin,editor']);
 
 // Editorial Statistics & Reporting
 $routes->get('/statistic', 'Statistic::index');
@@ -97,30 +97,30 @@ $routes->get('/kanal/stats', 'Kanal::stats', ['filter' => 'role:master,admin']);
 // Mobile Apps Ecosystem (Master, Admin)
 $routes->get('/apps-version', 'Apps::version', ['filter' => 'role:master,admin']);
 $routes->post('/apps-version/save', 'Apps::saveVersion', ['filter' => 'role:master,admin']);
-$routes->match(['GET', 'POST'], '/apps-version/delete/(:num)', 'Apps::deleteVersion/$1', ['filter' => 'role:master,admin']);
+$routes->post('/apps-version/delete/(:num)', 'Apps::deleteVersion/$1', ['filter' => 'role:master,admin']);
 
 $routes->get('/apps-push-notif', 'Apps::pushNotif', ['filter' => 'role:master,admin']);
 $routes->post('/apps-push-notif/create', 'Apps::createPushNotif', ['filter' => 'role:master,admin']);
 
 $routes->get('/apps-feature-content', 'Apps::featureContent', ['filter' => 'role:master,admin']);
 $routes->post('/apps-feature-content/save', 'Apps::saveFeatureContent', ['filter' => 'role:master,admin']);
-$routes->match(['GET', 'POST'], '/apps-feature-content/delete/(:num)', 'Apps::deleteFeature/$1', ['filter' => 'role:master,admin']);
+$routes->post('/apps-feature-content/delete/(:num)', 'Apps::deleteFeature/$1', ['filter' => 'role:master,admin']);
 
 // Category Taxonomy (Legacy Redirect)
 $routes->get('/categories', 'Kanal::master', ['filter' => 'role:master,admin']);
 $routes->post('/categories/save', 'Categories::save', ['filter' => 'role:master,admin']);
-$routes->match(['GET', 'POST'], '/categories/delete/(:num)', 'Categories::delete/$1', ['filter' => 'role:master,admin']);
+$routes->post('/categories/delete/(:num)', 'Categories::delete/$1', ['filter' => 'role:master,admin']);
 
 // Member / Client Management (Master, Admin) - Table: client_account_entity
 $routes->get('/member', 'Member::index', ['filter' => 'role:master,admin']);
 $routes->post('/member/save', 'Member::save', ['filter' => 'role:master,admin']);
-$routes->match(['GET', 'POST'], '/member/delete/(:num)', 'Member::delete/$1', ['filter' => 'role:master,admin']);
+$routes->post('/member/delete/(:num)', 'Member::delete/$1', ['filter' => 'role:master,admin']);
 
 // User & Role Management (Master, Admin)
 $routes->get('/user', 'User::index', ['filter' => 'role:master,admin']);
 $routes->post('/user/save', 'User::save', ['filter' => 'role:master,admin']);
 $routes->post('/user/update/(:num)', 'User::update/$1', ['filter' => 'role:master,admin']);
-$routes->match(['GET', 'POST'], '/user/delete/(:num)', 'User::delete/$1', ['filter' => 'role:master,admin']);
+$routes->post('/user/delete/(:num)', 'User::delete/$1', ['filter' => 'role:master,admin']);
 $routes->post('/user/toggle-status/(:num)', 'User::toggleStatus/$1', ['filter' => 'role:master,admin']);
 $routes->get('/user/permissions/(:num)', 'User::getPermissions/$1', ['filter' => 'role:master,admin']);
 $routes->post('/user/permissions/save', 'User::savePermissions', ['filter' => 'role:master,admin']);

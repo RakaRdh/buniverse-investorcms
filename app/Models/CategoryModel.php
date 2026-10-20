@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class CategoryModel extends Model
 {
-    protected $table = 'category';
+    protected $table = 'Category';
     protected $primaryKey = 'categoryID';
     protected $allowedFields = [
         'categoryName',
@@ -22,7 +22,7 @@ class CategoryModel extends Model
      */
     public function getKanalTree(): array
     {
-        $parents = $this->db->table('category c')
+        $parents = $this->db->table('Category c')
             ->select('
                 c.categoryID AS id,
                 c.label AS name,
@@ -32,15 +32,19 @@ class CategoryModel extends Model
                 COUNT(DISTINCT ncl.articleID) AS article_count,
                 SUM(COALESCE(n.viewed, 0)) AS total_views
             ')
-            ->join('articlecategory ncl', 'ncl.categoryID = c.categoryID', 'left')
-            ->join('article n', 'n.articleID = ncl.articleID', 'left')
-            ->where('c.parent IS NULL')
+            ->join('ArticleCategory ncl', 'ncl.categoryID = c.categoryID', 'left')
+            ->join('Article n', 'n.articleID = ncl.articleID', 'left')
+            ->groupStart()
+                ->where('c.parent IS NULL')
+                ->orWhere('c.parent', 0)
+                ->orWhere('c.parent', '')
+            ->groupEnd()
             ->groupBy('c.categoryID')
             ->orderBy('c.num', 'ASC')
             ->get()->getResultArray();
 
         foreach ($parents as &$p) {
-            $p['sub_kanals'] = $this->db->table('category c')
+            $p['sub_kanals'] = $this->db->table('Category c')
                 ->select('
                     c.categoryID AS id,
                     c.label AS name,
@@ -49,8 +53,8 @@ class CategoryModel extends Model
                     COUNT(DISTINCT ncl.articleID) AS article_count,
                     SUM(COALESCE(n.viewed, 0)) AS total_views
                 ')
-                ->join('articlecategory ncl', 'ncl.categoryID = c.categoryID', 'left')
-                ->join('article n', 'n.articleID = ncl.articleID', 'left')
+                ->join('ArticleCategory ncl', 'ncl.categoryID = c.categoryID', 'left')
+                ->join('Article n', 'n.articleID = ncl.articleID', 'left')
                 ->where('c.parent', $p['id'])
                 ->groupBy('c.categoryID')
                 ->orderBy('c.num', 'ASC')
@@ -66,7 +70,7 @@ class CategoryModel extends Model
      */
     public function getSubKanalsList(): array
     {
-        return $this->db->table('category sub')
+        return $this->db->table('Category sub')
             ->select('
                 sub.categoryID AS id,
                 sub.label AS name,
@@ -76,9 +80,9 @@ class CategoryModel extends Model
                 COUNT(DISTINCT ncl.articleID) AS article_count,
                 SUM(COALESCE(n.viewed, 0)) AS total_views
             ')
-            ->join('category parent', 'parent.categoryID = sub.parent')
-            ->join('articlecategory ncl', 'ncl.categoryID = sub.categoryID', 'left')
-            ->join('article n', 'n.articleID = ncl.articleID', 'left')
+            ->join('Category parent', 'parent.categoryID = sub.parent')
+            ->join('ArticleCategory ncl', 'ncl.categoryID = sub.categoryID', 'left')
+            ->join('Article n', 'n.articleID = ncl.articleID', 'left')
             ->where('sub.parent IS NOT NULL')
             ->groupBy('sub.categoryID')
             ->orderBy('parent.num', 'ASC')
@@ -118,7 +122,7 @@ class CategoryModel extends Model
     {
         $row = $this->find($id);
         if ($row) {
-            $this->db->table('category_backup')->replace($row);
+            $this->db->table('CategoryBackup')->replace($row);
         }
     }
 }

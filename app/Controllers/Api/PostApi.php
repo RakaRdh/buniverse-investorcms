@@ -59,6 +59,22 @@ class PostApi extends BaseController
             $category = $this->categoryModel->where('categoryName', $kanalName)->first();
         }
         $categoryId = $category ? (int)$category['categoryID'] : 1;
+        // Sub-Kanal Category Resolution (mendukung multiple sub-kanals)
+        $subKanalIds = [];
+        if (!empty($subKanal)) {
+            $subNames = array_map('trim', explode(',', $subKanal));
+            foreach ($subNames as $sName) {
+                if ($sName === '') continue;
+                $subCategory = $this->categoryModel->where('categoryName', $sName)->where('parent', $categoryId)->first();
+                if (!$subCategory) {
+                    $subCategory = $this->categoryModel->where('categoryName', $sName)->first();
+                }
+                if ($subCategory) {
+                    $subKanalIds[] = (int)$subCategory['categoryID'];
+                }
+            }
+        }
+        $subKanalId = !empty($subKanalIds) ? $subKanalIds[0] : 0;
 
         $rawTags = $data['tags'] ?? '';
         $tags = is_array($rawTags) ? $rawTags : array_values(array_filter(array_map('trim', explode(',', $rawTags))));
@@ -74,28 +90,45 @@ class PostApi extends BaseController
         $cleanSummary = HtmlSanitizer::cleanSummary($data['summary'] ?? '');
         $cleanContent = HtmlSanitizer::clean($content);
 
+        // Check if existing article already has a specific status (e.g. Hold, Scheduled) to preserve
+        $existingArticle = ($id) ? $this->articleModel->find($id) : null;
+        $statusToSave = ($existingArticle && !empty($existingArticle['status'])) ? $existingArticle['status'] : 'Draft';
+
+        // Preserve publish_date if passed or existing (mencegah reset jadwal tayang naskah)
+        $publishDateToSave = date('Y-m-d H:i:s');
+        if (!empty($data['publish_date'])) {
+            $parsedDate = strtotime($data['publish_date']);
+            if ($parsedDate !== false && $parsedDate > 0) {
+                $publishDateToSave = date('Y-m-d H:i:s', $parsedDate);
+            }
+        } elseif ($existingArticle && !empty($existingArticle['articleDate'])) {
+            $publishDateToSave = $existingArticle['articleDate'];
+        }
+
         $articleData = [
             'title'                 => !empty($cleanTitle) ? $cleanTitle : 'Draft Tanpa Judul (' . date('d M H:i') . ')',
             'slug'                  => url_title(!empty($cleanTitle) ? $cleanTitle : 'draft-' . time(), '-', true),
             'summary'               => $cleanSummary,
             'content'               => $cleanContent,
-            'status'                => 'Draft',
-            'publish_date'          => date('Y-m-d H:i:s'),
+            'status'                => $statusToSave,
+            'publish_date'          => $publishDateToSave,
             'thumbnail'             => !empty($data['thumbnail']) ? $data['thumbnail'] : '/img/investor_placeholder.jpg',
             'media_id'              => (int)($data['media_id'] ?? 0),
             'thumbnail_description' => trim((string)($data['thumbnail_description'] ?? '')),
             'thumbnail_caption'     => trim((string)($data['thumbnail_caption'] ?? '')),
             'upper_deck'            => $data['upper_deck'] ?? '',
-            'source'                => $data['source'] ?? 'Investor.id / Riset',
+            'source'                => !empty($data['source']) ? $data['source'] : 'Investor.id / Riset',
             'kanal'                 => $kanalName,
             'sub_kanal'             => $subKanal,
+            'sub_kanal_id'          => $subKanalId,
+            'sub_kanal_ids'         => $subKanalIds,
             'is_premium'            => (int)($data['is_premium'] ?? 0),
             'headline_type'         => $data['headline_type'] ?? 'none',
             'userID'                => $sessionUser,
         ];
 
         try {
-            if ($id && $this->articleModel->find($id)) {
+            if ($existingArticle) {
                 $this->articleModel->updateArticle($id, $articleData, $authorId, $categoryId, $tags, $points);
                 $articleId = $id;
             } else {

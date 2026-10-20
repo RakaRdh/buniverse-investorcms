@@ -6,16 +6,20 @@ use CodeIgniter\Model;
 
 class ChartModel extends Model
 {
-    protected $table = 'chartdata';
+    protected $table = 'ChartData';
     protected $primaryKey = 'chartID';
     protected $allowedFields = [
         'chartTitle',
         'xAxisTitle',
         'xAxisData',
+        'yAxisTitle',
+        'yAxisData',
         'createdAt',
         'createdBy',
-        'updateAt',
-        'updateBy',
+        'updatedAt',
+        'updatedBy',
+        'deletedAt',
+        'deletedBy',
         'source',
         'chartStyle'
     ];
@@ -26,7 +30,7 @@ class ChartModel extends Model
      */
     public function getChartsList(): array
     {
-        return $this->db->table('chartdata c')
+        return $this->db->table('ChartData c')
             ->select('
                 c.chartID AS id,
                 c.chartTitle AS title,
@@ -34,13 +38,14 @@ class ChartModel extends Model
                 c.xAxisTitle AS symbol,
                 c.source AS source,
                 p.name AS author,
-                c.updateAt AS updated,
+                c.updatedAt AS updated,
                 "Active" AS status,
                 c.xAxisData AS embed_code,
                 c.xAxisData AS data_json,
                 IF(c.source = "template", 1, 0) AS is_template
             ')
-            ->join('useradministrator p', 'p.userID = c.createdBy', 'left')
+            ->join('UserAdministrator p', 'p.userID = c.createdBy', 'left')
+            ->where('c.deletedAt IS NULL')
             ->orderBy('is_template', 'DESC')
             ->orderBy('c.chartID', 'DESC')
             ->get()->getResultArray();
@@ -51,7 +56,7 @@ class ChartModel extends Model
      */
     public function getTemplates(): array
     {
-        $rows = $this->db->table('chartdata c')
+        $rows = $this->db->table('ChartData c')
             ->select('
                 c.chartID AS id,
                 c.chartTitle AS title,
@@ -59,12 +64,13 @@ class ChartModel extends Model
                 c.xAxisTitle AS symbol,
                 c.source AS source,
                 p.name AS author,
-                c.updateAt AS updated,
+                c.updatedAt AS updated,
                 "Active" AS status,
                 c.xAxisData AS data_json
             ')
-            ->join('useradministrator p', 'p.userID = c.createdBy', 'left')
+            ->join('UserAdministrator p', 'p.userID = c.createdBy', 'left')
             ->where('c.source', 'template')
+            ->where('c.deletedAt IS NULL')
             ->orderBy('c.chartID', 'ASC')
             ->get()->getResultArray();
 
@@ -79,7 +85,7 @@ class ChartModel extends Model
      */
     public function getCustomChartsList(): array
     {
-        $rows = $this->db->table('chartdata c')
+        $rows = $this->db->table('ChartData c')
             ->select('
                 c.chartID AS id,
                 c.chartTitle AS title,
@@ -87,12 +93,13 @@ class ChartModel extends Model
                 c.xAxisTitle AS symbol,
                 c.source AS source,
                 p.name AS author,
-                c.updateAt AS updated,
+                c.updatedAt AS updated,
                 "Active" AS status,
                 c.xAxisData AS data_json
             ')
-            ->join('useradministrator p', 'p.userID = c.createdBy', 'left')
+            ->join('UserAdministrator p', 'p.userID = c.createdBy', 'left')
             ->where('c.source !=', 'template')
+            ->where('c.deletedAt IS NULL')
             ->orderBy('c.chartID', 'DESC')
             ->get()->getResultArray();
 
@@ -143,7 +150,7 @@ class ChartModel extends Model
      */
     public function getCustomCharts(): array
     {
-        return $this->db->table('chartdata c')
+        return $this->db->table('ChartData c')
             ->select('
                 c.chartID AS id,
                 c.chartTitle AS title,

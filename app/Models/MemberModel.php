@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class MemberModel extends Model
 {
-    protected $table = 'member';
+    protected $table = 'Member';
     protected $primaryKey = 'memberID';
     protected $allowedFields = [
         'password',
@@ -52,7 +52,7 @@ class MemberModel extends Model
      */
     public function getMembers(array $filters = [], int $page = 1, int $perPage = 10): array
     {
-        $builder = $this->db->table('member');
+        $builder = $this->db->table('Member');
 
         if (!empty($filters['q'])) {
             $q = trim($filters['q']);
@@ -80,7 +80,7 @@ class MemberModel extends Model
             $clientId = (int)$row['memberID'];
             
             // Count favorites / read articles if linked
-            $favCount = $this->db->table('memberfavarticle')
+            $favCount = $this->db->table('MemberFavArticle')
                 ->where('memberID', $clientId)
                 ->countAllResults();
 
@@ -115,10 +115,10 @@ class MemberModel extends Model
      */
     public function getMemberStats(): array
     {
-        $total = $this->db->table('member')->countAllResults();
-        $active = $this->db->table('member')->where('status', 'active')->countAllResults();
-        $pending = $this->db->table('member')->where('status', 'inactive')->countAllResults();
-        $suspended = $this->db->table('member')->where('status', 'banned')->countAllResults();
+        $total = $this->db->table('Member')->countAllResults();
+        $active = $this->db->table('Member')->where('status', 'active')->countAllResults();
+        $pending = $this->db->table('Member')->where('status', 'inactive')->countAllResults();
+        $suspended = $this->db->table('Member')->where('status', 'banned')->countAllResults();
 
         return [
             'total'     => $total,
@@ -150,17 +150,17 @@ class MemberModel extends Model
 
         if (!empty($id)) {
             // Update member
-            $this->db->table('member')
+            $this->db->table('Member')
                 ->where('memberID', $id)
                 ->update($record);
 
             // Sync to memberbackup
-            $backupExists = $this->db->table('memberbackup')
+            $backupExists = $this->db->table('MemberBackup')
                 ->where('memberID', $id)
                 ->countAllResults();
 
             if ($backupExists > 0) {
-                $this->db->table('memberbackup')
+                $this->db->table('MemberBackup')
                     ->where('memberID', $id)
                     ->update($record);
             } else {
@@ -168,7 +168,7 @@ class MemberModel extends Model
                 $record['slug'] = $slug;
                 $record['uniq'] = md5($email . time());
                 $record['signupdate'] = $now;
-                $this->db->table('memberbackup')->insert($record);
+                $this->db->table('MemberBackup')->insert($record);
             }
 
             return $id;
@@ -181,12 +181,12 @@ class MemberModel extends Model
             $record['signupdate'] = $now;
             $record['lastlogin'] = $now;
 
-            $this->db->table('member')->insert($record);
+            $this->db->table('Member')->insert($record);
             $newId = $this->db->insertID();
 
             // Sync to memberbackup with same PK
             $record['memberID'] = $newId;
-            $this->db->table('memberbackup')->insert($record);
+            $this->db->table('MemberBackup')->insert($record);
 
             return $newId;
         }
@@ -197,8 +197,8 @@ class MemberModel extends Model
      */
     public function deleteMember(int $id): bool
     {
-        $this->db->table('memberfavarticle')->where('memberID', $id)->delete();
-        $this->db->table('memberbackup')->where('memberID', $id)->delete();
-        return $this->db->table('member')->where('memberID', $id)->delete();
+        $this->db->table('MemberFavArticle')->where('memberID', $id)->delete();
+        $this->db->table('MemberBackup')->where('memberID', $id)->delete();
+        return $this->db->table('Member')->where('memberID', $id)->delete();
     }
 }

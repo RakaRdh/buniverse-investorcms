@@ -51,7 +51,7 @@ class AuthApi extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $member = $db->table('member')
+        $member = $db->table('Member')
             ->where('email', $email)
             ->get()->getRowArray();
 
@@ -71,7 +71,7 @@ class AuthApi extends BaseController
         }
 
         // Update last access timestamp
-        $db->table('member')
+        $db->table('Member')
             ->where('memberID', $member['memberID'])
             ->update(['lastlogin' => date('Y-m-d H:i:s')]);
 
@@ -121,7 +121,7 @@ class AuthApi extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $existing = $db->table('member')
+        $existing = $db->table('Member')
             ->where('email', $email)
             ->countAllResults();
 

@@ -25,7 +25,7 @@ class ProductionAlignmentMigration extends Migration
         // 2. Update articlestatus values to match production
         if ($this->db->tableExists('articlestatus')) {
             $this->db->query("DELETE FROM `articlestatus`");
-            $this->db->table('articlestatus')->insertBatch([
+            $this->db->table('ArticleStatus')->insertBatch([
                 ['id' => 1, 'label' => 'Draft'],
                 ['id' => 2, 'label' => 'Publish'],
                 ['id' => 3, 'label' => 'Hold'],
@@ -108,7 +108,7 @@ class ProductionAlignmentMigration extends Migration
         // Restore articlestatus
         if ($this->db->tableExists('articlestatus')) {
             $this->db->query("DELETE FROM `articlestatus`");
-            $this->db->table('articlestatus')->insertBatch([
+            $this->db->table('ArticleStatus')->insertBatch([
                 ['id' => 1, 'label' => 'Draft'],
                 ['id' => 2, 'label' => 'Review'],
                 ['id' => 3, 'label' => 'Scheduled'],
