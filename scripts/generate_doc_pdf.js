@@ -3,6 +3,15 @@ const path = require('path');
 const { marked } = require('marked');
 const { chromium } = require('@playwright/test');
 
+function githubSlugify(text) {
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/<[^>]*>/g, '')
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s/g, '-');
+}
+
 async function generatePdf() {
     const mdPath = path.resolve(__dirname, '../docs/Revamp Investor CMS Documentation.md');
     const pdfPath = path.resolve(__dirname, '../docs/Revamp Investor CMS Documentation.pdf');
@@ -14,7 +23,27 @@ async function generatePdf() {
     }
 
     const mdContent = fs.readFileSync(mdPath, 'utf8');
-    const htmlBody = marked.parse(mdContent);
+
+    // Setup marked with custom heading renderer
+    marked.use({
+        renderer: {
+            heading({ tokens, depth, text }) {
+                const slug = githubSlugify(text);
+                return `<h${depth} id="${slug}"><a id="${slug}" class="anchor"></a>${text}</h${depth}>\n`;
+            }
+        }
+    });
+
+    let htmlBody = marked.parse(mdContent);
+
+    // Post-processing fallback to guarantee all headings have id and anchor
+    htmlBody = htmlBody.replace(/<h([1-6])(.*?)>(.*?)<\/h\1>/gi, (match, level, attrs, innerText) => {
+        if (attrs.includes('id=')) {
+            return match;
+        }
+        const slug = githubSlugify(innerText);
+        return `<h${level} id="${slug}"${attrs}><a id="${slug}" class="anchor"></a>${innerText}</h${level}>`;
+    });
 
     const fullHtml = `<!DOCTYPE html>
 <html lang="id">
@@ -31,7 +60,7 @@ async function generatePdf() {
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            font-size: 13px;
+            font-size: 12.5px;
             line-height: 1.6;
             color: #24292f;
             background-color: #ffffff;
@@ -44,20 +73,21 @@ async function generatePdf() {
             margin-top: 24px;
             margin-bottom: 12px;
             page-break-after: avoid;
+            position: relative;
         }
         h1 {
-            font-size: 24px;
+            font-size: 22px;
             border-bottom: 2px solid #e2e8f0;
             padding-bottom: 8px;
             margin-top: 0;
         }
         h2 {
-            font-size: 18px;
+            font-size: 17px;
             border-bottom: 1px solid #e2e8f0;
             padding-bottom: 6px;
         }
         h3 {
-            font-size: 15px;
+            font-size: 14.5px;
         }
         h4 {
             font-size: 13px;
@@ -79,7 +109,7 @@ async function generatePdf() {
         }
         code {
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-            font-size: 11.5px;
+            font-size: 11px;
             background-color: #f1f5f9;
             color: #0f172a;
             padding: 2px 5px;
@@ -100,7 +130,7 @@ async function generatePdf() {
             background: none;
             border: none;
             padding: 0;
-            font-size: 11px;
+            font-size: 10.5px;
             line-height: 1.5;
             color: #1e293b;
         }
@@ -109,12 +139,12 @@ async function generatePdf() {
             width: 100%;
             margin-top: 12px;
             margin-bottom: 16px;
-            font-size: 12px;
+            font-size: 11.5px;
             page-break-inside: avoid;
         }
         table th, table td {
             border: 1px solid #cbd5e1;
-            padding: 8px 10px;
+            padding: 7px 10px;
             text-align: left;
         }
         table th {
@@ -138,8 +168,16 @@ async function generatePdf() {
             color: #78350f;
         }
         a {
-            color: #2563eb;
+            color: #0969da;
             text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .anchor {
+            position: absolute;
+            top: -20px;
+            left: 0;
         }
     </style>
 </head>
@@ -166,7 +204,7 @@ async function generatePdf() {
         },
         printBackground: true,
         displayHeaderFooter: true,
-        headerTemplate: '<div style="font-size: 9px; color: #94a3b8; width: 100%; text-align: right; padding-right: 15mm;">Investor.ID Revamp CMS Documentation</div>',
+        headerTemplate: '<div style="font-size: 9px; color: #94a3b8; width: 100%; text-align: right; padding-right: 15mm;">Investor.ID Revamp CMS Technical Documentation</div>',
         footerTemplate: '<div style="font-size: 9px; color: #94a3b8; width: 100%; text-align: center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>'
     });
 
@@ -174,7 +212,7 @@ async function generatePdf() {
     fs.copyFileSync(pdfPath, obsidianPdfPath);
 
     await browser.close();
-    console.log('PDF berhasil dibuat di:');
+    console.log('PDF berhasil dibuat dengan seluruh internal links aktif di:');
     console.log('1. ' + pdfPath);
     console.log('2. ' + obsidianPdfPath);
 }
