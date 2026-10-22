@@ -85,12 +85,29 @@ async function generatePdf() {
             font-size: 17px;
             border-bottom: 1px solid #e2e8f0;
             padding-bottom: 6px;
+            page-break-before: always;
+            break-before: page;
+        }
+        #daftar-isi, h2:first-of-type {
+            page-break-before: avoid !important;
+            break-before: avoid !important;
+        }
+        thead {
+            display: table-header-group;
+        }
+        tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         h3 {
             font-size: 14.5px;
+            page-break-after: avoid;
+            break-after: avoid;
         }
         h4 {
             font-size: 13px;
+            page-break-after: avoid;
+            break-after: avoid;
         }
         p, ul, ol {
             margin-top: 0;
@@ -125,6 +142,7 @@ async function generatePdf() {
             margin-top: 8px;
             margin-bottom: 14px;
             page-break-inside: avoid;
+            break-inside: avoid;
         }
         pre code {
             background: none;
@@ -140,7 +158,7 @@ async function generatePdf() {
             margin-top: 12px;
             margin-bottom: 16px;
             font-size: 11.5px;
-            page-break-inside: avoid;
+            page-break-inside: auto;
         }
         table th, table td {
             border: 1px solid #cbd5e1;
@@ -163,6 +181,7 @@ async function generatePdf() {
             color: #92400e;
             border-radius: 0 4px 4px 0;
             page-break-inside: avoid;
+            break-inside: avoid;
         }
         blockquote strong {
             color: #78350f;
@@ -208,13 +227,16 @@ async function generatePdf() {
         footerTemplate: '<div style="font-size: 9px; color: #94a3b8; width: 100%; text-align: center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>'
     });
 
-    console.log('Menyalin PDF ke Obsidian Vault...');
+    console.log('Menyalin PDF dan Markdown ke Obsidian Vault...');
     fs.copyFileSync(pdfPath, obsidianPdfPath);
+    const obsidianMdPath = 'D:\\Raka\\B-Universe\\Obsidian\\B-Universe\\Revamp Investor CMS\\Documentation\\Revamp Investor CMS Documentation.md';
+    fs.copyFileSync(mdPath, obsidianMdPath);
 
     await browser.close();
-    console.log('PDF berhasil dibuat dengan seluruh internal links aktif di:');
+    console.log('PDF dan Markdown berhasil diperbarui di:');
     console.log('1. ' + pdfPath);
     console.log('2. ' + obsidianPdfPath);
+    console.log('3. ' + obsidianMdPath);
 }
 
 generatePdf().catch(err => {

@@ -128,6 +128,13 @@ class ArticleModel extends Model
             $builder->where('n.status !=', 'Deleted');
         }
 
+        // Paritas Smarty: Pastikan naskah adalah posttype 'article' (kecuali filter eksplisit 'all')
+        $posttype = !empty($filters['posttype']) ? $filters['posttype'] : 'article';
+        if ($posttype !== 'all') {
+            $builder->where('n.posttype', $posttype);
+        }
+
+
         if (!empty($filters['q'])) {
             $builder->groupStart()
                 ->like('n.headline', $filters['q'])

@@ -175,5 +175,12 @@ $routes->get('/api/market/movers', 'Api\MarketApi::movers');
 $routes->post('/api/auth/client-login', 'Api\AuthApi::clientLogin');
 $routes->post('/api/auth/client-register', 'Api\AuthApi::clientRegister');
 
+// Archival / Discontinued Features (Track Record Only - Not Exposed in CMS Sidebar Navigation)
+$routes->get('/archive/trending', 'Trending::index', ['filter' => 'role:master,admin']);
+$routes->post('/archive/trending/save', 'Trending::save', ['filter' => 'role:master,admin']);
+$routes->post('/archive/trending/delete/(:num)', 'Trending::delete/$1', ['filter' => 'role:master,admin']);
+$routes->post('/archive/trending/exclude', 'Trending::addExclude', ['filter' => 'role:master,admin']);
+
 // Data Quality & Comparison Tool
 $routes->get('/datacomparator/sample', 'DataComparator::sample');
+

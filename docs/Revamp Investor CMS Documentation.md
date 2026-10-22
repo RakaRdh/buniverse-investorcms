@@ -9,6 +9,7 @@ Dokumentasi teknis komprehensif mengenai arsitektur sistem, komparasi mendalam s
    - [1.1 Perbandingan Arsitektur](#11-perbandingan-arsitektur)
    - [1.2 Konvensi Penamaan Tabel & Penanganan DBPrefix](#12-konvensi-penamaan-tabel--penanganan-dbprefix)
    - [1.3 Peningkatan Keamanan & Autentikasi](#13-peningkatan-keamanan--autentikasi)
+   - [1.4 Spesifikasi Teknis Sistem Revamp CMS](#14-spesifikasi-teknis-sistem-revamp-cms)
 2. [Catatan Kritis: Status UI Preview Artikel](#2-catatan-kritis-status-ui-preview-artikel)
 3. [Komparasi Menyeluruh Seluruh Modul & Query Database (Smarty vs Revamp)](#3-komparasi-menyeluruh-seluruh-modul--query-database-smarty-vs-revamp)
    - [3.1 Modul Artikel & Redaksional (Editorial Listing)](#31-modul-artikel--redaksional-editorial-listing)
@@ -33,11 +34,15 @@ Dokumentasi teknis komprehensif mengenai arsitektur sistem, komparasi mendalam s
    - [4.2 Market Data & Bursa APIs](#42-market-data--bursa-apis)
    - [4.3 Editorial & Newsroom APIs](#43-editorial--newsroom-apis)
    - [4.4 Reader Authentication APIs](#44-reader-authentication-apis)
-5. [Panduan Lengkap Pra-Produksi (Pre-Production Checklist)](#5-panduan-lengkap-pra-produksi-pre-production-checklist)
-   - [5.1 Database DDL untuk Tabel Baru & Indexing Performa](#51-database-ddl-untuk-tabel-baru--indexing-performa)
-   - [5.2 Penyesuaian Variabel Environment (`.env`)](#52-penyesuaian-variabel-environment-env)
-   - [5.3 Konfigurasi Crontab Linux Produksi](#53-konfigurasi-crontab-linux-produksi)
-   - [5.4 Hak Akses Folder & Konfigurasi Web Server](#54-hak-akses-folder--konfigurasi-web-server)
+5. [Hal-Hal yang Wajib Dilakukan Sebelum Naik ke Produksi (Pre-Production Checklist & Runbook)](#5-hal-hal-yang-wajib-dilakukan-sebelum-naik-ke-produksi-pre-production-checklist--runbook)
+   - [5.1 Verifikasi Konfigurasi Environment (`.env`)](#51-verifikasi-konfigurasi-environment-env)
+   - [5.2 Eksekusi Skema Database, Tabel Baru & Indexing Kinerja](#52-eksekusi-skema-database-tabel-baru--indexing-kinerja)
+   - [5.3 Konfigurasi Web Server & Isolasi Direktori Publik](#53-konfigurasi-web-server--isolasi-direktori-publik)
+   - [5.4 Perizinan Hak Akses Folder Server (`writable/`)](#54-perizinan-hak-akses-folder-server-writable)
+   - [5.5 Penjadwalan Crontab Otomatisasi Linux](#55-penjadwalan-crontab-otomatisasi-linux)
+   - [5.6 Pengujian Pre-Flight Operasional (Smoke Test Checklist)](#56-pengujian-pre-flight-operasional-smoke-test-checklist)
+   - [5.7 Rencana Kontingensi & Prosedur Rollback](#57-rencana-kontingensi--prosedur-rollback)
+
 
 ---
 
@@ -47,12 +52,12 @@ Dokumentasi teknis komprehensif mengenai arsitektur sistem, komparasi mendalam s
 
 | Karakteristik | Smarty CMS | Revamp CMS |
 | :--- | :--- | :--- |
-| **Framework & Versi** | PHP Prosedural Native + Smarty 2/3 | CodeIgniter 4.7 (PHP 8.2+, MVC, Strict Types) |
+| **Framework & Versi** | PHP 5.6 Prosedural Native + Smarty 2/3 | CodeIgniter v4.7.4 (PHP 8.3.28 / min. PHP ^8.2, Strict Types, PSR-4) |
 | **Pola Routing** | Berbasis file fisik (`/administration/pages/article/index.php`) | Centralized Router (`app/Config/Routes.php`) dengan Route Guard & Filter |
 | **Interaksi Database** | Prosedural `adodb` / raw string MySQL query concats | CodeIgniter 4 Query Builder & Model Layer |
 | **Konvensi Case-Sensitivity** | Raw SQL dengan string literal (`tblArticle`, `tblCategory`) | Model & Query Builder CamelCase (`Article`, `Category`), otomatis di-prefix `tbl` |
 | **Pemisahan Publik** | File PHP terekspos di root aplikasi | Web root terisolasi di `/public`, file inti di `/app` aman dari akses publik |
-| **Pengujian (Testing)** | Manual via browser | 111 Automated Unit Tests (PHPUnit 10.5) dengan 428 assertions |
+| **Pengujian (Testing)** | Manual via browser | 111 Automated Unit Tests (PHPUnit v10.5.16) dengan 428 assertions |
 
 ---
 
@@ -79,7 +84,7 @@ Pada CodeIgniter 4, prefix tabel dikonfigurasi secara global pada:
 
 ### 1.3 Peningkatan Keamanan & Autentikasi
 
-1. **Formula Salt & Password Smarty**:
+1. **Formula Salt & Password Deterministik**:
    ```php
    $salt = hash('SHA512', '[' . strtolower($username) . '>|<' . $password . ']', false);
    $hash = hash('SHA512', $salt . 'B3!21t454t03' . $password . $salt, false);
@@ -88,10 +93,41 @@ Pada CodeIgniter 4, prefix tabel dikonfigurasi secara global pada:
    - Sistem memvalidasi akun menggunakan formula SHA-512 Smarty di atas.
    - Jika akun lama terdeteksi masih menggunakan hash MD5 murni (`strlen(password) === 32`), sistem memvalidasi `md5($password) === $user['password']`.
    - Jika lolos, sistem **secara otomatis meng-upgrade hash akun ke format SHA-512 (128 karakter)** ke dalam database tanpa mengharuskan pengguna melakukan reset password manual.
-3. **Sanitasi HTML Tingkat Lanjut (`HtmlSanitizer`)**:
+3. **Autentikasi Dua Faktor (2FA) & Interval Verifikasi**:
+   - Sistem login menerapkan autentikasi dua faktor berbasis kode verifikasi OTP 6-digit acak yang dikirimkan ke alamat email resmi staf redaksi via Brevo SMTP TLS.
+   - Status kode OTP (`authCode`) dan masa aktifnya (`authExpired`, berlaku 5 menit) dikelola langsung pada entitas `tblUserAdministrator`.
+   - Setelah kode berhasil diverifikasi, sistem memberikan masa berlaku verifikasi selama 5 hari (`nextVerify = +5 days`) pada tabel pengguna. Dengan demikian, staf tidak diwajibkan menginput ulang kode verifikasi pada setiap sesi login harian selama periode tersebut masih aktif.
+4. **Kebijakan Rotasi Sandi & Proteksi Akun**:
+   - Batas masa aktif kata sandi staf ditetapkan selama 90 hari (`passwordExpired`). Filter rute `AuthGuard` secara otomatis mendeteksi akun yang telah melewati batas kedaluwarsa dan mengalihkannya ke halaman profil untuk pembaruan kata sandi.
+   - Sesi pengguna diamankan menggunakan cookie bertanda tangan HMAC-SHA256 (`cmsinvestorid`) dengan atribut `HttpOnly`, `SameSite=Lax`, dan `Secure` pada server produksi.
+5. **Sanitasi HTML Tingkat Lanjut (`HtmlSanitizer`)**:
    - Menggantikan sanitasi parsial `addslashes` pada Smarty.
    - Menghapus tag `<script>`, `<style>`, `<iframe>` tidak terpercaya, dan atribut inline event seperti `onclick`, `onload`, serta protokol pseudo `javascript:`.
    - Tetap mempertahankan tag format jurnalistik sah (`<p>`, `<strong>`, `<em>`, `<blockquote>`, `<a>`, `<img>`, `<table>`).
+
+---
+
+### 1.4 Spesifikasi Teknis Sistem Revamp CMS
+
+Berikut adalah rincian spesifikasi teknis dan kebutuhan infrastruktur dari sistem Revamp CMS yang tengah dibangun:
+
+| Komponen | Spesifikasi & Rincian Versi |
+| :--- | :--- |
+| **Bahasa & Runtime Engine** | **PHP 8.3.28 (64-bit)** *(Kebutuhan versi minimum: PHP ^8.2)*.<br>Fitur bahasa aktif: PSR-4 Autoloading, Strict Typing (`declare(strict_types=1)`), First-class callables, Enums, Readonly properties, dan JIT Compiler. |
+| **Ekstensi PHP Wajib & Peran** | • `ext-intl`: Internasionalisasi & lokalisasi format tanggal/waktu bahasa Indonesia.<br>• `ext-mbstring`: Pemrosesan string multibyte UTF-8 untuk naskah berita, judul, dan slug.<br>• `ext-mysqli`: Koneksi native MySQL 8 dengan dukungan query builder transaksional.<br>• `ext-curl`: HTTP client untuk integrasi Brevo SMTP TLS, Cluster Media Storage, & Gemini API.<br>• `ext-json`: Enkoding & dekoding payload JSON pada autosave draft, AJAX, dan REST API.<br>• `ext-openssl`: Keamanan HMAC-SHA256 session token, hashing SHA-512, dan enkripsi payload.<br>• `ext-gd` / `ext-imagick`: Manipulasi gambar lokal, pembuatan thumbnail, dan konversi WebP.<br>• `ext-zip`: Pustaka kompresi dan ekstraksi berkas pada File Management. |
+| **Framework Fondasi** | **CodeIgniter v4.7.4** (`codeigniter4/framework: v4.7.4` via Composer AppStarter).<br>Komponen arsitektur: MVC terstruktur, Service Container (`Config\Services`), Route Filters / Middleware Guards (`AuthGuard`, `CsrfFilter`, `CorsFilter`), dan Spark CLI Engine. |
+| **Sistem Pengujian Mutu (Testing)** | • **Unit Testing:** PHPUnit v10.5.16 (`phpunit/phpunit: ^10.5.16`) dengan 111 Test Cases dan 428 Assertions.<br>• **Mocking Fixtures:** `mikey179/vfsStream: ^1.6` (Virtual Filesystem) & `fakerphp/faker: ^1.9`.<br>• **End-to-End UI Testing:** Node.js v22.15.0 dengan Playwright Chromium Test Suite. |
+| **Web Server & Gateway** | Nginx 1.22+ / Apache 2.4+ dengan PHP-FPM FastCGI (`pm = dynamic`, `max_children = 50`, `request_terminate_timeout = 120s`). |
+| **Struktur Web Root** | Direktori *DocumentRoot* server diarahkan eksklusif ke folder `/public`. Seluruh file aplikasi inti (`/app`), pustaka (`/system`), dan berkas konfigurasi (`.env`) terisolasi dari akses web langsung. |
+| **Basis Data Engine** | MySQL 8.0 / Percona Server 5.7+, Collation: `utf8mb4_general_ci` / `utf8mb4_unicode_ci`. Mendukung tabel InnoDB (transaksional) dan MyISAM legacy. |
+| **Penamaan Tabel (DBPrefix)** | Prefix global `tbl` (`database.default.DBPrefix = tbl`). Model memanggil nama CamelCase tanpa prefix (`Article`, `Category`). |
+| **Antarmuka Redaksional (UI)** | Native PHP Views terstruktur, Tailwind CSS, Lucide Icons, dan komponen JavaScript modern tanpa ketergantungan jQuery berat pada halaman baru. |
+| **Editor Teks Redaksi** | CKEditor 4 tersanitasi dua lapis (browser-side & server-side), mendukung penataan paragraf, blockquote aman, embed video, dan pembersih spasi ganda. |
+| **Visualisasi Data** | Highcharts & Chart.js 4 untuk render tabel finansial interaktif, template grafik (bar, line, pie), dan upload custom data CSV. |
+| **Penyimpanan Media & Berkas** | Arsitektur Dual-Mode: <br>1. *Penyimpanan Intranet Produksi:* Integrasi REST API cluster media internal (`10.0.4.16` & `172.20.6.110`) dengan URL CDN publik `https://img.beritasatu.com/`.<br>2. *Fallback Lokal:* Folder terproteksi `/public/uploads/` dengan konvensi path `YYYY/MM/timestamp_name.webp`. |
+| **Email Gateway 2FA** | Brevo SMTP TLS (Port 587) untuk pengiriman notifikasi kode verifikasi login staf redaksi. |
+| **Otomatisasi Background** | Task runner berbasis CodeIgniter Spark CLI yang dieksekusi melalui Linux Crontab (penerbitan artikel terjadwal, truncate newsletter, sinkronisasi data saham IDX, dan pemrosesan antrean push notifikasi FCM). |
+
 
 ---
 
@@ -171,7 +207,7 @@ $builder = $this->db->table('Article a')
 
 ### 3.2 Modul Detail Artikel, Master Kanal & Multi Sub-Kanal
 
-- **Tabel Terkait**: `tblArticle`, `tblArticleCategory`, `tblCategory`, `tblArticleMeta`, `tblArticleAuthors`, `tblAuthors`, `tblArticleKeyword`, `tblKeyword`
+- **Tabel Terkait**: `tblArticle`, `tblArticleCategory`, `tblCategory`, `tblArticleMeta`, `tblArticleAuthor`, `tblAuthors`, `tblArticleKeyword`, `tblKeyword`
 - **Lokasi File Smarty**:
   - `Backup_CMS_ID/lib/Article.class.php` $\rightarrow$ fungsi `Article::edit()`, `Article::getAuthor()`, `Article::getTags()`
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_articledetail.php`
@@ -184,7 +220,7 @@ Query dijalankan secara prosedural terpisah berkali-kali:
 ```sql
 SELECT * FROM tblArticle WHERE articleID = 100;
 SELECT * FROM tblArticleCategory WHERE articleID = 100;
-SELECT * FROM tblArticleAuthors WHERE articleID = 100;
+SELECT * FROM tblArticleAuthor WHERE articleID = 100;
 SELECT * FROM tblArticleKeyword WHERE articleID = 100;
 ```
 
@@ -861,13 +897,57 @@ public function getTopArticles(int $limit = 10, string $interval = '7d'): array
 
 ---
 
-## 5. Panduan Lengkap Pra-Produksi (Pre-Production Checklist)
+## 5. Hal-Hal yang Wajib Dilakukan Sebelum Naik ke Produksi (Pre-Production Checklist & Runbook)
 
-Berikut adalah daftar pekerjaan teknis yang **wajib dieksekusi** sebelum aplikasi Revamp CMS di-deploy ke server produksi:
+Sebelum sistem Revamp CMS dialihkan menjadi sistem produksi utama (*cutover*), tim teknis (Sysadmin, DevOps, dan Software Engineer) wajib menjalankan serangkaian tahapan persiapan dan validasi berikut secara berurutan:
 
-### 5.1 Database DDL untuk Tabel Baru & Indexing Performa
+### 5.1 Verifikasi Konfigurasi Environment (`.env`)
 
-Eksekusi skrip SQL berikut di database MySQL produksi (`investor`):
+Pastikan seluruh parameter pada file `.env` di server produksi telah disesuaikan dengan lingkungan operasional live:
+
+```ini
+# 1. Mode Operasional Aplikasi
+CI_ENVIRONMENT = production
+
+# 2. Base URL Resmi Portal CMS
+app.baseURL = 'https://cms.investor.id/'
+
+# 3. Konfigurasi Koneksi Database Produksi (Wajib DBPrefix = tbl)
+database.default.hostname = 127.0.0.1
+database.default.database = investor
+database.default.username = prod_user
+database.default.password = [PROD_PASSWORD]
+database.default.DBDriver = MySQLi
+database.default.DBPrefix = tbl
+database.default.DBDebug = false
+database.default.charset  = utf8mb4
+database.default.DBCollat = utf8mb4_general_ci
+
+# 4. Kredensial Email Gateway 2FA (Brevo SMTP TLS)
+email.SMTPHost = 'smtp-relay.brevo.com'
+email.SMTPPort = 587
+email.SMTPCrypto = 'tls'
+email.SMTPUser = '[BREVO_SMTP_USER]'
+email.SMTPPass = '[BREVO_SMTP_PASSWORD]'
+email.fromEmail = 'noreply@b-universe.id'
+email.fromName = 'CMS Investor.ID'
+
+# 5. Media Storage Driver (Cluster Intranet Produksi)
+MEDIA_STORAGE_DRIVER = smarty_api
+MEDIA_API_ENDPOINT = 'http://10.0.4.16/imgapi/upload/'
+MEDIA_SECONDARY_API_ENDPOINT = 'http://172.20.6.110:8080/imgapi/upload/'
+MEDIA_CDN_BASE_URL = 'https://img.beritasatu.com/'
+MEDIA_CDN_ORIGINAL_URL = 'https://img2.beritasatu.com/investor/'
+
+# 6. Integrasi AI Editorial (Gemini API)
+GEMINI_API_KEY = [LIVE_GEMINI_KEY]
+```
+
+---
+
+### 5.2 Eksekusi Skema Database, Tabel Baru & Indexing Kinerja
+
+Jalankan perintah migrasi atau eksekusi DDL berikut pada database `investor` untuk memastikan tabel-tabel pendukung baru dan indeks query kinerja tinggi telah terpasang:
 
 ```sql
 -- 1. Tabel Sub-headline & Poin Penting Artikel
@@ -924,80 +1004,137 @@ CREATE TABLE IF NOT EXISTS `tblAiGeneratedLogs` (
   KEY `idx_ai_article` (`articleID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. Indexing Kinerja untuk Tabel Utama
+-- 5. Indexing Kinerja untuk Tabel Utama Berkapasitas Jutaan Baris
 ALTER TABLE `tblArticle` ADD INDEX IF NOT EXISTS `idx_status_date` (`status`, `articleDate`);
 ALTER TABLE `tblArticleCategory` ADD INDEX IF NOT EXISTS `idx_art_cat` (`articleID`, `categoryID`);
 ALTER TABLE `tblMediaArticle` ADD INDEX IF NOT EXISTS `idx_media_art_pos` (`articleID`, `position`);
 ALTER TABLE `tblArticleHeadline` ADD INDEX IF NOT EXISTS `idx_cat_status_num` (`category`, `status`, `num`);
+ALTER TABLE `tblArticleKeyword` ADD INDEX IF NOT EXISTS `idx_kw_art` (`keywordID`, `articleID`);
 ```
 
-*Atau melalui CLI*:
+*Alternatif eksekusi via Spark CLI*:
 ```bash
 php spark migrate
 ```
 
 ---
 
-### 5.2 Penyesuaian Variabel Environment (`.env`)
+### 5.3 Konfigurasi Web Server & Isolasi Direktori Publik
 
-Ubah parameter kunci di file `.env` server produksi:
-```ini
-# Environment Mode
-CI_ENVIRONMENT = production
+Arahkan *DocumentRoot* virtual host Nginx atau Apache ke sub-direktori `/public`. File-file sensitif seperti `.env`, folder `/app`, `/system`, dan `/writable` sama sekali tidak boleh terekspos ke internet.
 
-# URL Domain CMS Live
-app.baseURL = 'https://cms.investor.id/'
+**Contoh Blok Konfigurasi Nginx (`/etc/nginx/sites-available/investorcms.conf`):**
+```nginx
+server {
+    listen 80;
+    server_name cms.investor.id;
+    return 301 https://$host$request_uri;
+}
 
-# Konfigurasi Database (DBPrefix WAJIB 'tbl')
-database.default.hostname = 127.0.0.1
-database.default.database = investor
-database.default.username = prod_user
-database.default.password = [PROD_PASSWORD]
-database.default.DBDriver = MySQLi
-database.default.DBPrefix = tbl
-database.default.DBDebug = false
+server {
+    listen 443 ssl http2;
+    server_name cms.investor.id;
 
-# Driver Media Penyimpanan (AWS S3 & CDN Produksi)
-MEDIA_STORAGE_DRIVER = smarty_api
-MEDIA_API_ENDPOINT = 'http://10.0.4.16/imgapi/upload/'
-MEDIA_SECONDARY_API_ENDPOINT = 'http://172.20.6.110:8080/imgapi/upload/'
-MEDIA_CDN_BASE_URL = 'https://img.beritasatu.com/'
-MEDIA_CDN_ORIGINAL_URL = 'https://img2.beritasatu.com/investor/'
+    # SSL Certificate
+    ssl_certificate /etc/letsencrypt/live/cms.investor.id/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cms.investor.id/privkey.pem;
 
-# Gemini AI API Key
-GEMINI_API_KEY = [LIVE_GEMINI_KEY]
+    # Document Root wajib mengarah ke folder /public
+    root /var/www/investorcms/public;
+    index index.php index.html;
+
+    client_max_body_size 32M;
+
+    # Routing CodeIgniter 4
+    location / {
+        try_files $uri $uri/ /index.php$is_args$args;
+    }
+
+    # Blokir akses langsung ke berkas tersembunyi
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # PHP-FPM FastCGI
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock; # Atau /run/php/php8.2-fpm.sock (sesuai versi PHP aktif)
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
 ```
 
 ---
 
-### 5.3 Konfigurasi Crontab Linux Produksi
+### 5.4 Perizinan Hak Akses Folder Server (`writable/`)
 
-Buka crontab user web server (`crontab -e -u www-data`) dan pasang jadwal berikut:
+Aplikasi CodeIgniter 4 membutuhkan hak akses tulis pada direktori kerja untuk penyimpanan file cache, sesi, file log, dan folder unggahan lokal:
 
 ```bash
-# 1. Publikasikan artikel Hold yang telah melewati articleDate (tiap 1 menit)
+# Menetapkan ownership ke user web server
+chown -R www-data:www-data /var/www/investorcms
+
+# Memberikan akses tulis ke direktori kerja aplikasi
+chmod -R 775 /var/www/investorcms/writable
+chmod -R 775 /var/www/investorcms/public/uploads
+
+# Memastikan direktori cache dan logs siap digunakan
+mkdir -p /var/www/investorcms/writable/cache
+mkdir -p /var/www/investorcms/writable/logs
+mkdir -p /var/www/investorcms/writable/session
+```
+
+---
+
+### 5.5 Penjadwalan Crontab Otomatisasi Linux
+
+Buka editor crontab pengguna web server (`crontab -e -u www-data`) dan pasang tugas otomatisasi berikut:
+
+```bash
+# 1. Terbitkan naskah terjadwal yang telah melewati jadwal tayang (tiap 1 menit)
 * * * * * cd /var/www/investorcms && php spark cron:publish-scheduled > /dev/null 2>&1
 
-# 2. Reset / Truncate slot headline newsletter (pukul 08:00, 14:00, 20:00 WIB)
+# 2. Kosongkan / truncate slot headline newsletter (pukul 08:00, 14:00, 20:00 WIB)
 0 8,14,20 * * * cd /var/www/investorcms && php spark cron:truncate-newsletter > /dev/null 2>&1
 
-# 3. Proses antrean pengiriman push notification FCM (tiap 5 menit)
-*/5 * * * * cd /var/www/investorcms && php spark cron:process-push > /dev/null 2>&1
+# 3. Tarik pergerakan data bursa saham IDX (tiap 10 menit pada jam perdagangan Senin-Jumat)
+*/10 9-16 * * 1-5 cd /var/www/investorcms && php spark cron:fetch-idx-stock > /dev/null 2>&1
 
-# 4. Bersihkan log audit editor yang berusia lebih dari 90 hari (tiap hari pukul 02:00 WIB)
+# 4. Proses antrean siaran push notification FCM (tiap 1 menit)
+* * * * * cd /var/www/investorcms && php spark cron:process-push-notif > /dev/null 2>&1
+
+# 5. Pembersihan log audit editor berusia lebih dari 90 hari (tiap hari pukul 02:00 WIB)
 0 2 * * * cd /var/www/investorcms && php spark cron:cleanup-logs > /dev/null 2>&1
 ```
 
 ---
 
-### 5.4 Hak Akses Folder & Konfigurasi Web Server
+### 5.6 Pengujian Pre-Flight Operasional (Smoke Test Checklist)
 
-1. **Permissions**:
-   ```bash
-   chown -R www-data:www-data /var/www/investorcms
-   chmod -R 775 /var/www/investorcms/writable
-   chmod -R 775 /var/www/investorcms/public/uploads
-   ```
+Sebelum merilis URL CMS ke seluruh staf redaksi, lakukan verifikasi manual pada poin-poin berikut:
 
-2. **Web Server Root Pointing**:
-   Pastikan web server (Nginx / Apache) mengarahkan *root direktori* ke `/var/www/investorcms/public`, **bukan** ke folder root proyek, agar file inti aplikasi dan file `.env` terlindungi dari akses publik.
+- [ ] **Uji Login & 2FA**: Lakukan login menggunakan akun uji coba. Pastikan email OTP 6-digit masuk ke inbox dalam < 10 detik, input kode verifikasi, dan pastikan dashboard terbuka normal.
+- [ ] **Uji Sesi 5 Hari**: Logout dan login kembali dengan akun yang sama dalam hari yang sama. Pastikan sistem langsung masuk tanpa meminta OTP ulang (validasi grace period 5 hari).
+- [ ] **Uji Pembuatan Artikel**: Buat draft naskah berita baru lengkap dengan judul, slug auto-generate, kanal, sub-kanal, keyword chips, dan cover foto. Simpan naskah dan pastikan muncul di daftar artikel.
+- [ ] **Uji Pessimistic Lock**: Buka naskah yang sama dari dua browser berbeda dengan akun berbeda. Pastikan browser kedua menampilkan peringatan bahwa naskah sedang dikunci oleh redaktur pertama.
+- [ ] **Uji Kurasi Headline**: Masukkan naskah ke slot Headline kategori 'home' dan lakukan drag-and-drop urutan nomor 1 s.d. 5. Pastikan perubahan nomor tersimpan di database.
+- [ ] **Uji Upload Media & Reverse Lookup**: Unggah foto baru ke Media Library, gunakan sebagai cover naskah, lalu coba hapus foto tersebut dari Media Library. Pastikan sistem memblokir penghapusan karena foto sedang aktif dipakai artikel.
+- [ ] **Uji Ekspor Laporan**: Buka menu Laporan Editorial dan ekspor publish log ke format CSV. Buka di spreadsheet dan pastikan karakter serta inisial alias editor terbaca rapi.
+
+---
+
+### 5.7 Rencana Kontingensi & Prosedur Rollback
+
+Jika pada hari peluncuran ditemukan kendala kritis yang tidak dapat diselesaikan dalam window maintenance (misal: gangguan koneksi database cluster atau kendala jaringan intranet):
+
+1. **Pengalihan DNS / Virtual Host**:
+   - Kembalikan konfigurasi web server Nginx/Apache untuk mengarahkan domain `cms.investor.id` ke direktori sistem lama Smarty CMS (`/var/www/backup_cms_id/administration/pages/login/index.php`).
+   - Reload web server: `sudo systemctl reload nginx`.
+2. **Integritas Basis Data**:
+   - Karena Revamp CMS menggunakan skema nama tabel fisik asli (`tblArticle`, `tblArticleAuthor`, `tblCategory`, `tblUserAdministrator`), data naskah baru yang sempat dibuat di Revamp tetap tersimpan aman dan dapat langsung dibaca oleh sistem Smarty CMS lama tanpa perlu konversi ulang.
+3. **Penyelidikan Masalah**:
+   - Periksa file log error CodeIgniter pada direktori `/var/www/investorcms/writable/logs/log-YYYY-MM-DD.php` untuk menelusuri penyebab kegagalan teknis.
+

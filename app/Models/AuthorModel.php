@@ -31,6 +31,7 @@ class AuthorModel extends Model
                 COUNT(DISTINCT nal.articleID) AS article_count
             ')
             ->join('ArticleAuthor nal', 'nal.authorID = a.authorID', 'left')
+            ->where('a.valid !=', '3')
             ->groupBy('a.authorID')
             ->orderBy('article_count', 'DESC')
             ->get()->getResultArray();
