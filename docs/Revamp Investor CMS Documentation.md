@@ -446,6 +446,38 @@ public function getMediaWithRelations(?string $search = null, int $page = 1, int
 }
 ```
 
+#### Arsitektur Penyimpanan Media Dual-Driver (`MediaStorageService`)
+Revamp CMS mengisolasi mekanisme penyimpanan berkas gambar menggunakan service terpadu [InvestorCMS/app/Libraries/MediaStorageService.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Libraries/MediaStorageService.php). Layanan ini mendukung dua mode operasional yang ditentukan melalui variabel environment `MEDIA_STORAGE_DRIVER`:
+
+1. **Lingkungan Development / Lokal (`MEDIA_STORAGE_DRIVER = local`)**:
+   - File fisik disimpan langsung di direktori web root lokal: `public/uploads/media/YYYY/MM/{timestamp}_{prefix}_{hash}.jpg`.
+   - Gambar diproses dan dikompresi menggunakan GD Library lokal dengan batas resolusi maksimum 1200px dan kualitas JPEG 85%.
+   - Kolom database `tblMedia.filename` tetap menyimpan format standar legacy: `YYYY/MM/namafile.jpg`.
+   - URL publik lokal disajikan melalui rute web: `http://localhost:8080/uploads/media/YYYY/MM/namafile.jpg`.
+
+2. **Lingkungan Produksi (`MEDIA_STORAGE_DRIVER = smarty_api` / `legacy_api`)**:
+   - Gambar tidak disimpan di server web lokal CMS, melainkan di-stream melalui cURL POST dengan payload Base64 ke klaster microservice upload internal AWS S3 (`http://10.0.4.16/imgapi/upload/`, dengan server cadangan di `http://172.20.6.110:8080/imgapi/upload/`).
+   - Microservice tersebut menyimpan file fisik ke storage server terpusat `/data/media/investor/YYYY/MM/` dan secara otomatis menghasilkan varian format WebP serta thumbnail multi-resolusi (`620x350`, `320x220`, `120x120`).
+   - Konten gambar didistribusikan ke publik pembaca melalui CDN BeritaSatu (`https://img.beritasatu.com/` dan `https://img2.beritasatu.com/investor/`).
+   - Jika koneksi ke microservice gagal/unreachable, sistem secara otomatis *fallback* menyimpan sementara ke storage lokal untuk mencegah naskah gagal terbit.
+
+#### Standarisasi Pemanggilan Gambar: Helper Global `media_url()`
+Untuk memastikan tampilan gambar di seluruh view redaksi, editor, dan reader API tidak rusak terlepas dari apakah sistem berjalan di lokal atau produksi, Revamp CMS menyediakan helper global [InvestorCMS/app/Helpers/media_helper.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Helpers/media_helper.php) dengan fungsi `media_url(?string $filename)`:
+
+```php
+// Contoh pemanggilan di view Blade / PHP:
+<img src="<?= media_url($article['thumbnail']) ?>" alt="Thumbnail">
+```
+
+Fungsi `media_url()` bekerja secara cerdas menangani 4 varian format nilai database:
+1. **Full URL Eksternal**: Jika bernilai `https://...` atau `http://...` (misal gambar dari CDN AWS S3 langsung atau scraping berlisensi), nilai URL dikembalikan langsung tanpa modifikasi.
+2. **Format Path Lokal `/uploads/...`**: Otomatis diselesaikan menggunakan fungsi `base_url(ltrim($filename, '/'))`.
+3. **Format Standar Legacy `YYYY/MM/namafile.jpg`**:
+   - Pada mode `local`: Memeriksa keberadaan file fisik di `public/uploads/media/`. Jika ada, menghasilkan `http://localhost:8080/uploads/media/YYYY/MM/namafile.jpg`.
+   - Pada mode `production`: Otomatis menggabungkan nilai dengan `MEDIA_CDN_BASE_URL` sehingga menghasilkan `https://img.beritasatu.com/YYYY/MM/namafile.jpg`.
+4. **Fallback File Kosong**: Jika kolom bernilai `null` atau string kosong, fungsi otomatis mengembalikan URL placeholder default: `base_url('img/investor_placeholder.jpg')`.
+
+
 ---
 
 ### 3.7 Modul Pengguna Administrator & RBAC
