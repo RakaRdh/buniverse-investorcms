@@ -99,9 +99,47 @@ Pada CodeIgniter 4, prefix tabel dikonfigurasi secara global pada:
    - Sistem login menerapkan autentikasi dua faktor berbasis kode verifikasi OTP 6-digit acak yang dikirimkan ke alamat email resmi staf redaksi via Brevo SMTP TLS.
    - Status kode OTP (`authCode`) dan masa aktifnya (`authExpired`, berlaku 5 menit) dikelola langsung pada entitas `tblUserAdministrator`. *(Catatan Keputusan Arsitektur: Smarty menetapkan `INTERVAL 60 SECOND` / 1 menit. Pada Revamp, masa berlaku diperpanjang menjadi 5 menit sebagai optimalisasi UX untuk mengakomodasi potensi latency pengiriman email gateway SMTP/Brevo tanpa mengorbankan keamanan).*
    - Setelah kode berhasil diverifikasi, sistem memberikan masa berlaku verifikasi selama 5 hari (`nextVerify = +5 days`) pada tabel pengguna. Dengan demikian, staf tidak diwajibkan menginput ulang kode verifikasi pada setiap sesi login harian selama periode tersebut masih aktif.
-4. **Kebijakan Rotasi Sandi & Proteksi Akun**:
-   - Batas masa aktif kata sandi staf ditetapkan selama 90 hari (`passwordExpired`). Filter rute `AuthGuard` secara otomatis mendeteksi akun yang telah melewati batas kedaluwarsa dan mengalihkannya ke halaman profil untuk pembaruan kata sandi.
-   - Sesi pengguna diamankan menggunakan cookie bertanda tangan HMAC-SHA256 (`cmsinvestorid`) dengan atribut `HttpOnly`, `SameSite=Lax`, dan `Secure` pada server produksi.
+
+   ```
+   [User Input: Username + Password]
+                  │
+                  ▼
+   [Verifikasi Hash: SHA-512 (Auto-upgrade MD5 jika legacy)]
+                  │
+                  ▼
+   [Evaluasi nextVerify > NOW()?]
+          ├── YA (Dalam masa grace 5 hari) ──► [Langsung Buka Sesi Dashboard]
+          └── TIDAK (Wajib 2FA)
+                  │
+                  ▼
+   [Generate OTP 6 Digit] ──► Simpan ke authCode & authExpired (+5 menit)
+                  │
+                  ▼
+   [Kirim Email via Brevo SMTP TLS] ──► [Staf Input OTP di /auth/verification]
+                  │
+                  ▼
+   [Kode Cocok & Belum Kedaluwarsa?]
+          ├── SALAH / KEDALUWARSA ──► [Tolak Akses & Beri Notifikasi Error]
+          └── BENAR
+                  │
+                  ▼
+   [Update nextVerify = +5 hari, Bersihkan authCode]
+                  │
+                  ▼
+   [Terbitkan Cookie HMAC-SHA256 & Buka Dashboard]
+   ```
+
+4. **Kebijakan Rotasi Sandi & Struktur Cookie HMAC-SHA256**:
+   - **Rotasi Sandi 90 Hari**: Batas masa aktif kata sandi staf ditetapkan selama 90 hari (`passwordExpired`). Filter rute `AuthGuard` secara otomatis mendeteksi akun yang telah melewati batas kedaluwarsa dan mengalihkannya ke halaman profil untuk pembaruan kata sandi.
+   - **Struktur Cookie Bertanda Tangan (`cmsinvestorid`)**:
+     Berbeda dari Smarty yang menyimpan salt mentah di cookie, Revamp CMS mengimplementasikan token bertanda tangan kriptografis untuk mencegah pemalsuan sesi (*session hijacking / tampering*):
+     ```php
+     // Format Payload Token:
+     $payload   = $userId . '|' . $expiryTimestamp;
+     $signature = hash_hmac('sha256', $payload, $appSecretKey);
+     $token     = base64_encode($payload . '|' . $signature);
+     ```
+     Atribut cookie disetel: `HttpOnly = true`, `SameSite = Lax`, dan `Secure = true` (pada production SSL). Sesi juga dilengkapi *legacy fallback validator* untuk mengenali cookie aktif staf dari sesi Smarty lama saat masa transisi.
 5. **Sanitasi HTML Tingkat Lanjut (`HtmlSanitizer`)**:
    - Menggantikan sanitasi parsial `addslashes` pada Smarty.
    - Menghapus tag `<script>`, `<style>`, `<iframe>` tidak terpercaya, dan atribut inline event seperti `onclick`, `onload`, serta protokol pseudo `javascript:`.
@@ -153,11 +191,11 @@ Berikut adalah rincian spesifikasi teknis dan kebutuhan infrastruktur dari siste
 
 - **Tabel Terkait**: `tblArticle`, `tblArticleCategory`, `tblCategory`, `tblUserAdministrator`, `tblMediaArticle`, `tblMedia`
 - **Lokasi File Smarty**:
-  - `Backup_CMS_ID/lib/Article.class.php` $\rightarrow$ fungsi `Article::read()`
+  - `Backup_CMS_ID/lib/Article.class.php` → fungsi `Article::read()`
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_articlelist.php`
 - **Lokasi File Revamp**:
-  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) $\rightarrow$ fungsi `getArticlesWithRelations()`
-  - [InvestorCMS/app/Controllers/Post.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/Post.php) $\rightarrow$ fungsi `index()`
+  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) → fungsi `getArticlesWithRelations()`
+  - [InvestorCMS/app/Controllers/Post.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/Post.php) → fungsi `index()`
 
 #### Query di Smarty CMS:
 ```sql
@@ -211,11 +249,11 @@ $builder = $this->db->table('Article a')
 
 - **Tabel Terkait**: `tblArticle`, `tblArticleCategory`, `tblCategory`, `tblArticleMeta`, `tblArticleAuthor`, `tblAuthors`, `tblArticleKeyword`, `tblKeyword`
 - **Lokasi File Smarty**:
-  - `Backup_CMS_ID/lib/Article.class.php` $\rightarrow$ fungsi `Article::edit()`, `Article::getAuthor()`, `Article::getTags()`
+  - `Backup_CMS_ID/lib/Article.class.php` → fungsi `Article::edit()`, `Article::getAuthor()`, `Article::getTags()`
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_articledetail.php`
 - **Lokasi File Revamp**:
-  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) $\rightarrow$ fungsi `getArticleDetail()`
-  - [InvestorCMS/app/Controllers/Post.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/Post.php) $\rightarrow$ fungsi `edit()`
+  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) → fungsi `getArticleDetail()`
+  - [InvestorCMS/app/Controllers/Post.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/Post.php) → fungsi `edit()`
 
 #### Pola di Smarty CMS:
 Query dijalankan secara prosedural terpisah berkali-kali:
@@ -264,10 +302,10 @@ $linkedCategories = $this->db->table('ArticleCategory ac')
 
 - **Tabel Terkait**: `tblAuthors`, `tblArticleAuthor`
 - **Lokasi File Smarty**:
-  - `Backup_CMS_ID/lib/Author.class.php` $\rightarrow$ fungsi `saveAuthor()`, `getAuthor()`, `searchAuthor()`
+  - `Backup_CMS_ID/lib/Author.class.php` → fungsi `saveAuthor()`, `getAuthor()`, `searchAuthor()`
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_getauthor.php`
 - **Lokasi File Revamp**:
-  - [InvestorCMS/app/Models/AuthorModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/AuthorModel.php) $\rightarrow$ fungsi `getAuthorsWithCount()`, `findOrCreate()`
+  - [InvestorCMS/app/Models/AuthorModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/AuthorModel.php) → fungsi `getAuthorsWithCount()`, `findOrCreate()`
 
 #### Query di Smarty CMS:
 ```sql
@@ -305,11 +343,11 @@ public function getAuthorsWithCount(?string $keyword = null, int $limit = 20, in
 
 - **Tabel Terkait**: `tblKeyword`, `tblArticleKeyword`, `tblTag`
 - **Lokasi File Smarty**:
-  - `Backup_CMS_ID/lib/Tag.class.php` $\rightarrow$ fungsi `getTagList()`, `saveTag()`, `getKeyword()`
+  - `Backup_CMS_ID/lib/Tag.class.php` → fungsi `getTagList()`, `saveTag()`, `getKeyword()`
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_taglist.php`
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_keywordlist.php`
 - **Lokasi File Revamp**:
-  - [InvestorCMS/app/Models/KeywordModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/KeywordModel.php) $\rightarrow$ fungsi `syncArticleKeywords()`, `getArticleKeywords()`
+  - [InvestorCMS/app/Models/KeywordModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/KeywordModel.php) → fungsi `syncArticleKeywords()`, `getArticleKeywords()`
 
 #### Query di Smarty CMS:
 ```sql
@@ -358,7 +396,7 @@ public function syncArticleKeywords(int $articleId, array $keywords): void
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_headlinelist.php`
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_headlinesave.php`
 - **Lokasi File Revamp**:
-  - [InvestorCMS/app/Models/HeadlineModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/HeadlineModel.php) $\rightarrow$ fungsi `getActiveHeadlines()`, `batchReorder()`
+  - [InvestorCMS/app/Models/HeadlineModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/HeadlineModel.php) → fungsi `getActiveHeadlines()`, `batchReorder()`
   - [InvestorCMS/app/Controllers/Headline.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/Headline.php)
   - [InvestorCMS/app/Commands/TruncateNewsletterHeadline.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/TruncateNewsletterHeadline.php)
 
@@ -408,11 +446,11 @@ public function batchReorder(string $category, array $orderedIds, string $user =
 
 - **Tabel Terkait**: `tblMedia`, `tblMediaArticle`, `tblAlbum`
 - **Lokasi File Smarty**:
-  - `Backup_CMS_ID/lib/Media.class.php` $\rightarrow$ fungsi `getMediaList()`, `totalMedia()`
+  - `Backup_CMS_ID/lib/Media.class.php` → fungsi `getMediaList()`, `totalMedia()`
   - `Backup_CMS_ID/administration/pages/media/index.php`
   - `Backup_CMS_ID/administration/pages/media/ajax/ajax_medialist.php`
 - **Lokasi File Revamp**:
-  - [InvestorCMS/app/Models/MediaModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/MediaModel.php) $\rightarrow$ fungsi `getMediaWithRelations()`, `getArticlesUsingMedia()`
+  - [InvestorCMS/app/Models/MediaModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/MediaModel.php) → fungsi `getMediaWithRelations()`, `getArticlesUsingMedia()`
   - [InvestorCMS/app/Controllers/Media.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/Media.php)
 
 #### Query di Smarty CMS:
@@ -484,11 +522,11 @@ Fungsi `media_url()` bekerja secara cerdas menangani 4 varian format nilai datab
 
 - **Tabel Terkait**: `tblUserAdministrator`
 - **Lokasi File Smarty**:
-  - `Backup_CMS_ID/lib/Administrator.class.php` $\rightarrow$ fungsi `auth()`, `encodePassword()`, `getAdminList()`
+  - `Backup_CMS_ID/lib/Administrator.class.php` → fungsi `auth()`, `encodePassword()`, `getAdminList()`
   - `Backup_CMS_ID/administration/pages/user/index.php`
   - `Backup_CMS_ID/administration/pages/user/add.php`
 - **Lokasi File Revamp**:
-  - [InvestorCMS/app/Models/AdminModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/AdminModel.php) $\rightarrow$ fungsi `authenticate()`, `getAdminsWithActivity()`
+  - [InvestorCMS/app/Models/AdminModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/AdminModel.php) → fungsi `authenticate()`, `getAdminsWithActivity()`
   - [InvestorCMS/app/Controllers/User.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/User.php)
 
 #### Query di Smarty CMS:
@@ -520,6 +558,26 @@ public function getAdminsWithActivity(): array
 }
 ```
 
+#### Matriks Hak Akses Peran (Role-Based Access Control Matrix)
+Hak akses diatur secara sentral melalui filter rute [RoleGuard.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Filters/RoleGuard.php) dengan pemetaan izin sebagai berikut:
+
+| Modul CMS | Master / Administrator | Editor / Redpel | Riset / Sekred | Reporter | Fotografer | Staff / Client |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Dashboard & Ringkasan** | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ⚠️ Read-only |
+| **Artikel: Tulis & Edit Draf** | ✅ Full | ✅ Full | ✅ Full | ✅ Milik Sendiri | ❌ | ❌ |
+| **Artikel: Terbitkan (Publish)** | ✅ Full | ✅ Full | ✅ Full | ❌ (Hold Only) | ❌ | ❌ |
+| **Artikel: Hapus (Trash/Delete)** | ✅ Full | ✅ Full | ✅ Full | ❌ Dibatasi | ❌ | ❌ |
+| **Kurasi Slot Headline** | ✅ Full | ✅ Full | ✅ Full | ❌ | ❌ | ❌ |
+| **Media Library & Upload** | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ❌ |
+| **Embed Chart & Visualisasi** | ✅ Full | ✅ Full | ✅ Full | ⚠️ View Only | ❌ | ❌ |
+| **Arsip Berkas & Google Docs** | ✅ Full | ✅ Full | ✅ Full | ✅ View Only | ❌ | ❌ |
+| **Laporan & Statistik Trafik** | ✅ Full | ✅ Editorial | ✅ Full | ⚠️ Personal | ❌ | ❌ |
+| **Push Notification Siaran** | ✅ Full | ✅ Full | ❌ | ❌ | ❌ | ❌ |
+| **Manajemen Pengguna & RBAC** | ✅ Full | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+> **Mekanisme Pemetaan Alias (Backward Compatibility)**:
+> Database legacy Smarty menyimpan variasi nama peran seperti `admin` dan `redpel` (Redaktur Pelaksana). Pada [RoleGuard.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Filters/RoleGuard.php#L68-L73), sistem secara otomatis memetakan `admin` → `administrator`, serta `editor` → `redpel`. Selain itu, role `master`, `administrator`, `admin`, `riset`, dan `sekred` diberikan status *bypass* (akses penuh ke seluruh modul tanpa restriksi rute).
+
 #### Mekanisme Custom Permission per User (Granular Access Override)
 Selain RBAC berbasis peran standar (`master`, `administrator`, `editor`, `reporter`, dll), Revamp CMS menyediakan fitur *Custom Permission* berbasis file JSON (`writable/data/json/permissions.json`) yang dievaluasi langsung oleh filter [RoleGuard.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Filters/RoleGuard.php#L31-L61).
 
@@ -546,10 +604,10 @@ Pengelolaan izin ini dapat diakses melalui controller [InvestorCMS/app/Controlle
 
 - **Tabel Terkait**: `tblArticle`, `tblUserAdministrator`
 - **Lokasi File Smarty**:
-  - `Backup_CMS_ID/lib/Article.class.php` $\rightarrow$ fungsi `Article::PostLock()`, `Article::ReleaseLock()`
+  - `Backup_CMS_ID/lib/Article.class.php` → fungsi `Article::PostLock()`, `Article::ReleaseLock()`
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_releaselock.php`
 - **Lokasi File Revamp**:
-  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) $\rightarrow$ fungsi `acquireLock()`, `releaseLock()`, `forceUnlock()`
+  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) → fungsi `acquireLock()`, `releaseLock()`, `forceUnlock()`
 
 #### Mekanisme Query di Revamp CMS:
 ```php
@@ -580,10 +638,10 @@ $this->db->table('Article')
 
 - **Tabel Terkait**: `tblArticleHistory`, `tblArticle`, `tblUserAdministrator`
 - **Lokasi File Smarty**:
-  - `Backup_CMS_ID/lib/Article.class.php` $\rightarrow$ fungsi `Article::Revision()`
+  - `Backup_CMS_ID/lib/Article.class.php` → fungsi `Article::Revision()`
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_articlehistory.php`
 - **Lokasi File Revamp**:
-  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) $\rightarrow$ fungsi `getRevisionHistory()`, `getRevisionDetail()`
+  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) → fungsi `getRevisionHistory()`, `getRevisionDetail()`
 
 #### Query di Revamp CMS:
 ```php
@@ -651,6 +709,26 @@ public function getChartsList(?string $search = null, int $limit = 20, int $offs
 }
 ```
 
+#### Alur Pembuatan Grafik, Unggah CSV & Kode Semat (Embed Code)
+Modul [EmbedChart.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/EmbedChart.php) dirancang khusus untuk memenuhi kebutuhan jurnalisme data finansial:
+1. **Tipe Grafik yang Didukung**: `line` (tren pergerakan saham/komoditas), `bar` (komparasi laba emiten), `pie` / `donut` (pangsa pasar), dan `area` (volume perdagangan).
+2. **Unggah Custom Data CSV**: Redaksi dapat mengunggah file `.csv` yang otomatis diparse menjadi struktur `dataJson` (kategori kolom pertama sebagai sumbu X, kolom numerik berikutnya sebagai sumbu Y):
+   ```json
+   {
+     "labels": ["2022", "2023", "2024", "2025", "2026"],
+     "datasets": [
+       { "label": "Laba Bersih (Rp T)", "data": [12.4, 15.8, 18.2, 21.5, 24.1], "color": "#1E6EA3" }
+     ]
+   }
+   ```
+3. **Kode Semat Iframe Redaksi**:
+   Sistem menghasilkan snippet kode HTML yang siap disalin dan ditempel ke dalam CKEditor naskah artikel:
+   ```html
+   <div class="investor-chart-wrapper" style="position:relative;width:100%;max-width:720px;margin:24px auto;">
+     <iframe src="https://investor.id/embed/chart/48" width="100%" height="420" frameborder="0" scrolling="no" loading="lazy"></iframe>
+   </div>
+   ```
+
 ---
 
 ### 3.11 Modul Arsip Dokumen & Integrasi Google Docs (Files)
@@ -689,6 +767,16 @@ public function getFilesWithUploader(?string $keyword = null, int $limit = 20, i
 }
 ```
 
+#### Alur Ekstraksi Impor Naskah Google Docs:
+Untuk mempercepat penulisan wartawan di lapangan, Revamp CMS mengadopsi mekanisme parsing naskah dari tautan publik Google Docs:
+1. Redaksi memasukkan URL publik Google Docs (format: `https://docs.google.com/document/d/{DOC_ID}/pub` atau link share viewer).
+2. Service parser di [GoogleDocsModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/GoogleDocsModel.php) mengambil konten HTML, membersihkan tag inline style Google yang merusak layout, mengekstrak judul otomatis dari elemen `<h1>` / title, dan memindahkan paragraf berita yang tersanitasi langsung ke form editor naskah baru.
+
+#### Ketentuan Arsip Berkas Publik (File Manager):
+- **Format yang Diizinkan**: `.pdf`, `.doc`, `.docx`, `.xls`, `.xlsx`, `.zip`, `.csv` (dokumen laporan keuangan emiten, prospektus, dan riset riset pasar).
+- **Batasan Ukuran**: Maksimum 50 MB per berkas.
+- **Penyimpanan**: Disimpan pada direktori terproteksi `public/uploads/files/` dengan penamaan deterministik berbasis timestamp.
+
 ---
 
 ### 3.12 Modul Notifikasi Push & Ekosistem Aplikasi Mobile
@@ -706,13 +794,48 @@ public function getFilesWithUploader(?string $keyword = null, int $limit = 20, i
   - [InvestorCMS/app/Commands/ProcessPushNotif.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/ProcessPushNotif.php)
 
 #### Alur Eksekusi Push Notification:
-1. **Redaksi Mengirim Pesan**: Disimpan ke `tblPushNotif` dengan status `'ready'`.
-2. **Cron Scheduler CLI**: Perintah `php spark cron:process-push` memproses antrean:
+1. **Redaksi Menyiapkan Notifikasi**: 
+   Redaksi memasukkan naskah siaran melalui antarmuka [Apps.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/Apps.php). Data disimpan ke tabel `tblPushNotif` dengan status awal `'ready'`.
+   - **Skema Kolom `tblPushNotif`**: `idPush` (PK), `postBy` (User ID), `pushDate`, `pushType` (`breaking_news`, `market_alert`, `general`), `pushTitle`, `pushBody`, `pushImage`, `pushUrl`, `urlTarget`, `articleID`, `categoryName`, `fcm_message_id`, `status` (`ready`, `sent`, `failed`).
+
+2. **Cron Scheduler CLI Background Runner**:
+   Perintah `php spark cron:process-push-notif` dijalankan setiap menit via Crontab server:
+   ```bash
+   * * * * * cd /var/www/investorcms && php spark cron:process-push-notif > /dev/null 2>&1
+   ```
+   **Logika Pemrosesan**:
    ```php
    $pending = $db->table('PushNotif')->where('status', 'ready')->get()->getResultArray();
    foreach ($pending as $item) {
-       // Kirim ke Google FCM HTTP v1 API
-       $db->table('PushNotif')->where('id', $item['id'])->update(['status' => 'sent']);
+       // Jika FCM_DISPATCH_SIMULATION = true, lakukan mock logging aman
+       // Jika production live, dispatch payload ke Google FCM HTTP v1 endpoint
+       $db->table('PushNotif')->where('idPush', $item['idPush'])->update([
+           'status'         => 'sent',
+           'fcm_message_id' => $fcmMessageId,
+           'completeSent'   => date('Y-m-d H:i:s')
+       ]);
+   }
+   ```
+
+3. **Format Payload Google FCM HTTP v1 API**:
+   Siaran dikirim menggunakan Google Service Account JWT bearer token ke endpoint `https://fcm.googleapis.com/v1/projects/{project_id}/messages:send`:
+   ```json
+   {
+     "message": {
+       "topic": "all_investor_users",
+       "notification": {
+         "title": "IHSG Menembus Level All-Time High",
+         "body": "Indeks Harga Saham Gabungan melesat 1,2% siang ini...",
+         "image": "https://img.beritasatu.com/investor/2026/10/ihsg.jpg"
+       },
+       "data": {
+         "click_action": "FLUTTER_NOTIFICATION_CLICK",
+         "type": "breaking_news",
+         "articleID": "982145",
+         "categoryName": "Market",
+         "url": "https://investor.id/market/982145/ihsg-all-time-high"
+       }
+     }
    }
    ```
 
@@ -722,13 +845,13 @@ public function getFilesWithUploader(?string $keyword = null, int $limit = 20, i
 
 - **Tabel Terkait**: `tblArticle`, `tblUserAdministrator`, `tblAuthors`, `tblCategory`
 - **Lokasi File Smarty**:
-  - `Backup_CMS_ID/lib/Report.class.php` $\rightarrow$ fungsi `getProductivity()`
+  - `Backup_CMS_ID/lib/Report.class.php` → fungsi `getProductivity()`
   - `Backup_CMS_ID/administration/pages/statistic/index.php`
   - `Backup_CMS_ID/administration/pages/statistic/export.php`
 - **Lokasi File Revamp**:
   - [InvestorCMS/app/Controllers/Statistic.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/Statistic.php)
   - [InvestorCMS/app/Controllers/StatisticReport.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/StatisticReport.php)
-  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) $\rightarrow$ fungsi `getTrafficChartData()`, `getPublishingChartData()`
+  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) → fungsi `getTrafficChartData()`, `getPublishingChartData()`
 
 #### Query Agregasi Produktivitas Editor di Smarty:
 ```sql
@@ -819,7 +942,7 @@ public function getMembers(array $filters = [], int $page = 1, int $perPage = 10
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_trendingtopic.php`
 - **Lokasi File Revamp**:
   - [InvestorCMS/app/Controllers/Trending.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/Trending.php)
-  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) $\rightarrow$ fungsi `getTopArticles()`
+  - [InvestorCMS/app/Models/ArticleModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/ArticleModel.php) → fungsi `getTopArticles()`
 
 #### Query di Revamp CMS:
 ```php
@@ -845,13 +968,32 @@ public function getTopArticles(int $limit = 10, string $interval = '7d'): array
 
 ### 3.17 Modul Background Scheduler & Cron Jobs
 
-| Tugas Cron | File Smarty | File Revamp | Pola Query & Aksi |
-| :--- | :--- | :--- | :--- |
-| **Auto-Publish Scheduled** | `Backup_CMS_ID/cron/updatedraft.php` | [app/Commands/PublishScheduled.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/PublishScheduled.php) | `UPDATE tblArticle SET status = 'Publish' WHERE status = 'Hold' AND articleDate <= NOW()` |
-| **Truncate Newsletter Headline** | `Backup_CMS_ID/cron/truncate_newsletter.php` | [app/Commands/TruncateNewsletterHeadline.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/TruncateNewsletterHeadline.php) | `UPDATE tblArticleHeadline SET status = 0 WHERE category = 'newsletter'` (pukul 08:00, 14:00, 20:00 WIB) |
-| **Proses Antrean Push FCM** | `Backup_CMS_ID/cron/pushnotif.php` | [app/Commands/ProcessPushNotif.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/ProcessPushNotif.php) | `SELECT FROM tblPushNotif WHERE status = 'ready'`, dispatch FCM v1 |
-| **Pembersihan Log Audit Lama** | `Backup_CMS_ID/cron/deletelog.php` | [app/Commands/CleanupLogs.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/CleanupLogs.php) | `DELETE FROM tblEditorLog WHERE timestamp < NOW() - INTERVAL 90 DAY` |
-| **Feed Data Saham & Indeks** | `Backup_CMS_ID/cron/index-saham.php` | [app/Commands/FetchIdxStock.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/FetchIdxStock.php) | Parsing XML/FTP feed IDX, update cache ticker |
+| Tugas Cron | File Smarty | File Revamp | Command Spark & Crontab | Pola Query & Aksi |
+| :--- | :--- | :--- | :--- | :--- |
+| **Auto-Publish Scheduled** | `Backup_CMS_ID/cron/updatedraft.php` | [app/Commands/PublishScheduled.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/PublishScheduled.php) | `cron:publish-scheduled`<br>`* * * * *` (tiap 1 mnt) | `UPDATE tblArticle SET status = 'Publish' WHERE status = 'Hold' AND articleDate <= NOW()` |
+| **Truncate Newsletter Headline** | `Backup_CMS_ID/cron/truncate_newsletter.php` | [app/Commands/TruncateNewsletterHeadline.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/TruncateNewsletterHeadline.php) | `cron:truncate-newsletter`<br>`0 8,14,20 * * *` (3x sehari) | `UPDATE tblArticleHeadline SET status = 0 WHERE category = 'newsletter'`, catat audit trail ke `tblArticleHeadlineHistory` |
+| **Proses Antrean Push FCM** | `Backup_CMS_ID/cron/pushnotif.php` | [app/Commands/ProcessPushNotif.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/ProcessPushNotif.php) | `cron:process-push-notif`<br>`* * * * *` (tiap 1 mnt) | `SELECT FROM tblPushNotif WHERE status = 'ready'`, dispatch Google FCM v1 payload |
+| **Pembersihan Log Audit Lama** | `Backup_CMS_ID/cron/deletelog.php` | [app/Commands/CleanupLogs.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/CleanupLogs.php) | `cron:cleanup-logs`<br>`0 2 * * *` (pukul 02:00) | `DELETE FROM tblEditorLog WHERE timestamp < NOW() - INTERVAL 90 DAY` |
+| **Feed Data Saham & Indeks** | `Backup_CMS_ID/cron/index-saham.php` | [app/Commands/FetchIdxStock.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Commands/FetchIdxStock.php) | `cron:fetch-idx-stock`<br>`*/10 9-16 * * 1-5` (jam bursa) | HTTP fetcher feed ringkasan & indeks saham IDX ke `tblSaham_Summary`, rotasi data > 7 hari |
+
+#### Panduan Operasional & Eksekusi Manual CLI:
+Jika server mengalami keterlambatan atau perlu sinkronisasi manual saat pemeliharaan, perintah Spark dapat dipicu langsung via shell server:
+```bash
+# 1. Publikasikan manual naskah terjadwal yang tertahan:
+php spark cron:publish-scheduled
+
+# 2. Reset paksa slot headline newsletter:
+php spark cron:truncate-newsletter
+
+# 3. Proses manual antrean push notification tertunda:
+php spark cron:process-push-notif
+
+# 4. Tarik manual pergerakan saham bursa IDX terbaru:
+php spark cron:fetch-idx-stock
+
+# 5. Bersihkan riwayat log aktivitas yang telah berusia 90 hari:
+php spark cron:cleanup-logs
+```
 
 ---
 
@@ -925,12 +1067,80 @@ Histori penilaian disimpan ke dalam tabel `tblSeoScores` untuk memantau peningka
 }
 ```
 
+#### 3. Pohon Hierarki Kategori (Master & Sub-Kanal)
+- **Endpoint**: `GET /api/categories`
+- **Sample Output**:
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "categoryID": 1,
+      "categoryName": "Market",
+      "slug": "market",
+      "sub_kanals": [
+        { "categoryID": 11, "categoryName": "Saham", "slug": "saham" },
+        { "categoryID": 12, "categoryName": "Obligasi & Reksadana", "slug": "obligasi-reksadana" },
+        { "categoryID": 13, "categoryName": "Komoditas & Valas", "slug": "komoditas-valas" }
+      ]
+    },
+    {
+      "categoryID": 2,
+      "categoryName": "Bisnis",
+      "slug": "bisnis",
+      "sub_kanals": [
+        { "categoryID": 21, "categoryName": "Industri", "slug": "industri" },
+        { "categoryID": 22, "categoryName": "Infrastruktur", "slug": "infrastruktur" }
+      ]
+    }
+  ]
+}
+```
+
+#### 4. Pencarian Berita Publik
+- **Endpoint**: `GET /api/search`
+- **Parameters**: `q` (kata kunci wajib), `category` (opsional), `page` (default: 1), `per_page` (default: 10)
+- **Sample Output**: Mengembalikan array naskah terformat identik dengan list artikel beserta blok pagination.
+
 ---
 
 ### 4.2 Market Data & Bursa APIs
 
-- **Market Ticker**: `GET /api/market/ticker` $\rightarrow$ Indeks gabungan (IHSG, LQ45, IDX30), nilai tukar mata uang asing, harga komoditas (Minyak WTI, Emas, CPO).
-- **Market Movers**: `GET /api/market/movers?type=gainers` $\rightarrow$ 10 saham top gainers, losers, dan most active hari ini.
+#### 1. Real-Time Index & Commodity Ticker
+- **Endpoint**: `GET /api/market/ticker`
+- **Sample Output**:
+```json
+{
+  "status": "success",
+  "updated_at": "22 Oct 2026 11:15 WIB",
+  "data": [
+    { "symbol": "IHSG", "name": "Indeks Harga Saham Gabungan", "price": "7.284,55", "change": "+42,12", "percent": "+0,58%", "direction": "up", "color_class": "text-market-up" },
+    { "symbol": "LQ45", "name": "Indeks LQ45", "price": "912,40", "change": "+5,80", "percent": "+0,64%", "direction": "up", "color_class": "text-market-up" },
+    { "symbol": "IDX30", "name": "Indeks IDX30", "price": "468,25", "change": "-1,15", "percent": "-0,24%", "direction": "down", "color_class": "text-market-down" },
+    { "symbol": "USD/IDR", "name": "Rupiah vs Dolar AS", "price": "15.680", "change": "-35", "percent": "-0,22%", "direction": "down", "color_class": "text-market-down" },
+    { "symbol": "EMAS/ANTM", "name": "Emas Antam (gram)", "price": "1.385.000", "change": "+6.000", "percent": "+0,43%", "direction": "up", "color_class": "text-market-up" }
+  ]
+}
+```
+
+#### 2. Top Movers (Gainers & Losers)
+- **Endpoint**: `GET /api/market/movers`
+- **Sample Output**:
+```json
+{
+  "status": "success",
+  "data": {
+    "gainers": [
+      { "ticker": "BBCA", "name": "Bank Central Asia Tbk", "price": "10.250", "change": "+275", "percent": "+2,76%", "direction": "up" },
+      { "ticker": "BMRI", "name": "Bank Mandiri Tbk", "price": "6.850", "change": "+150", "percent": "+2,24%", "direction": "up" }
+    ],
+    "losers": [
+      { "ticker": "GOTO", "name": "GoTo Gojek Tokopedia Tbk", "price": "52", "change": "-2", "percent": "-3,70%", "direction": "down" },
+      { "ticker": "TLKM", "name": "Telkom Indonesia Tbk", "price": "2.920", "change": "-70", "percent": "-2,34%", "direction": "down" }
+    ]
+  }
+}
+```
 
 ---
 
@@ -950,17 +1160,20 @@ Histori penilaian disimpan ke dalam tabel `tblSeoScores` untuk memantau peningka
 }
 ```
 
-#### 2. AI Editorial Assistant (Gemini API)
+#### 2. AI Editorial Assistant (Google Gemini Multi-Tier Fallback)
 - **Endpoint**: `POST /api/ai/generate`
-- **Request Body**:
-```json
-{
-  "action": "suggest_titles",
-  "content": "Isi lengkap naskah berita...",
-  "tone": "formal"
-}
-```
-- **Actions yang Didukung**: `suggest_titles` (3 opsi judul SEO-friendly), `generate_summary` (ringkasan 2 paragraf), `proofread` (koreksi EYD/PUEBI), `extract_tags` (rekomendasi tag relevan).
+- **Controller**: [InvestorCMS/app/Controllers/AiAssistant.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/AiAssistant.php)
+- **Arsitektur Multi-Tier**: Sistem secara transparan menggunakan 3 lapis model Google Gemini untuk menjamin zero-downtime saat terjadi rate limit HTTP 429:
+  1. *Tier 1 (Primary)*: `gemini-3.5-flash-lite` (tercepat, latensi terendah).
+  2. *Tier 2 (Secondary)*: `gemini-2.5-flash-lite` (fallback otomatis jika Tier 1 throttled).
+  3. *Tier 3 (Tertiary)*: `gemini-3.1-flash-lite` (fail-safe cadangan darurat).
+- **5 Action Endpoint yang Didukung**:
+  1. `suggest_titles`: Menghasilkan 3 variasi judul SEO-friendly & menarik klik.
+  2. `generate_summary`: Menghasilkan lead paragraph & ringkasan eksekutif 2 paragraf.
+  3. `extract_tags`: Merekomendasikan 5-8 tag/kata kunci pasar relevan.
+  4. `key_points`: Mengekstrak 3-5 poin penting naskah untuk tabel `tblArticlePoints`.
+  5. `scrape_article`: Mengekstrak dan merangkum konten berita dari tautan URL eksternal berlisensi.
+- **Audit Logging**: Setiap eksekusi AI dicatat ke tabel `tblAiGeneratedLogs` (mencatat user ID, action, token prompt, token completion, model yang digunakan, dan durasi).
 
 #### 3. Autocomplete Tag & Keyword Redaksi
 - **Endpoint**: `POST /post/search-tags` (Payload: `{ "term": "saham" }`)
@@ -968,16 +1181,30 @@ Histori penilaian disimpan ke dalam tabel `tblSeoScores` untuk memantau peningka
 #### 4. SEO Readiness Scoring & AI Recommendations
 - **Endpoint Analisis**: `POST /api/scoring/analyze`
   - **Payload**: `{ "article_id": 982145 }` atau `{ "headline": "...", "body": "...", "keywords": ["saham", "ihsg"] }`
-  - **Response**: Breakdown skor parameter SEO (Title, Keyword, Body Length, Headings, Meta) beserta saran perbaikan.
+  - **Response**: Breakdown skor parameter SEO (Title, Keyword, Body Length, Headings, Meta) beserta rekomendasi AI.
 - **Endpoint Histori**: `GET /api/scoring/history/(:num)`
   - Mengambil daftar histori penilaian artikel berdasarkan ID artikel.
 
 ---
 
-### 4.4 Reader Authentication APIs
+### 4.4 Reader Authentication APIs & Standar Pesan Galat
 
 - **Client Login**: `POST /api/auth/client-login` (Payload: `email`, `password`)
 - **Client Register**: `POST /api/auth/client-register` (Payload: `name`, `email`, `password`)
+
+#### Standar Format Respon Error (REST API Standard):
+Seluruh endpoint API publik dan internal merespons kegagalan menggunakan format JSON seragam:
+```json
+{
+  "status": "error",
+  "code": 404,
+  "message": "Artikel dengan ID 982145 tidak ditemukan atau berstatus draft.",
+  "errors": {
+    "articleID": "Invalid identifier"
+  }
+}
+```
+*HTTP Status Codes*: `400 Bad Request` (payload tidak valid), `401 Unauthorized` (kredensial salah / sesi kedaluwarsa), `403 Forbidden` (akses peran ditolak), `404 Not Found` (data tidak ada), `500 Internal Error` (kesalahan server tercatat di log).
 
 ---
 
@@ -1090,12 +1317,33 @@ CREATE TABLE IF NOT EXISTS `tblAiGeneratedLogs` (
   KEY `idx_ai_article` (`articleID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. Indexing Kinerja untuk Tabel Utama Berkapasitas Jutaan Baris
-ALTER TABLE `tblArticle` ADD INDEX IF NOT EXISTS `idx_status_date` (`status`, `articleDate`);
-ALTER TABLE `tblArticleCategory` ADD INDEX IF NOT EXISTS `idx_art_cat` (`articleID`, `categoryID`);
-ALTER TABLE `tblMediaArticle` ADD INDEX IF NOT EXISTS `idx_media_art_pos` (`articleID`, `position`);
-ALTER TABLE `tblArticleHeadline` ADD INDEX IF NOT EXISTS `idx_cat_status_num` (`category`, `status`, `num`);
-ALTER TABLE `tblArticleKeyword` ADD INDEX IF NOT EXISTS `idx_kw_art` (`keywordID`, `articleID`);
+-- 5. Indexing Kinerja untuk Tabel Utama Berkapasitas Jutaan Baris (Sesuai Migrasi AddPerformanceIndexes)
+-- Indeks performa tabel Article
+ALTER TABLE `tblArticle` ADD INDEX IF NOT EXISTS `idx_article_status` (`status`);
+ALTER TABLE `tblArticle` ADD INDEX IF NOT EXISTS `idx_article_slug` (`slug`);
+ALTER TABLE `tblArticle` ADD INDEX IF NOT EXISTS `idx_article_date` (`articleDate`);
+ALTER TABLE `tblArticle` ADD INDEX IF NOT EXISTS `idx_article_acc` (`userID`);
+
+-- Indeks performa tabel Pivot & Relasi (JOIN Performance)
+ALTER TABLE `tblArticleCategory` ADD INDEX IF NOT EXISTS `idx_ncl_nano` (`articleID`);
+ALTER TABLE `tblArticleCategory` ADD INDEX IF NOT EXISTS `idx_ncl_charlie` (`categoryID`);
+ALTER TABLE `tblArticleAuthor` ADD INDEX IF NOT EXISTS `idx_nal_nano` (`articleID`);
+ALTER TABLE `tblArticleAuthor` ADD INDEX IF NOT EXISTS `idx_nal_aubert` (`authorID`);
+ALTER TABLE `tblArticleTag` ADD INDEX IF NOT EXISTS `idx_ntl_nano` (`articleId`);
+ALTER TABLE `tblArticleKeyword` ADD INDEX IF NOT EXISTS `idx_nkl_nano` (`articleID`);
+ALTER TABLE `tblMediaArticle` ADD INDEX IF NOT EXISTS `idx_mnl_media` (`mediaID`);
+ALTER TABLE `tblMediaArticle` ADD INDEX IF NOT EXISTS `idx_mnl_nano` (`articleID`);
+
+-- Indeks performa hierarki Kategori & Data Pasar Saham IDX
+ALTER TABLE `tblCategory` ADD INDEX IF NOT EXISTS `idx_category_parent` (`parent`);
+ALTER TABLE `tblSaham_Summary` ADD INDEX IF NOT EXISTS `idx_summary_date` (`Date`);
+ALTER TABLE `tblSaham_Summary` ADD INDEX IF NOT EXISTS `idx_summary_code` (`StockCode`);
+
+-- Indeks performa Headline & Log Audit
+ALTER TABLE `tblArticleHeadline` ADD INDEX IF NOT EXISTS `idx_headline_article` (`articleID`);
+ALTER TABLE `tblArticleHeadline` ADD INDEX IF NOT EXISTS `idx_headline_status` (`status`);
+ALTER TABLE `tblEditorLog` ADD INDEX IF NOT EXISTS `idx_editor_user` (`editorId`);
+ALTER TABLE `tblPushToDevices` ADD INDEX IF NOT EXISTS `idx_notif_dispatch_push` (`idPush`);
 ```
 
 *Alternatif eksekusi via Spark CLI*:

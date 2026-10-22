@@ -22,7 +22,14 @@ async function generatePdf() {
         process.exit(1);
     }
 
-    const mdContent = fs.readFileSync(mdPath, 'utf8');
+    let mdContent = fs.readFileSync(mdPath, 'utf8');
+
+    // Auto-convert LaTeX remnants to clean Unicode characters
+    mdContent = mdContent
+        .replace(/\$\\rightarrow\$/g, '→')
+        .replace(/\\rightarrow/g, '→')
+        .replace(/\$\\leftarrow\$/g, '←')
+        .replace(/\\leftarrow/g, '←');
 
     // Setup marked with custom heading renderer
     marked.use({
