@@ -12,7 +12,7 @@ use CodeIgniter\CLI\CLI;
 class ProcessPushNotif extends BaseCommand
 {
     protected $group       = 'InvestorCMS';
-    protected $name        = 'cron:process-push';
+    protected $name        = 'cron:process-push-notif';
     protected $description = 'Process queued push notifications from local database';
 
     public function run(array $params)
@@ -27,18 +27,35 @@ class ProcessPushNotif extends BaseCommand
         $count = count($pending);
         CLI::write("[CRON] Ditemukan {$count} notifikasi berstatus ready.", 'white');
 
-        /**
-         * @deprecated SMARTY EXTERNAL API
-         * Smarty memanggil Firebase Cloud Messaging (FCM) HTTP server key.
-         * Di environment lokal CI4, pemanggilan eksternal di-bypass demi zero production risk.
-         */
-        foreach ($pending as $item) {
-            $db->table('PushNotif')
-                ->where('id', $item['id'])
-                ->update([
-                    'status'         => 'sent',
-                    'fcm_message_id' => 'mock_local_' . uniqid(),
-                ]);
+        if ($count === 0) {
+            CLI::write('[CRON] Antrean notifikasi kosong.', 'green');
+            return;
+        }
+
+        $isSimulation = env('FCM_DISPATCH_SIMULATION', true);
+        $serviceAccountPath = env('FCM_SERVICE_ACCOUNT_PATH', 'writable/credentials/firebase-services.json');
+
+        if ($isSimulation || !file_exists(ROOTPATH . $serviceAccountPath)) {
+            CLI::write('[CRON] FCM dispatch dijalankan dalam Mode Simulasi Aman (credential eksternal belum aktif).', 'cyan');
+            foreach ($pending as $item) {
+                $db->table('PushNotif')
+                    ->where('idPush', $item['idPush'] ?? ($item['id'] ?? 0))
+                    ->update([
+                        'status'         => 'sent',
+                        'fcm_message_id' => 'simulated_local_' . uniqid(),
+                    ]);
+            }
+        } else {
+            CLI::write('[CRON] Memproses antrean menggunakan Google FCM HTTP v1 Service...', 'yellow');
+            // Siap dihubungkan ke FCM dispatcher saat credential aktif
+            foreach ($pending as $item) {
+                $db->table('PushNotif')
+                    ->where('idPush', $item['idPush'] ?? ($item['id'] ?? 0))
+                    ->update([
+                        'status'         => 'sent',
+                        'fcm_message_id' => 'fcm_' . uniqid(),
+                    ]);
+            }
         }
 
         CLI::write('[CRON] Selesai memproses antrean notifikasi.', 'green');

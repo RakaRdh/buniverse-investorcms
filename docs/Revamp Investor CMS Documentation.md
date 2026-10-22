@@ -29,6 +29,7 @@ Dokumentasi teknis komprehensif mengenai arsitektur sistem, komparasi mendalam s
    - [3.15 Modul Keanggotaan Pembaca (Member)](#315-modul-keanggotaan-pembaca-member)
    - [3.16 Modul Trending Topics & Peringkat Baca](#316-modul-trending-topics--peringkat-baca)
    - [3.17 Modul Background Scheduler & Cron Jobs](#317-modul-background-scheduler--cron-jobs)
+   - [3.18 Modul Evaluasi & Kesiapan SEO (SEO Readiness Scoring)](#318-modul-evaluasi--kesiapan-seo-seo-readiness-scoring)
 4. [Spesifikasi & Pemanggilan Seluruh Endpoint API](#4-spesifikasi--pemanggilan-seluruh-endpoint-api)
    - [4.1 Reader Public APIs](#41-reader-public-apis)
    - [4.2 Market Data & Bursa APIs](#42-market-data--bursa-apis)
@@ -58,6 +59,7 @@ Dokumentasi teknis komprehensif mengenai arsitektur sistem, komparasi mendalam s
 | **Konvensi Case-Sensitivity** | Raw SQL dengan string literal (`tblArticle`, `tblCategory`) | Model & Query Builder CamelCase (`Article`, `Category`), otomatis di-prefix `tbl` |
 | **Pemisahan Publik** | File PHP terekspos di root aplikasi | Web root terisolasi di `/public`, file inti di `/app` aman dari akses publik |
 | **Pengujian (Testing)** | Manual via browser | 111 Automated Unit Tests (PHPUnit v10.5.16) dengan 428 assertions |
+| **Integrasi Social Share** | `SocialShare.class.php` (AddThis, Twitter API, URL Shortener internal) | **Didepresiasi/Dihapus**. API pihak ketiga lama sudah usang; sharing di-handle native oleh frontend pembaca |
 
 ---
 
@@ -95,7 +97,7 @@ Pada CodeIgniter 4, prefix tabel dikonfigurasi secara global pada:
    - Jika lolos, sistem **secara otomatis meng-upgrade hash akun ke format SHA-512 (128 karakter)** ke dalam database tanpa mengharuskan pengguna melakukan reset password manual.
 3. **Autentikasi Dua Faktor (2FA) & Interval Verifikasi**:
    - Sistem login menerapkan autentikasi dua faktor berbasis kode verifikasi OTP 6-digit acak yang dikirimkan ke alamat email resmi staf redaksi via Brevo SMTP TLS.
-   - Status kode OTP (`authCode`) dan masa aktifnya (`authExpired`, berlaku 5 menit) dikelola langsung pada entitas `tblUserAdministrator`.
+   - Status kode OTP (`authCode`) dan masa aktifnya (`authExpired`, berlaku 5 menit) dikelola langsung pada entitas `tblUserAdministrator`. *(Catatan Keputusan Arsitektur: Smarty menetapkan `INTERVAL 60 SECOND` / 1 menit. Pada Revamp, masa berlaku diperpanjang menjadi 5 menit sebagai optimalisasi UX untuk mengakomodasi potensi latency pengiriman email gateway SMTP/Brevo tanpa mengorbankan keamanan).*
    - Setelah kode berhasil diverifikasi, sistem memberikan masa berlaku verifikasi selama 5 hari (`nextVerify = +5 days`) pada tabel pengguna. Dengan demikian, staf tidak diwajibkan menginput ulang kode verifikasi pada setiap sesi login harian selama periode tersebut masih aktif.
 4. **Kebijakan Rotasi Sandi & Proteksi Akun**:
    - Batas masa aktif kata sandi staf ditetapkan selama 90 hari (`passwordExpired`). Filter rute `AuthGuard` secara otomatis mendeteksi akun yang telah melewati batas kedaluwarsa dan mengalihkannya ke halaman profil untuk pembaruan kata sandi.
@@ -260,7 +262,7 @@ $linkedCategories = $this->db->table('ArticleCategory ac')
 
 ### 3.3 Modul Penulis, Editor & Fotografer (Authors)
 
-- **Tabel Terkait**: `tblAuthors`, `tblArticleAuthors` (atau `tblArticleAuthor`)
+- **Tabel Terkait**: `tblAuthors`, `tblArticleAuthor`
 - **Lokasi File Smarty**:
   - `Backup_CMS_ID/lib/Author.class.php` $\rightarrow$ fungsi `saveAuthor()`, `getAuthor()`, `searchAuthor()`
   - `Backup_CMS_ID/administration/pages/article/ajax/ajax_getauthor.php`
@@ -284,7 +286,8 @@ public function getAuthorsWithCount(?string $keyword = null, int $limit = 20, in
 {
     $builder = $this->db->table('Authors a')
         ->select('a.authorID, a.authorName, a.slug, a.type, COUNT(aa.articleID) as total_articles')
-        ->join('ArticleAuthors aa', 'aa.authorID = a.authorID', 'left')
+        ->join('ArticleAuthor aa', 'aa.authorID = a.authorID', 'left')
+        ->where('a.valid !=', '3')
         ->groupBy('a.authorID')
         ->orderBy('a.authorName', 'ASC');
 
@@ -485,6 +488,26 @@ public function getAdminsWithActivity(): array
 }
 ```
 
+#### Mekanisme Custom Permission per User (Granular Access Override)
+Selain RBAC berbasis peran standar (`master`, `administrator`, `editor`, `reporter`, dll), Revamp CMS menyediakan fitur *Custom Permission* berbasis file JSON (`writable/data/json/permissions.json`) yang dievaluasi langsung oleh filter [RoleGuard.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Filters/RoleGuard.php#L31-L61).
+
+Fitur ini memungkinkan Administrator memberikan atau membatasi izin akses spesifik modul untuk user tertentu (misal: membatasi reporter hanya bisa mengakses modul `post` dan `media`, atau memberi staf akses ke `embed-chart`). Format konfigurasi JSON:
+```json
+{
+  "users": {
+    "12": {
+      "dashboard": true,
+      "post": true,
+      "media": true,
+      "headline": false,
+      "files": false
+    }
+  }
+}
+```
+Pengelolaan izin ini dapat diakses melalui controller [InvestorCMS/app/Controllers/User.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/User.php) via metode `getPermissions()` dan `savePermissions()`.
+
+
 ---
 
 ### 3.8 Modul Penguncian Artikel Bersamaan (Edit Lock)
@@ -621,7 +644,7 @@ WHERE t1.userID = t2.userID ORDER BY t1.title ASC;
 ```php
 public function getFilesWithUploader(?string $keyword = null, int $limit = 20, int $offset = 0): array
 {
-    $builder = $this->db->table('File f')
+    $builder = $this->db->table('Files f')
         ->select('f.fileID, f.title, f.filename, f.filetype, f.filesize, f.timestamp, u.username as uploader_name')
         ->join('UserAdministrator u', 'u.userID = f.userID', 'left')
         ->orderBy('f.timestamp', 'DESC');
@@ -800,6 +823,28 @@ public function getTopArticles(int $limit = 10, string $interval = '7d'): array
 
 ---
 
+### 3.18 Modul Evaluasi & Kesiapan SEO (SEO Readiness Scoring)
+
+- **Tabel Terkait**: `tblSeoScores` (skema DDL di §5.2)
+- **Status di Smarty CMS**: ❌ Tidak ada (Fitur baru pada Revamp CMS)
+- **Lokasi File Revamp**:
+  - Controller: [InvestorCMS/app/Controllers/Scoring.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Controllers/Scoring.php)
+  - Library Evaluator: [InvestorCMS/app/Libraries/SeoScorer.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Libraries/SeoScorer.php)
+  - Model: [InvestorCMS/app/Models/SeoScoreModel.php](file:///d:/Raka/B-Universe/Revamp%20CMS%20Investor/InvestorCMS/app/Models/SeoScoreModel.php)
+  - View: `app/Views/scoring/index.php`
+
+#### Logika Evaluasi Algoritma SEO:
+Modul ini menghitung skor kesiapan naskah (0 - 100) sebelum diterbitkan redaksi berdasarkan bobot parameter berikut:
+1. **Title Tag Optimization (20%)**: Panjang judul ideal (50-65 karakter), ketiadaan duplikasi, dan penempatan kata kunci utama.
+2. **Focus Keyword Presence & Density (25%)**: Keberadaan keyword di paragraf pembuka (lead), kepadatan kata kunci optimal (1.5% - 2.5%), serta kemunculan pada sub-judul.
+3. **Content Length & Readability (25%)**: Minimal panjang naskah editorial berita (300+ kata) dan keterbacaan paragraf.
+4. **Heading Structure (15%)**: Keberadaan hierarki sub-heading H2 dan H3 dalam naskah.
+5. **Meta Description & Media Caption (15%)**: Kelengkapan ringkasan naskah (summary) dan caption gambar penjelas.
+
+Histori penilaian disimpan ke dalam tabel `tblSeoScores` untuk memantau peningkatan kualitas artikel sebelum dipublikasikan. Modul ini juga terhubung dengan layanan Google Gemini AI (`GeminiProvider.php`) untuk memberikan saran penyempurnaan judul dan paragraf pembuka secara instan.
+
+---
+
 ## 4. Spesifikasi & Pemanggilan Seluruh Endpoint API
 
 ### 4.1 Reader Public APIs
@@ -888,6 +933,13 @@ public function getTopArticles(int $limit = 10, string $interval = '7d'): array
 #### 3. Autocomplete Tag & Keyword Redaksi
 - **Endpoint**: `POST /post/search-tags` (Payload: `{ "term": "saham" }`)
 
+#### 4. SEO Readiness Scoring & AI Recommendations
+- **Endpoint Analisis**: `POST /api/scoring/analyze`
+  - **Payload**: `{ "article_id": 982145 }` atau `{ "headline": "...", "body": "...", "keywords": ["saham", "ihsg"] }`
+  - **Response**: Breakdown skor parameter SEO (Title, Keyword, Body Length, Headings, Meta) beserta saran perbaikan.
+- **Endpoint Histori**: `GET /api/scoring/history/(:num)`
+  - Mengambil daftar histori penilaian artikel berdasarkan ID artikel.
+
 ---
 
 ### 4.4 Reader Authentication APIs
@@ -922,6 +974,8 @@ database.default.DBPrefix = tbl
 database.default.DBDebug = false
 database.default.charset  = utf8mb4
 database.default.DBCollat = utf8mb4_general_ci
+
+> **Catatan Konsistensi Collation**: Database eksisting Smarty dan server database produksi menggunakan `utf8mb4_general_ci`. Pastikan konfigurasi `.env` produksi tidak diubah menjadi `utf8mb4_unicode_ci` agar tidak terjadi *illegal mix of collations* saat melakukan operasi `JOIN` atau `UNION` pada tabel-tabel lama.
 
 # 4. Kredensial Email Gateway 2FA (Brevo SMTP TLS)
 email.SMTPHost = 'smtp-relay.brevo.com'
